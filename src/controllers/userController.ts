@@ -1,61 +1,586 @@
 import { Request, Response } from "express";
 import { User } from "../models/User";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
-export const createUser = async (req: Request, res: Response) => {
+interface UserFilter {
+  type?: string;
+  $or?: Array<{
+    firstName?: RegExp;
+    lastName?: RegExp;
+    email?: RegExp;
+  }>;
+}
+
+interface UserUpdates {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  nickname?: string;
+  bio?: string;
+  profileImage?: string;
+  receiveNotifications?: boolean;
+  type?: string;
+  email?: string;
+}
+
+// Auth-related controller functions
+export const loginUser = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
   try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        errors: [{ msg: "Missing required fields" }],
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        errors: [{ msg: "Invalid email format" }],
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(403).json({ error: "Invalid credentials" });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(403).json({ error: "Invalid credentials" });
+    }
+
+    const validTypes = [
+      "Soldier",
+      "Municipality",
+      "Donor",
+      "Organization",
+      "Business",
+      "Admin",
+    ];
+    if (!validTypes.includes(user.type)) {
+      return res.status(403).json({ error: "Invalid user type" });
+    }
+
+    // Check approval status (allow admin regardless of status)
+    if (user.type !== "Admin" && user.approvalStatus !== "approved") {
+      return res.status(403).json({
+        error: "Account not approved",
+        status: user.approvalStatus,
+        message:
+          user.approvalStatus === "denied"
+            ? user.denialReason
+            : "Your account is pending approval",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        type: user.type,
+      },
+      process.env.JWT_SECRET || "test-secret-key",
+      {
+        expiresIn: "24h",
+      }
+    );
+
+    return res.json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        type: user.type,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        nickname: user.nickname,
+        receiveNotifications: user.receiveNotifications,
+        approvalStatus: user.approvalStatus,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    return res.status(500).json({ error: "Error logging in" });
+  }
+};
+
+export const getCurrentUser = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.user.userId)) {
+      return res.status(400).json({ error: "Invalid user ID format" });
+    }
+
+    const user = await User.findById(req.user.userId)
+      .select("-password -passport")
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.type !== req.user.type) {
+      return res
+        .status(401)
+        .json({ error: "User type mismatch. Please login again." });
+    }
+
+    return res.json({ user });
+  } catch (error) {
+    console.error("Get current user error:", error);
+    return res.status(500).json({ error: "Error fetching user" });
+  }
+};
+
+// User management controller functions
+export const createUser = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const { email, phone, passport } = req.body;
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res
+        .status(400)
+        .json({ errors: [{ msg: "Invalid email format" }] });
+    }
+
+    // Check for existing user
+    const existingUser = await User.findOne({
+      $or: [{ email }, { phone }, { passport }],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        error: "User already exists",
+      });
+    }
+
     const user = await User.create(req.body);
-    res.status(201).json(user);
-  } catch (error) {
-    res.status(400).json({ message: "Error creating user", error });
-  }
-};
+    const userResponse = user.toObject();
+    const { password: _p, passport: _pp, ...sanitizedUser } = userResponse;
 
-export const getUsers = async (_req: Request, res: Response) => {
-  try {
-    const users = await User.find().select("-password");
-    res.json(users);
+    res.status(201).json({ user: sanitizedUser });
   } catch (error) {
-    res.status(500).json({ message: "Error fetching users", error });
-  }
-};
-
-export const getUserById = async (req: Request, res: Response) => {
-  try {
-    const user = await User.findById(req.params.id).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    console.error("Create user error:", error);
+    if (error instanceof mongoose.Error.ValidationError) {
+      return res.status(400).json({
+        errors: Object.values(error.errors).map((err) => ({
+          msg: err.message,
+        })),
+      });
     }
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching user", error });
+    res.status(500).json({ error: "Error creating user" });
   }
 };
 
-export const updateUser = async (req: Request, res: Response) => {
+export const getAllUsers = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const filter: UserFilter = {};
+    if (req.query.type && typeof req.query.type === "string") {
+      const validTypes = [
+        "Soldier",
+        "Municipality",
+        "Donor",
+        "Organization",
+        "Business",
+      ];
+      if (validTypes.includes(req.query.type)) {
+        filter.type = req.query.type;
+      }
+    }
+
+    if (req.query.search && typeof req.query.search === "string") {
+      const searchRegex = new RegExp(req.query.search, "i");
+      filter.$or = [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { email: searchRegex },
+      ];
+    }
+
+    const users = await User.find(filter)
+      .select("-password -passport")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const total = await User.countDocuments(filter);
+
+    return res.json({
+      users,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        hasMore: page * limit < total,
+      },
+    });
+  } catch (error) {
+    console.error("Get all users error:", error);
+    return res.status(500).json({
+      message: "Error fetching users",
+      error: process.env.NODE_ENV === "development" ? error : undefined,
+    });
+  }
+};
+
+export const editUser = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid user ID format" });
+    }
+
+    const existingUser = await User.findById(id);
+    if (!existingUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const isAdmin = req.user.type === "Admin";
+    const isSelfUpdate = req.user.userId === id;
+    if (!isAdmin && !isSelfUpdate) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to edit this user" });
+    }
+
+    const allowedUpdates = [
+      "firstName",
+      "lastName",
+      "phone",
+      "nickname",
+      "bio",
+      "profileImage",
+      "receiveNotifications",
+    ];
+    if (isAdmin) {
+      allowedUpdates.push("type", "email");
+    }
+
+    const sanitizedUpdates: UserUpdates = {};
+    Object.keys(updates).forEach((key) => {
+      if (allowedUpdates.includes(key)) {
+        sanitizedUpdates[key as keyof UserUpdates] = updates[key];
+      }
+    });
+
+    if (sanitizedUpdates.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(sanitizedUpdates.email)) {
+        return res.status(400).json({ error: "Invalid email format" });
+      }
+      const emailExists = await User.findOne({
+        email: sanitizedUpdates.email,
+        _id: { $ne: id },
+      });
+      if (emailExists) {
+        return res.status(400).json({ error: "Email already in use" });
+      }
+    }
+
+    if (sanitizedUpdates.phone) {
+      const phoneRegex = /^\+?[\d\s-]{10,}$/;
+      if (!phoneRegex.test(sanitizedUpdates.phone)) {
+        return res.status(400).json({ error: "Invalid phone format" });
+      }
+      const phoneExists = await User.findOne({
+        phone: sanitizedUpdates.phone,
+        _id: { $ne: id },
+      });
+      if (phoneExists) {
+        return res.status(400).json({ error: "Phone number already in use" });
+      }
+    }
+
     const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true }
-    ).select("-password");
+      id,
+      { $set: sanitizedUpdates },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-password -passport");
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ error: "User not found" });
     }
-    res.json(user);
+
+    return res.json({ user });
   } catch (error) {
-    res.status(500).json({ message: "Error updating user", error });
+    console.error("Edit user error:", error);
+    if (error instanceof mongoose.Error.ValidationError) {
+      return res.status(400).json({
+        errors: Object.values(error.errors).map((err) => ({
+          msg: err.message,
+        })),
+      });
+    }
+    return res.status(500).json({ error: "Error updating user" });
   }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
+export const deleteUser = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
+    const user = await User.findByIdAndDelete(id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
     res.json({ message: "User deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Error deleting user", error });
+    console.error("Delete user error:", error);
+    res.status(500).json({
+      message: "Error deleting user",
+      error: process.env.NODE_ENV === "development" ? error : undefined,
+    });
+  }
+};
+
+// Approval-related controller functions
+export const getPendingUsers = async (
+  _req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const users = await User.find({ approvalStatus: "pending" })
+      .select("-password -passport")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.json({ users });
+  } catch (error) {
+    console.error("Get pending users error:", error);
+    return res.status(500).json({ error: "Error fetching pending users" });
+  }
+};
+
+export const getPendingUser = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
+    const user = await User.findOne({
+      _id: id,
+      approvalStatus: "pending",
+    })
+      .select("-password -passport")
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ message: "Pending user not found" });
+    }
+
+    return res.json(user);
+  } catch (error) {
+    console.error("Get pending user error:", error);
+    return res.status(500).json({
+      message: "Error fetching pending user",
+      error: process.env.NODE_ENV === "development" ? error : undefined,
+    });
+  }
+};
+
+export const approveUser = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid user ID format" });
+    }
+
+    const user = await User.findOneAndUpdate(
+      { _id: id, approvalStatus: "pending" },
+      {
+        $set: {
+          approvalStatus: "approved",
+          approvalDate: new Date(),
+          denialReason: undefined,
+        },
+      },
+      { new: true }
+    ).select("-password -passport");
+
+    if (!user) {
+      return res.status(404).json({ error: "Pending user not found" });
+    }
+
+    return res.json({ user });
+  } catch (error) {
+    console.error("Approve user error:", error);
+    return res.status(500).json({ error: "Error approving user" });
+  }
+};
+
+export const denyUser = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid user ID format" });
+    }
+
+    if (!reason) {
+      return res.status(400).json({ error: "Denial reason is required" });
+    }
+
+    const user = await User.findOneAndUpdate(
+      { _id: id, approvalStatus: "pending" },
+      {
+        $set: {
+          approvalStatus: "denied",
+          approvalDate: new Date(),
+          denialReason: reason,
+        },
+      },
+      { new: true }
+    ).select("-password -passport");
+
+    if (!user) {
+      return res.status(404).json({ error: "Pending user not found" });
+    }
+
+    return res.json({ user });
+  } catch (error) {
+    console.error("Deny user error:", error);
+    return res.status(500).json({ error: "Error denying user" });
+  }
+};
+
+// Current user management
+export const updateCurrentUser = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const updates = req.body;
+    const userId = req.user.userId;
+
+    const allowedUpdates = [
+      "firstName",
+      "lastName",
+      "phone",
+      "nickname",
+      "bio",
+      "profileImage",
+      "receiveNotifications",
+    ];
+
+    const sanitizedUpdates: UserUpdates = {};
+    Object.keys(updates).forEach((key) => {
+      if (allowedUpdates.includes(key)) {
+        sanitizedUpdates[key as keyof UserUpdates] = updates[key];
+      }
+    });
+
+    if (sanitizedUpdates.phone) {
+      const phoneRegex = /^\+?[\d\s-]{10,}$/;
+      if (!phoneRegex.test(sanitizedUpdates.phone)) {
+        return res.status(400).json({ message: "Invalid phone format" });
+      }
+      const phoneExists = await User.findOne({
+        phone: sanitizedUpdates.phone,
+        _id: { $ne: userId },
+      });
+      if (phoneExists) {
+        return res.status(400).json({ message: "Phone number already in use" });
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: sanitizedUpdates },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-password -passport");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.json({ user });
+  } catch (error) {
+    console.error("Update current user error:", error);
+    if (error instanceof mongoose.Error.ValidationError) {
+      return res.status(400).json({
+        errors: Object.values(error.errors).map((err) => ({
+          msg: err.message,
+        })),
+      });
+    }
+    return res.status(500).json({ error: "Error updating user" });
+  }
+};
+
+export const getUserById = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid user ID format" });
+    }
+
+    const user = await User.findById(id).select("-password -passport").lean();
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.json({ user });
+  } catch (error) {
+    console.error("Get user by id error:", error);
+    return res.status(500).json({ error: "Error fetching user" });
   }
 };

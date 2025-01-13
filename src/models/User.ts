@@ -1,7 +1,10 @@
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
-dotenv.config()
+dotenv.config();
+
+export type ApprovalStatus = "pending" | "approved" | "denied";
+
 export interface User extends Document {
   firstName: string;
   lastName: string;
@@ -14,71 +17,91 @@ export interface User extends Document {
   bio: string;
   profileImage: string;
   receiveNotifications: boolean;
+  approvalStatus: ApprovalStatus;
+  approvalDate?: Date;
+  denialReason?: string;
   createdAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-const userSchema = new Schema({
-  firstName: {
-    type: String,
-    required: true,
+const userSchema = new Schema(
+  {
+    firstName: {
+      type: String,
+      required: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+    },
+    passport: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      match: [/.+\@.+\..+/, "Please enter a valid email address"],
+    },
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
+    },
+    phone: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    type: {
+      type: String,
+      enum: [
+        "Soldier",
+        "Municipality",
+        "Donor",
+        "Organization",
+        "Business",
+        "Admin",
+      ],
+      required: true,
+    },
+    // Additional fields for Profile
+    nickname: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
+    profileImage: {
+      type: String,
+      default: "",
+    },
+    receiveNotifications: {
+      type: Boolean,
+      default: false,
+    },
+    // Approval fields
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "denied"],
+      default: "pending",
+    },
+    approvalDate: {
+      type: Date,
+    },
+    denialReason: {
+      type: String,
+    },
   },
-  lastName: {
-    type: String,
-    required: true,
-  },
-  passport: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    match: [/.+\@.+\..+/, "Please enter a valid email address"],
-  },
-  password: {
-    type: String,
-    required: true,
-    minlength: 6,
-  },
-  phone: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  type: {
-    type: String,
-    enum: [
-      "Soldier",
-      "Municipality",
-      "Donor",
-      "Organization",
-      "Business",
-      "Admin",
-    ],
-    required: true,
-  },
-  // Additional fields for Profile
-  nickname: {
-    type: String,
-    default: "",
-  },
-  bio: {
-    type: String,
-    default: "",
-  },
-  profileImage: {
-    type: String,
-    default: "",
-  },
-  receiveNotifications: {
-    type: Boolean,
-    default: false,
-  },
-});
+  {
+    timestamps: true,
+  }
+);
 
 // Hash password before saving
 userSchema.pre("save", async function (next) {

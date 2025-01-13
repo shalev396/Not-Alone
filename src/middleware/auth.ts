@@ -3,8 +3,6 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/User";
 import mongoose from "mongoose";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-
 // Extend Express Request type to include user
 declare global {
   namespace Express {
@@ -12,7 +10,7 @@ declare global {
       user: {
         userId: string;
         type: string;
-        _doc?: any; // For the full user document
+        _doc?: mongoose.Document;
       };
     }
   }
@@ -27,10 +25,13 @@ export const verifyToken = async (
     const token = req.header("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
-      return res.status(401).json({ error: "No token provided" });
+      return res.status(401).json({ error: "Authentication required" });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "test-secret-key"
+    ) as {
       userId: string;
       type: string;
     };
@@ -42,20 +43,30 @@ export const verifyToken = async (
 
     const user = await User.findById(decoded.userId).select("-password");
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(401).json({ error: "User not found" });
     }
 
     // Verify user type matches token
     if (user.type !== decoded.type) {
-      return res
-        .status(401)
-        .json({ error: "Token invalid - user type mismatch" });
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    // Check approval status (allow admin regardless of status)
+    if (user.type !== "Admin" && user.approvalStatus !== "approved") {
+      return res.status(403).json({
+        error: "Account not approved",
+        status: user.approvalStatus,
+        message:
+          user.approvalStatus === "denied"
+            ? user.denialReason
+            : "Your account is pending approval",
+      });
     }
 
     req.user = {
       userId: decoded.userId,
       type: decoded.type,
-      _doc: user.toObject(), // Store full user object for convenience
+      _doc: user.toObject(),
     };
 
     next();
@@ -122,7 +133,7 @@ export const createToken = (user: { _id: string; type: string }): string => {
       userId: user._id,
       type: user.type,
     },
-    JWT_SECRET,
-    { expiresIn: "23h" }
+    process.env.JWT_SECRET || "test-secret-key",
+    { expiresIn: "24h" }
   );
 };

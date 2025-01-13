@@ -4,40 +4,77 @@ import {
   getCurrentUser,
   getAllUsers,
   editUser,
-} from "../controllers/authController";
-import { createUser, deleteUser } from "../controllers/userController";
+  createUser,
+  deleteUser,
+  getPendingUser,
+  approveUser,
+  denyUser,
+  updateCurrentUser,
+  getPendingUsers,
+  getUserById,
+} from "../controllers/userController";
+import { verifyToken, isAdmin, accessRoles } from "../middleware/auth";
 import {
-  verifyToken,
-  isAdmin,
-  accessRoles,
-  canHandleRequestForm,
-} from "../middleware/authMiddleware";
+  loginLimiter,
+  registrationLimiter,
+  pendingCheckLimiter,
+  validateLogin,
+  validateRegistration,
+  validateUserUpdate,
+  auditLog,
+} from "../middleware/security";
 
 const router = express.Router();
 
 // Public routes
-router.post("/login", loginUser);
-router.post("/register", createUser);
+router.post(
+  "/login",
+  loginLimiter,
+  validateLogin,
+  auditLog("USER_LOGIN"),
+  loginUser
+);
+router.post(
+  "/register",
+  registrationLimiter,
+  validateRegistration,
+  auditLog("USER_CREATE"),
+  createUser
+);
+router.get("/pending/:id", pendingCheckLimiter, getPendingUser);
 
 // Protected routes
 router.use(verifyToken);
 
 // User profile routes
-router.get("/me", getCurrentUser);
-router.get("/", isAdmin, getAllUsers);
+router.get("/me", auditLog("USER_ACCESS"), getCurrentUser);
+router.put(
+  "/me",
+  validateUserUpdate,
+  auditLog("USER_UPDATE"),
+  updateCurrentUser
+);
+
+// Admin routes
+router.get("/pending", isAdmin, auditLog("ADMIN_ACTION"), getPendingUsers);
+router.post("/approve/:id", isAdmin, auditLog("USER_APPROVE"), approveUser);
+router.post("/deny/:id", isAdmin, auditLog("USER_DENY"), denyUser);
+router.get("/all", isAdmin, auditLog("ADMIN_ACTION"), getAllUsers);
+
+// User management routes (restricted by role)
 router.get(
   "/:id",
   accessRoles(["Admin", "Municipality", "Organization"]),
-  getCurrentUser
+  auditLog("USER_ACCESS"),
+  getUserById
 );
-
-// User management routes (restricted by role)
-router.put("/:id", accessRoles(["Admin", "Municipality"]), editUser);
-router.delete("/:id", isAdmin, deleteUser);
-
-// Example of using combined role middleware
-router.get("/requests/form", canHandleRequestForm, (req, res) => {
-  res.json({ message: "Access to request form granted" });
-});
+router.put(
+  "/:id",
+  accessRoles(["Admin", "Municipality"]),
+  validateUserUpdate,
+  auditLog("USER_UPDATE"),
+  editUser
+);
+router.delete("/:id", isAdmin, auditLog("USER_DELETE"), deleteUser);
 
 export default router;
