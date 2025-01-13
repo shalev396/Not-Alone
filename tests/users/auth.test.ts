@@ -1,26 +1,10 @@
 import request from "supertest";
-import mongoose from "mongoose";
 import { app } from "../../src/index";
 import { User } from "../../src/models/User";
+import { setupTestDB } from "../setup";
 
 describe("Authentication Endpoints", () => {
-  beforeAll(async () => {
-    // Connect to a test database
-    await mongoose.connect(
-      process.env.MONGODB_URI_TEST || "mongodb://localhost:27017/not-alone-test"
-    );
-  });
-
-  afterAll(async () => {
-    // Clean up database and close connection
-    await User.deleteMany({});
-    await mongoose.connection.close();
-  });
-
-  beforeEach(async () => {
-    // Clean up users before each test
-    await User.deleteMany({});
-  });
+  setupTestDB();
 
   describe("POST /api/users/register", () => {
     const validUser = {
@@ -84,7 +68,7 @@ describe("Authentication Endpoints", () => {
       passport: "AB123456",
       type: "Soldier",
     };
-
+//TODO: fix so this wont be posable approvalStatus: "approved",
     beforeEach(async () => {
       // Create a user before each login test
       await User.create({

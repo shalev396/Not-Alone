@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Express, Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import morgan from "morgan";
@@ -7,12 +7,15 @@ import path from "path";
 import helmet from "helmet";
 import userRoutes from "./routes/userRoutes";
 import { validateEnv } from "./utils/validateEnv";
+import { Server } from "http";
 
 // Load and validate environment variables
 dotenv.config();
 validateEnv();
 
-export const app = express();
+// Create Express app instance
+const app = express();
+let server: Server | null = null;
 
 // Security middleware
 app.use(helmet());
@@ -34,7 +37,7 @@ app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(express.static(path.join(__dirname, "../public")));
 
 // Security headers middleware
-app.use((_req, res, next) => {
+app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-XSS-Protection", "1; mode=block");
@@ -45,24 +48,17 @@ app.use((_req, res, next) => {
 app.use("/api/users", userRoutes);
 
 // Global error handling middleware
-app.use(
-  (
-    err: Error,
-    _req: express.Request,
-    res: express.Response,
-    _next: express.NextFunction
-  ) => {
-    console.error(err.stack);
-    const message =
-      process.env.NODE_ENV === "production"
-        ? "Internal Server Error"
-        : err.message;
-    res.status(500).json({
-      error: message,
-      ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
-    });
-  }
-);
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err.stack);
+  const message =
+    process.env.NODE_ENV === "production"
+      ? "Internal Server Error"
+      : err.message;
+  res.status(500).json({
+    error: message,
+    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
+  });
+});
 
 // Database connection with retry logic
 export const connectDB = async (retries = 5): Promise<void> => {
@@ -87,7 +83,24 @@ export const connectDB = async (retries = 5): Promise<void> => {
       return connectDB(retries - 1);
     }
     console.error("MongoDB connection error:", error);
-    throw error; // Don't exit process, throw error instead
+    throw error;
+  }
+};
+
+// Helper functions for server state
+export const isServerListening = (): boolean => {
+  return server !== null && server.listening;
+};
+
+export const closeServer = async (): Promise<void> => {
+  if (server) {
+    await new Promise<void>((resolve, reject) => {
+      server!.close((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    server = null;
   }
 };
 
@@ -96,14 +109,14 @@ if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   connectDB()
     .then(() => {
-      const server = app.listen(PORT, () => {
+      server = app.listen(PORT, () => {
         console.log(`Server is running on port http://localhost:${PORT}`);
       });
 
       // Graceful shutdown
       process.on("SIGTERM", () => {
         console.log("SIGTERM received. Shutting down gracefully...");
-        server.close(() => {
+        closeServer().then(() => {
           console.log("Server closed. Exiting process...");
           mongoose.connection.close(false).then(() => {
             process.exit(0);
@@ -116,3 +129,5 @@ if (require.main === module) {
       process.exit(1);
     });
 }
+
+export { app, server };

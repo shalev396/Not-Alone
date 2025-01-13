@@ -45,7 +45,7 @@ export const loginUser = async (
       });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return res.status(403).json({ error: "Invalid credentials" });
@@ -91,18 +91,21 @@ export const loginUser = async (
       }
     );
 
+    // Convert to plain object and remove password using destructuring
+    const { password: _, ...userObject } = user.toObject();
+
     return res.json({
       token,
       user: {
-        id: user._id,
-        email: user.email,
-        type: user.type,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        phone: user.phone,
-        nickname: user.nickname,
-        receiveNotifications: user.receiveNotifications,
-        approvalStatus: user.approvalStatus,
+        id: userObject._id,
+        email: userObject.email,
+        type: userObject.type,
+        firstName: userObject.firstName,
+        lastName: userObject.lastName,
+        phone: userObject.phone,
+        nickname: userObject.nickname,
+        receiveNotifications: userObject.receiveNotifications,
+        approvalStatus: userObject.approvalStatus,
       },
     });
   } catch (error) {
@@ -157,7 +160,7 @@ export const createUser = async (
         .json({ errors: [{ msg: "Invalid email format" }] });
     }
 
-    // Check for existing user
+    // First check if user exists
     const existingUser = await User.findOne({
       $or: [{ email }, { phone }, { passport }],
     });
@@ -168,9 +171,10 @@ export const createUser = async (
       });
     }
 
+    // Create new user if doesn't exist
     const user = await User.create(req.body);
     const userResponse = user.toObject();
-    const { password: _p, passport: _pp, ...sanitizedUser } = userResponse;
+    const { password: _, passport: __, ...sanitizedUser } = userResponse;
 
     res.status(201).json({ user: sanitizedUser });
   } catch (error) {
@@ -180,6 +184,11 @@ export const createUser = async (
         errors: Object.values(error.errors).map((err) => ({
           msg: err.message,
         })),
+      });
+    }
+    if (error instanceof Error && (error as any).code === 11000) {
+      return res.status(400).json({
+        error: "User already exists",
       });
     }
     res.status(500).json({ error: "Error creating user" });
@@ -218,14 +227,23 @@ export const getAllUsers = async (
       ];
     }
 
-    const users = await User.find(filter)
-      .select("-password -passport")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const result = await User.aggregate([
+      { $match: filter },
+      {
+        $facet: {
+          users: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit },
+            { $project: { password: 0, passport: 0 } },
+          ],
+          total: [{ $count: "count" }],
+        },
+      },
+    ]);
 
-    const total = await User.countDocuments(filter);
+    const users = result[0].users;
+    const total = result[0].total[0]?.count || 0;
 
     return res.json({
       users,
@@ -239,8 +257,7 @@ export const getAllUsers = async (
   } catch (error) {
     console.error("Get all users error:", error);
     return res.status(500).json({
-      message: "Error fetching users",
-      error: process.env.NODE_ENV === "development" ? error : undefined,
+      error: "Error fetching users",
     });
   }
 };
@@ -255,11 +272,6 @@ export const editUser = async (
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "Invalid user ID format" });
-    }
-
-    const existingUser = await User.findById(id);
-    if (!existingUser) {
-      return res.status(404).json({ error: "User not found" });
     }
 
     const isAdmin = req.user.type === "Admin";
@@ -290,36 +302,18 @@ export const editUser = async (
       }
     });
 
-    if (sanitizedUpdates.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(sanitizedUpdates.email)) {
-        return res.status(400).json({ error: "Invalid email format" });
-      }
-      const emailExists = await User.findOne({
-        email: sanitizedUpdates.email,
-        _id: { $ne: id },
-      });
-      if (emailExists) {
-        return res.status(400).json({ error: "Email already in use" });
-      }
-    }
-
     if (sanitizedUpdates.phone) {
       const phoneRegex = /^\+?[\d\s-]{10,}$/;
       if (!phoneRegex.test(sanitizedUpdates.phone)) {
         return res.status(400).json({ error: "Invalid phone format" });
       }
-      const phoneExists = await User.findOne({
-        phone: sanitizedUpdates.phone,
-        _id: { $ne: id },
-      });
-      if (phoneExists) {
-        return res.status(400).json({ error: "Phone number already in use" });
-      }
     }
 
-    const user = await User.findByIdAndUpdate(
-      id,
+    const user = await User.findOneAndUpdate(
+      {
+        _id: id,
+        $or: [{ phone: { $ne: sanitizedUpdates.phone } }, { _id: id }],
+      },
       { $set: sanitizedUpdates },
       {
         new: true,
@@ -328,7 +322,9 @@ export const editUser = async (
     ).select("-password -passport");
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res
+        .status(404)
+        .json({ error: "User not found or phone number already in use" });
     }
 
     return res.json({ user });
@@ -353,21 +349,18 @@ export const deleteUser = async (
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid user ID format" });
+      return res.status(400).json({ error: "Invalid user ID format" });
     }
 
     const user = await User.findByIdAndDelete(id);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ error: "User not found" });
     }
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error("Delete user error:", error);
-    res.status(500).json({
-      message: "Error deleting user",
-      error: process.env.NODE_ENV === "development" ? error : undefined,
-    });
+    res.status(500).json({ error: "Error deleting user" });
   }
 };
 
@@ -397,7 +390,7 @@ export const getPendingUser = async (
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid user ID format" });
+      return res.status(400).json({ error: "Invalid user ID format" });
     }
 
     const user = await User.findOne({
@@ -408,16 +401,13 @@ export const getPendingUser = async (
       .lean();
 
     if (!user) {
-      return res.status(404).json({ message: "Pending user not found" });
+      return res.status(404).json({ error: "Pending user not found" });
     }
 
-    return res.json(user);
+    return res.json({ user });
   } catch (error) {
     console.error("Get pending user error:", error);
-    return res.status(500).json({
-      message: "Error fetching pending user",
-      error: process.env.NODE_ENV === "development" ? error : undefined,
-    });
+    return res.status(500).json({ error: "Error fetching pending user" });
   }
 };
 
@@ -523,19 +513,15 @@ export const updateCurrentUser = async (
     if (sanitizedUpdates.phone) {
       const phoneRegex = /^\+?[\d\s-]{10,}$/;
       if (!phoneRegex.test(sanitizedUpdates.phone)) {
-        return res.status(400).json({ message: "Invalid phone format" });
-      }
-      const phoneExists = await User.findOne({
-        phone: sanitizedUpdates.phone,
-        _id: { $ne: userId },
-      });
-      if (phoneExists) {
-        return res.status(400).json({ message: "Phone number already in use" });
+        return res.status(400).json({ error: "Invalid phone format" });
       }
     }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
+    const user = await User.findOneAndUpdate(
+      {
+        _id: userId,
+        $or: [{ phone: { $ne: sanitizedUpdates.phone } }, { _id: userId }],
+      },
       { $set: sanitizedUpdates },
       {
         new: true,
@@ -544,7 +530,9 @@ export const updateCurrentUser = async (
     ).select("-password -passport");
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res
+        .status(404)
+        .json({ error: "User not found or phone number already in use" });
     }
 
     return res.json({ user });

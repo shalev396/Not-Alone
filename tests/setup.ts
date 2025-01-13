@@ -1,11 +1,36 @@
-import dotenv from "dotenv";
+import mongoose from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
+import { app, server } from "../src/index";
 
-// Load environment variables from .env.test if it exists, otherwise from .env
-dotenv.config({ path: ".env.test" });
+let mongoServer: MongoMemoryServer;
 
-// Set test environment variables
-process.env.NODE_ENV = "test";
-process.env.MONGODB_URI_TEST =
-  process.env.MONGODB_URI_TEST || "mongodb://localhost:27017/not-alone-test";
-process.env.JWT_SECRET = process.env.JWT_SECRET || "test-secret-key";
-process.env.PASSWORD_KEY = process.env.PASSWORD_KEY || "test-password-key";
+export const setupTestDB = () => {
+  beforeAll(async () => {
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
+  });
+
+  afterAll(async () => {
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+    await mongoServer.stop();
+
+    // Ensure server is properly closed
+    if (server?.listening) {
+      await new Promise<void>((resolve) => {
+        server?.close(() => resolve());
+      });
+    }
+  });
+
+  beforeEach(async () => {
+    if (mongoose.connection.db) {
+      const collections = await mongoose.connection.db.collections();
+      for (const collection of collections) {
+        await collection.deleteMany({});
+      }
+    }
+  });
+};

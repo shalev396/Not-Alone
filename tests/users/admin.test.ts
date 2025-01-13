@@ -1,27 +1,17 @@
 import request from "supertest";
-import mongoose from "mongoose";
 import { app } from "../../src/index";
 import { User } from "../../src/models/User";
 import { createTestUser, createAdminUser, generateTestToken } from "../helpers";
+import { setupTestDB } from "../setup";
 
 describe("Admin Routes", () => {
+  setupTestDB();
+
   let adminUser: any;
   let adminToken: string;
   let testUser: any;
 
-  beforeAll(async () => {
-    await mongoose.connect(
-      process.env.MONGODB_URI_TEST || "mongodb://localhost:27017/not-alone-test"
-    );
-  });
-
-  afterAll(async () => {
-    await User.deleteMany({});
-    await mongoose.connection.close();
-  });
-
   beforeEach(async () => {
-    await User.deleteMany({});
     adminUser = await createAdminUser();
     testUser = await createTestUser({ approvalStatus: "pending" });
     adminToken = generateTestToken(adminUser._id.toString(), "Admin");

@@ -23,7 +23,7 @@ export const generateTestToken = (userId: string, type = "Soldier") => {
     { expiresIn: "1h" }
   );
 };
-
+//TODO: fix so this wont be posable type: "Admin",
 export const createAdminUser = async () => {
   const admin = await User.create({
     email: "admin@example.com",
