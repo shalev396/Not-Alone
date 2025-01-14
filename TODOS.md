@@ -10,7 +10,7 @@
 - [V-MRC] User
 - [V-MRC] City
 - [V-MRC] Request
-- [ ] Eat Up
+- [V-MRC] Eat Up
 - [V-MRC] Donation
 - [ ] Business
 
@@ -122,13 +122,17 @@
 
 ## existing eatups routes
 
-- [] GET /all: Retrieve all eatups.
-- [] GET /:eatupId: Retrieve a eatup by eatup ID.
-- [] POST / create a eatup
-- [] POST /:eatupId/join: Join a eatup
-- [] POST /:eatupId/leave: Leave a eatup
-- [] PUT /:id : Update a eatup by eatup ID.
-- [] DELETE /:id : Delete a eatup by eatup ID.
+- [V] GET /all: Retrieve all eatups.
+- [V] GET /:eatupId: Retrieve a eatup by eatup ID.
+- [V] POST / create a eatup
+- [V] POST /:eatupId/join: Join a eatup
+- [V] POST /:eatupId/leave: Leave a eatup
+- [V] PUT /:id : Update a eatup by eatup ID.
+- [V] DELETE /:id : Delete a eatup by eatup ID.
+
+## extra eatups routes
+
+- [V] GET /my: Retrieve all eatups of the authenticated user.
 
 # profile routes
 
