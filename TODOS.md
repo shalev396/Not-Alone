@@ -1,12 +1,13 @@
 ## To-Do List
 
 - at the end add auth test so it will test every endpoint with every user type
+- add self auth for crud operations, so that only the user who made the "data" can access his own data and not other users (except admins)
 
 ### Progress
 
-- [V] User
-- [-] City
-- [ ] Request
+- [V-MRC] User
+- [V-MRC] City
+- [V-MRC] Request
 - [ ] Eat Up
 - [ ] Donation
 - [ ] Business
@@ -24,22 +25,6 @@
 
 - [ ] Channel
 - [ ] Message
-
-### Prompt for request
-
-so now i want you to make a request Schema
-request is more of a financial request
-
-its need to have a authorId of the user that made the request
-service ['Regular' or 'Reserves']
-item (title)
-itemDescription
-quantity
-zone {north center south}
-city from city model
-agreeToShareDetails boolean
-status ['approved', 'deny', 'in process']
-the default is in process
 
 # user routes
 
@@ -94,25 +79,25 @@ the default is in process
 
 ## existing request routes
 
-- [] POST / create a request
-- [] GET /all: Retrieve all requests.
-- [] GET /:requestId: Retrieve a request by request ID.
+- [V] POST / create a request
+- [V] GET /all: Retrieve all requests.
+- [V] GET /:requestId: Retrieve a request by request ID.
 
 ### existing municipality routes related to requests
 
-- [] POST /:requestId/approve: Approve a request by request ID.
-- [] POST /:requestId/deny: Deny a request by request ID.
-- [] DELETE /:requestId: Delete a request by request ID.
+- [V] POST /:requestId/approve: Approve a request by request ID.
+- [V] POST /:requestId/deny: Deny a request by request ID.
+- [x] DELETE /:requestId: Delete a request by request ID.
 
 ### existing Donor routes related to requests
 
-- [] GET /approved: Retrieve all approved requests.
+- [x] GET /approved: Retrieve all approved requests.
 
 ### existing soldier routes related to requests
 
-- [] GET /my-requests: Retrieve all requests of the soldier.
-- [] PUT /:id : Update a request by request ID.
-- [] DELETE /:id : Delete a request by request ID.
+- [V] GET /my-requests: Retrieve all requests of the soldier.
+- [V] PUT /:id : Update a request by request ID.
+- [x] DELETE /:id : Delete a request by request ID.
 
 # Donation routes
 

@@ -8,6 +8,7 @@ import helmet from "helmet";
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
 import cityRoutes from "./routes/cityRoutes";
+import requestRoutes from "./routes/requestRoutes";
 import { validateEnv } from "./utils/validateEnv";
 import { Server } from "http";
 
@@ -50,6 +51,7 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/cities", cityRoutes);
+app.use("/api/requests", requestRoutes);
 
 // Global error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
