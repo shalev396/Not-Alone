@@ -2,6 +2,8 @@
 
 - at the end add auth test so it will test every endpoint with every user type
 - add self auth for crud operations, so that only the user who made the "data" can access his own data and not other users (except admins)
+- implement join to cities that will need municipality approval
+  for now users cant leave cities after they are approved
 
 ### Progress
 
@@ -9,7 +11,7 @@
 - [V-MRC] City
 - [V-MRC] Request
 - [ ] Eat Up
-- [ ] Donation
+- [V-MRC] Donation
 - [ ] Business
 
 ---
@@ -103,11 +105,18 @@
 
 ## existing donation routes
 
-- [] POST / create a donation
-- [] GET /all: Retrieve all donations.
-- [] GET /:donationId: Retrieve a donation by donation ID.
-- [] PUT /:id : Update a donation by donation ID.
-- [] DELETE /:id : Delete a donation by donation ID.
+- [V] POST / create a donation
+- [V] GET /all: Retrieve all donations.
+- [V] GET /:donationId: Retrieve a donation by donation ID.
+- [V] PUT /:id : Update a donation by donation ID.
+- [V] DELETE /:id : Delete a donation by donation ID.
+
+## extra donation routes
+
+- [V] GET /my: Retrieve all donations of the authenticated user.
+- [V] GET /city-matching: Retrieve all donations of the authenticated user.
+- [V] POST /:donationId/assign/:soldierId: Assign a donation to a soldier.
+- [V] PUT /:donationId/status: Update the status of a donation.
 
 # eatups routes
 
