@@ -1,16 +1,16 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose from "mongoose";
 
-export interface AuditLog extends Document {
+export interface AuditLog extends mongoose.Document {
   action: string;
-  userId: string;
-  targetId?: string;
+  userId: mongoose.Types.ObjectId;
+  targetId?: mongoose.Types.ObjectId;
   changes?: Record<string, any>;
   ipAddress?: string;
   userAgent?: string;
   timestamp: Date;
 }
 
-const auditLogSchema = new Schema({
+const auditLogSchema = new mongoose.Schema<AuditLog>({
   action: {
     type: String,
     required: true,
@@ -24,19 +24,26 @@ const auditLogSchema = new Schema({
       "USER_DENY",
       "USER_ACCESS",
       "ADMIN_ACTION",
+      "CITY_CREATE",
+      "CITY_UPDATE",
+      "CITY_DELETE",
+      "CITY_APPROVE",
+      "CITY_DENY",
+      "CITY_JOIN",
     ],
   },
   userId: {
-    type: Schema.Types.ObjectId,
-    required: false,
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
     ref: "User",
   },
   targetId: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
   changes: {
-    type: Schema.Types.Mixed,
+    type: Map,
+    of: mongoose.Schema.Types.Mixed,
   },
   ipAddress: String,
   userAgent: String,
@@ -46,8 +53,7 @@ const auditLogSchema = new Schema({
   },
 });
 
-// Index for better query performance
-auditLogSchema.index({ action: 1, timestamp: -1 });
-auditLogSchema.index({ userId: 1, timestamp: -1 });
-
-export const AuditLog = mongoose.model<AuditLog>("AuditLog", auditLogSchema);
+export const AuditLogModel = mongoose.model<AuditLog>(
+  "AuditLog",
+  auditLogSchema
+);

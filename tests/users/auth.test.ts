@@ -1,26 +1,20 @@
 import request from "supertest";
 import { app } from "../../src/index";
-import { User } from "../../src/models/User";
-import { setupTestDB } from "../setup";
+import { UserModel } from "../../src/models/userModel";
+import { validUser } from "../helpers";
+import { User } from "../../src/types/user";
+import { setupTestDB } from "../helpers";
 
 describe("Authentication Endpoints", () => {
   setupTestDB();
 
-  describe("POST /api/users/register", () => {
-    const validUser = {
-      email: "test@example.com",
-      password: "Password123",
-      firstName: "Test",
-      lastName: "User",
-      phone: "+1234567890",
-      passport: "AB123456",
-      type: "Soldier",
-    };
+  beforeEach(async () => {
+    await UserModel.deleteMany({});
+  });
 
+  describe("POST /api/auth/register", () => {
     it("should register a new user successfully", async () => {
-      const res = await request(app)
-        .post("/api/users/register")
-        .send(validUser);
+      const res = await request(app).post("/api/auth/register").send(validUser);
 
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty("user");
@@ -30,7 +24,7 @@ describe("Authentication Endpoints", () => {
 
     it("should fail with invalid email", async () => {
       const res = await request(app)
-        .post("/api/users/register")
+        .post("/api/auth/register")
         .send({ ...validUser, email: "invalid-email" });
 
       expect(res.status).toBe(400);
@@ -39,7 +33,7 @@ describe("Authentication Endpoints", () => {
 
     it("should fail with weak password", async () => {
       const res = await request(app)
-        .post("/api/users/register")
+        .post("/api/auth/register")
         .send({ ...validUser, password: "123" });
 
       expect(res.status).toBe(400);
@@ -47,40 +41,28 @@ describe("Authentication Endpoints", () => {
     });
 
     it("should fail with duplicate email", async () => {
-      await request(app).post("/api/users/register").send(validUser);
-
-      const res = await request(app)
-        .post("/api/users/register")
-        .send(validUser);
+      await UserModel.create(validUser);
+      const res = await request(app).post("/api/auth/register").send(validUser);
 
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty("error");
     });
   });
 
-  describe("POST /api/users/login", () => {
-    const user = {
-      email: "test@example.com",
-      password: "Password123",
-      firstName: "Test",
-      lastName: "User",
-      phone: "+1234567890",
-      passport: "AB123456",
-      type: "Soldier",
-    };
-//TODO: fix so this wont be posable approvalStatus: "approved",
+  describe("POST /api/auth/login", () => {
+    let user: User;
+
     beforeEach(async () => {
-      // Create a user before each login test
-      await User.create({
-        ...user,
+      user = await UserModel.create({
+        ...validUser,
         approvalStatus: "approved",
       });
     });
 
     it("should login successfully with valid credentials", async () => {
-      const res = await request(app).post("/api/users/login").send({
-        email: user.email,
-        password: user.password,
+      const res = await request(app).post("/api/auth/login").send({
+        email: validUser.email,
+        password: validUser.password,
       });
 
       expect(res.status).toBe(200);
@@ -90,8 +72,8 @@ describe("Authentication Endpoints", () => {
     });
 
     it("should fail with incorrect password", async () => {
-      const res = await request(app).post("/api/users/login").send({
-        email: user.email,
+      const res = await request(app).post("/api/auth/login").send({
+        email: validUser.email,
         password: "wrongpassword",
       });
 
@@ -100,9 +82,9 @@ describe("Authentication Endpoints", () => {
     });
 
     it("should fail with non-existent email", async () => {
-      const res = await request(app).post("/api/users/login").send({
+      const res = await request(app).post("/api/auth/login").send({
         email: "nonexistent@example.com",
-        password: user.password,
+        password: validUser.password,
       });
 
       expect(res.status).toBe(403);
@@ -110,9 +92,9 @@ describe("Authentication Endpoints", () => {
     });
 
     it("should fail with invalid email format", async () => {
-      const res = await request(app).post("/api/users/login").send({
+      const res = await request(app).post("/api/auth/login").send({
         email: "invalid-email",
-        password: user.password,
+        password: validUser.password,
       });
 
       expect(res.status).toBe(400);
@@ -120,14 +102,13 @@ describe("Authentication Endpoints", () => {
     });
 
     it("should fail with pending approval status", async () => {
-      await User.findOneAndUpdate(
-        { email: user.email },
-        { approvalStatus: "pending" }
-      );
+      await UserModel.findByIdAndUpdate(user._id, {
+        approvalStatus: "pending",
+      });
 
-      const res = await request(app).post("/api/users/login").send({
-        email: user.email,
-        password: user.password,
+      const res = await request(app).post("/api/auth/login").send({
+        email: validUser.email,
+        password: validUser.password,
       });
 
       expect(res.status).toBe(403);

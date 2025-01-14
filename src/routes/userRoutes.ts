@@ -1,80 +1,42 @@
 import express from "express";
+import { auth } from "../middleware/auth";
+import { checkUserType } from "../middleware/checkUserType";
 import {
-  loginUser,
-  getCurrentUser,
-  getAllUsers,
-  editUser,
-  createUser,
-  deleteUser,
-  getPendingUser,
+  getUsers,
+  getProfile,
+  updateProfile,
+  updateUser,
   approveUser,
   denyUser,
-  updateCurrentUser,
-  getPendingUsers,
-  getUserById,
+  deleteUser,
+  getPendingUser,
 } from "../controllers/userController";
-import { verifyToken, isAdmin, accessRoles } from "../middleware/auth";
-import {
-  loginLimiter,
-  registrationLimiter,
-  pendingCheckLimiter,
-  validateLogin,
-  validateRegistration,
-  validateUserUpdate,
-  auditLog,
-} from "../middleware/security";
 
 const router = express.Router();
 
 // Public routes
-router.post(
-  "/login",
-  loginLimiter,
-  validateLogin,
-  auditLog("USER_LOGIN"),
-  loginUser
-);
-router.post(
-  "/register",
-  registrationLimiter,
-  validateRegistration,
-  auditLog("USER_CREATE"),
-  createUser
-);
-router.get("/pending/:id", pendingCheckLimiter, getPendingUser);
+router.get("/pending/:userId", getPendingUser);
 
 // Protected routes
-router.use(verifyToken);
-
-// User profile routes
-router.get("/me", auditLog("USER_ACCESS"), getCurrentUser);
-router.put(
-  "/me",
-  validateUserUpdate,
-  auditLog("USER_UPDATE"),
-  updateCurrentUser
-);
+router.get("/me", auth, getProfile);
+router.put("/me", auth, updateProfile);
 
 // Admin routes
-router.get("/pending", isAdmin, auditLog("ADMIN_ACTION"), getPendingUsers);
-router.post("/approve/:id", isAdmin, auditLog("USER_APPROVE"), approveUser);
-router.post("/deny/:id", isAdmin, auditLog("USER_DENY"), denyUser);
-router.get("/all", isAdmin, auditLog("ADMIN_ACTION"), getAllUsers);
+router.get("/all", auth, checkUserType(["Admin"]), getUsers);
+router.get("/pending", auth, checkUserType(["Admin"]), getUsers);
 
-// User management routes (restricted by role)
+// Profile access routes
 router.get(
-  "/:id",
-  accessRoles(["Admin", "Municipality", "Organization"]),
-  auditLog("USER_ACCESS"),
-  getUserById
+  "/:userId",
+  auth,
+  checkUserType(["Admin", "Municipality", "Organization"]),
+  getProfile
 );
-router.put(
-  "/:id",
-  accessRoles(["Admin", "Municipality"]),
-  validateUserUpdate,
-  auditLog("USER_UPDATE"),
-  editUser
-);
-router.delete("/:id", isAdmin, auditLog("USER_DELETE"), deleteUser);
+
+// User management routes
+router.put("/:userId", auth, checkUserType(["Admin"]), updateUser);
+router.post("/approve/:userId", auth, checkUserType(["Admin"]), approveUser);
+router.post("/deny/:userId", auth, checkUserType(["Admin"]), denyUser);
+router.delete("/:userId", auth, checkUserType(["Admin"]), deleteUser);
 
 export default router;

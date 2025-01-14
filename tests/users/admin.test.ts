@@ -1,6 +1,6 @@
 import request from "supertest";
 import { app } from "../../src/index";
-import { User } from "../../src/models/User";
+import { UserModel } from "../../src/models/userModel";
 import { createTestUser, createAdminUser, generateTestToken } from "../helpers";
 import { setupTestDB } from "../setup";
 
@@ -64,7 +64,7 @@ describe("Admin Routes", () => {
     });
 
     it("should fail for already approved user", async () => {
-      await User.findByIdAndUpdate(testUser._id, {
+      await UserModel.findByIdAndUpdate(testUser._id, {
         approvalStatus: "approved",
       });
 
@@ -108,7 +108,7 @@ describe("Admin Routes", () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty("message");
 
-      const deletedUser = await User.findById(testUser._id);
+      const deletedUser = await UserModel.findById(testUser._id);
       expect(deletedUser).toBeNull();
     });
 

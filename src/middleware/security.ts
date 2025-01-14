@@ -1,7 +1,7 @@
 import rateLimit from "express-rate-limit";
 import { body, validationResult } from "express-validator";
 import { Request, Response, NextFunction } from "express";
-import { AuditLog } from "../models/AuditLog";
+import { AuditLogModel } from "../models/AuditLog";
 
 // Rate limiters
 export const loginLimiter = rateLimit({
@@ -100,7 +100,7 @@ export const auditLog = (action: string) => {
             logData.userId = req.user.userId;
           }
 
-          AuditLog.create(logData).catch((error) => {
+          AuditLogModel.create(logData).catch((error) => {
             console.error("Audit log error:", error);
           });
         } catch (error) {

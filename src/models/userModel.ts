@@ -1,9 +1,8 @@
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
+import { UserType, ApprovalStatus } from "../types/user";
 dotenv.config();
-
-export type ApprovalStatus = "pending" | "approved" | "denied";
 
 export interface User extends Document {
   firstName: string;
@@ -12,7 +11,7 @@ export interface User extends Document {
   email: string;
   password: string;
   phone: string;
-  type: string;
+  type: UserType;
   nickname: string;
   bio: string;
   profileImage: string;
@@ -65,7 +64,7 @@ const userSchema = new Schema(
         "Organization",
         "Business",
         "Admin",
-      ],
+      ] as UserType[],
       required: true,
     },
     // Additional fields for Profile
@@ -88,7 +87,7 @@ const userSchema = new Schema(
     // Approval fields
     approvalStatus: {
       type: String,
-      enum: ["pending", "approved", "denied"],
+      enum: ["pending", "approved", "denied"] as ApprovalStatus[],
       default: "pending",
     },
     approvalDate: {
@@ -129,4 +128,4 @@ userSchema.methods.comparePassword = async function (
   );
 };
 
-export const User = mongoose.model<User>("User", userSchema);
+export const UserModel = mongoose.model<User>("User", userSchema);

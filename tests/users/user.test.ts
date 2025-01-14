@@ -1,6 +1,6 @@
 import request from "supertest";
 import { app } from "../../src/index";
-import { User } from "../../src/models/User";
+import { User } from "../../src/models/userModel";
 import { createTestUser, createAdminUser, generateTestToken } from "../helpers";
 import { setupTestDB } from "../setup";
 

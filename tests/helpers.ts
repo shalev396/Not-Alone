@@ -1,8 +1,9 @@
-import { User } from "../src/models/User";
+import { UserModel } from "../src/models/userModel";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 export const createTestUser = async (override = {}) => {
-  const user = await User.create({
+  const user = await UserModel.create({
     email: "test@example.com",
     password: "Password123",
     firstName: "Test",
@@ -25,7 +26,7 @@ export const generateTestToken = (userId: string, type = "Soldier") => {
 };
 //TODO: fix so this wont be posable type: "Admin",
 export const createAdminUser = async () => {
-  const admin = await User.create({
+  const admin = await UserModel.create({
     email: "admin@example.com",
     password: "AdminPass123",
     firstName: "Admin",
@@ -36,4 +37,34 @@ export const createAdminUser = async () => {
     approvalStatus: "approved",
   });
   return admin;
+};
+
+export const validUser = {
+  email: "test@example.com",
+  password: "Password123",
+  firstName: "Test",
+  lastName: "User",
+  phone: "+1234567890",
+  passport: "AB123456",
+  type: "Soldier",
+};
+
+export const setupTestDB = () => {
+  beforeAll(async () => {
+    const MONGODB_URI =
+      process.env.MONGODB_URI || "mongodb://localhost:27017/not-alone-test";
+    await mongoose.connect(MONGODB_URI);
+  });
+
+  beforeEach(async () => {
+    await Promise.all(
+      Object.values(mongoose.connection.collections).map(async (collection) =>
+        collection.deleteMany({})
+      )
+    );
+  });
+
+  afterAll(async () => {
+    await mongoose.disconnect();
+  });
 };
