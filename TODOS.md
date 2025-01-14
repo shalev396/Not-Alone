@@ -4,6 +4,7 @@
 - add self auth for crud operations, so that only the user who made the "data" can access his own data and not other users (except admins)
 - implement join to cities that will need municipality approval
   for now users cant leave cities after they are approved
+  -only users and cities are optimized for now
 
 ### Progress
 
@@ -12,6 +13,7 @@
 - [V-MRC] Request
 - [V-MRC] Eat Up
 - [V-MRC] Donation
+- [ ] Discount
 - [ ] Business
 
 ---
