@@ -13,6 +13,7 @@ import { validateEnv } from "./utils/validateEnv";
 import { Server } from "http";
 import businessRoutes from "./routes/businessRoutes";
 import discountRoutes from "./routes/discountRoutes";
+import profileRoutes from "./routes/profileRoutes";
 
 // Load and validate environment variables
 dotenv.config();
@@ -56,6 +57,7 @@ app.use("/api/cities", cityRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/businesses", businessRoutes);
 app.use("/api/discounts", discountRoutes);
+app.use("/api/profiles", profileRoutes);
 
 // Global error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

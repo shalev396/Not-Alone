@@ -17,6 +17,37 @@ const ensureUser = (req: Request, res: Response): UserInfo | undefined => {
   return { userId: req.user.userId, type: req.user.type };
 };
 
+const canAccessDonation = async (
+  userId: string,
+  userType: string,
+  donationId: string
+): Promise<boolean> => {
+  // Admins can access everything
+  if (userType === "Admin") return true;
+
+  const donation = await DonationModel.findById(donationId).lean();
+  if (!donation) return false;
+
+  // Donor can access their own donations
+  if (donation.donorId.toString() === userId) return true;
+
+  // Municipality users can access donations in their city
+  if (userType === "Municipality") {
+    const city = await CityModel.findById(donation.city).lean();
+    return (
+      city?.municipalityUsers.map((id) => id.toString()).includes(userId) ||
+      false
+    );
+  }
+
+  // Assigned soldier can access their assigned donations
+  if (userType === "Soldier" && donation.assignedTo) {
+    return donation.assignedTo.toString() === userId;
+  }
+
+  return false;
+};
+
 // Get all donations (admin and municipality only)
 export const getAllDonations = async (req: Request, res: Response) => {
   const userInfo = ensureUser(req, res);
@@ -51,46 +82,34 @@ export const getAllDonations = async (req: Request, res: Response) => {
 
 // Get donation by ID
 export const getDonationById = async (req: Request, res: Response) => {
-  const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
-
   try {
     const { donationId } = req.params;
+    const userInfo = ensureUser(req, res);
+    if (!userInfo) return;
 
     if (!mongoose.Types.ObjectId.isValid(donationId)) {
       return res.status(400).json({ message: "Invalid donation ID format" });
     }
 
+    const hasAccess = await canAccessDonation(
+      userInfo.userId,
+      userInfo.type,
+      donationId
+    );
+    if (!hasAccess) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to access this donation" });
+    }
+
     const donation = await DonationModel.findById(donationId)
-      .populate("donor", "firstName lastName email phone")
-      .populate("cityDetails", "name zone")
-      .populate("assignedSoldier", "firstName lastName email phone")
+      .populate("donor", "-password")
+      .populate("cityDetails")
+      .populate("assignedSoldier", "-password")
       .lean();
 
     if (!donation) {
       return res.status(404).json({ message: "Donation not found" });
-    }
-
-    // Check permissions
-    if (userInfo.type !== "Admin") {
-      const isDonor = donation.donorId.toString() === userInfo.userId;
-      const isAssignedSoldier =
-        donation.assignedTo?.toString() === userInfo.userId;
-
-      if (userInfo.type === "Municipality") {
-        const userCity = await CityModel.findOne({
-          municipalityUsers: userInfo.userId,
-        });
-        if (!userCity || userCity._id.toString() !== donation.city.toString()) {
-          return res
-            .status(403)
-            .json({ message: "Not authorized to view this donation" });
-        }
-      } else if (!isDonor && !isAssignedSoldier) {
-        return res
-          .status(403)
-          .json({ message: "Not authorized to view this donation" });
-      }
     }
 
     return res.json(donation);
@@ -139,54 +158,58 @@ export const createDonation = async (req: Request, res: Response) => {
 
 // Update donation
 export const updateDonation = async (req: Request, res: Response) => {
-  const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
-
   try {
     const { donationId } = req.params;
-    const updates = req.body;
+    const userInfo = ensureUser(req, res);
+    if (!userInfo) return;
 
     if (!mongoose.Types.ObjectId.isValid(donationId)) {
       return res.status(400).json({ message: "Invalid donation ID format" });
     }
 
-    // Find donation and check permissions
-    const existingDonation = await DonationModel.findById(donationId);
-    if (!existingDonation) {
-      return res.status(404).json({ message: "Donation not found" });
-    }
-
-    // Only allow updates if donation is pending
-    if (existingDonation.status !== "pending") {
-      return res
-        .status(400)
-        .json({ message: "Cannot update donation that is not pending" });
-    }
-
-    // Check permissions
-    const isDonor = existingDonation.donorId.toString() === userInfo.userId;
-    if (!isDonor && userInfo.type !== "Admin") {
+    const hasAccess = await canAccessDonation(
+      userInfo.userId,
+      userInfo.type,
+      donationId
+    );
+    if (!hasAccess) {
       return res
         .status(403)
         .json({ message: "Not authorized to update this donation" });
     }
 
-    // Remove fields that shouldn't be updated
-    delete updates.donorId;
-    delete updates.status;
-    delete updates.assignedTo;
-    delete updates.createdAt;
+    const donation = await DonationModel.findById(donationId);
+    if (!donation) {
+      return res.status(404).json({ message: "Donation not found" });
+    }
 
-    const donation = await DonationModel.findByIdAndUpdate(
+    // Only donor or admin can update
+    if (
+      donation.donorId.toString() !== userInfo.userId &&
+      userInfo.type !== "Admin"
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Only the donor or admin can update this donation" });
+    }
+
+    // Don't allow updates to assigned donations
+    if (donation.status !== "pending") {
+      return res
+        .status(400)
+        .json({ message: "Cannot update assigned donations" });
+    }
+
+    const updatedDonation = await DonationModel.findByIdAndUpdate(
       donationId,
-      { $set: updates },
+      { $set: req.body },
       { new: true, runValidators: true }
     )
-      .populate("donor", "firstName lastName email phone")
-      .populate("cityDetails", "name zone")
-      .populate("assignedSoldier", "firstName lastName email phone");
+      .populate("donor", "-password")
+      .populate("cityDetails")
+      .populate("assignedSoldier", "-password");
 
-    return res.json(donation);
+    return res.json(updatedDonation);
   } catch (error) {
     if (error instanceof mongoose.Error.ValidationError) {
       return res.status(400).json({
@@ -202,14 +225,24 @@ export const updateDonation = async (req: Request, res: Response) => {
 
 // Delete donation
 export const deleteDonation = async (req: Request, res: Response) => {
-  const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
-
   try {
     const { donationId } = req.params;
+    const userInfo = ensureUser(req, res);
+    if (!userInfo) return;
 
     if (!mongoose.Types.ObjectId.isValid(donationId)) {
       return res.status(400).json({ message: "Invalid donation ID format" });
+    }
+
+    const hasAccess = await canAccessDonation(
+      userInfo.userId,
+      userInfo.type,
+      donationId
+    );
+    if (!hasAccess) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this donation" });
     }
 
     const donation = await DonationModel.findById(donationId);
@@ -217,22 +250,24 @@ export const deleteDonation = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Donation not found" });
     }
 
-    // Only allow deletion if donation is pending
+    // Only donor or admin can delete
+    if (
+      donation.donorId.toString() !== userInfo.userId &&
+      userInfo.type !== "Admin"
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Only the donor or admin can delete this donation" });
+    }
+
+    // Don't allow deletion of assigned donations
     if (donation.status !== "pending") {
       return res
         .status(400)
-        .json({ message: "Cannot delete donation that is not pending" });
+        .json({ message: "Cannot delete assigned donations" });
     }
 
-    // Check permissions
-    const isDonor = donation.donorId.toString() === userInfo.userId;
-    if (!isDonor && userInfo.type !== "Admin") {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to delete this donation" });
-    }
-
-    await donation.deleteOne();
+    await DonationModel.findByIdAndDelete(donationId);
     return res.json({ message: "Donation deleted successfully" });
   } catch (error) {
     console.error("Delete donation error:", error);

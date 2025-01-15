@@ -15,6 +15,29 @@ const ensureUser = (req: Request, res: Response): UserInfo | undefined => {
   return { userId: req.user.userId, type: req.user.type };
 };
 
+const canAccessBusiness = async (
+  userId: string,
+  userType: string,
+  businessId: string
+): Promise<boolean> => {
+  // Admins can access everything
+  if (userType === "Admin") return true;
+
+  const business = await BusinessModel.findById(businessId).lean();
+  if (!business) return false;
+
+  // Owner can access their own business
+  if (business.owner.toString() === userId) return true;
+
+  // Workers can access their business
+  if (business.workers.map((id) => id.toString()).includes(userId)) return true;
+
+  // For approved businesses, anyone can view basic details
+  if (business.status === "approved") return true;
+
+  return false;
+};
+
 // Get all approved businesses
 export const getAllBusinesses = async (req: Request, res: Response) => {
   try {
@@ -54,6 +77,17 @@ export const getBusinessById = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid business ID format" });
     }
 
+    const hasAccess = await canAccessBusiness(
+      userInfo.userId,
+      userInfo.type,
+      businessId
+    );
+    if (!hasAccess) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to access this business" });
+    }
+
     const business = await BusinessModel.findById(businessId)
       .populate("ownerDetails", "-password")
       .populate("workerDetails", "-password")
@@ -63,19 +97,10 @@ export const getBusinessById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Business not found" });
     }
 
-    // Only return approved businesses unless user is admin or owner
-    if (
-      business.status !== "approved" &&
-      userInfo.type !== "Admin" &&
-      business.owner.toString() !== userInfo.userId
-    ) {
-      return res.status(404).json({ message: "Business not found" });
-    }
-
-    res.json(business);
+    return res.json(business);
   } catch (error) {
     console.error("Get business error:", error);
-    res.status(500).json({ message: "Error fetching business" });
+    return res.status(500).json({ message: "Error fetching business" });
   }
 };
 
@@ -109,15 +134,24 @@ export const createBusiness = async (req: Request, res: Response) => {
 
 // Update business
 export const updateBusiness = async (req: Request, res: Response) => {
-  const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
-
   try {
     const { businessId } = req.params;
-    const updates = req.body;
+    const userInfo = ensureUser(req, res);
+    if (!userInfo) return;
 
     if (!mongoose.Types.ObjectId.isValid(businessId)) {
       return res.status(400).json({ message: "Invalid business ID format" });
+    }
+
+    const hasAccess = await canAccessBusiness(
+      userInfo.userId,
+      userInfo.type,
+      businessId
+    );
+    if (!hasAccess) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this business" });
     }
 
     const business = await BusinessModel.findById(businessId);
@@ -130,22 +164,26 @@ export const updateBusiness = async (req: Request, res: Response) => {
       business.owner.toString() !== userInfo.userId &&
       userInfo.type !== "Admin"
     ) {
-      return res.status(403).json({ message: "Not authorized" });
+      return res
+        .status(403)
+        .json({ message: "Only the owner or admin can update this business" });
     }
 
-    // Don't allow status changes through this route
-    delete updates.status;
-    delete updates.owner;
-    delete updates.workers;
-    delete updates.pendingWorkers;
+    // Don't allow updates to certain fields
+    delete req.body.status;
+    delete req.body.owner;
+    delete req.body.workers;
+    delete req.body.pendingWorkers;
 
     const updatedBusiness = await BusinessModel.findByIdAndUpdate(
       businessId,
-      { $set: updates },
+      { $set: req.body },
       { new: true, runValidators: true }
-    );
+    )
+      .populate("ownerDetails", "-password")
+      .populate("workerDetails", "-password");
 
-    res.json(updatedBusiness);
+    return res.json(updatedBusiness);
   } catch (error) {
     if (error instanceof mongoose.Error.ValidationError) {
       return res.status(400).json({
@@ -155,21 +193,30 @@ export const updateBusiness = async (req: Request, res: Response) => {
         })),
       });
     }
-    console.error("Update business error:", error);
-    res.status(500).json({ message: "Error updating business" });
+    return res.status(500).json({ message: "Error updating business" });
   }
 };
 
 // Delete business
 export const deleteBusiness = async (req: Request, res: Response) => {
-  const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
-
   try {
     const { businessId } = req.params;
+    const userInfo = ensureUser(req, res);
+    if (!userInfo) return;
 
     if (!mongoose.Types.ObjectId.isValid(businessId)) {
       return res.status(400).json({ message: "Invalid business ID format" });
+    }
+
+    const hasAccess = await canAccessBusiness(
+      userInfo.userId,
+      userInfo.type,
+      businessId
+    );
+    if (!hasAccess) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this business" });
     }
 
     const business = await BusinessModel.findById(businessId);
@@ -182,14 +229,16 @@ export const deleteBusiness = async (req: Request, res: Response) => {
       business.owner.toString() !== userInfo.userId &&
       userInfo.type !== "Admin"
     ) {
-      return res.status(403).json({ message: "Not authorized" });
+      return res
+        .status(403)
+        .json({ message: "Only the owner or admin can delete this business" });
     }
 
     await BusinessModel.findByIdAndDelete(businessId);
-    res.json({ message: "Business deleted successfully" });
+    return res.json({ message: "Business deleted successfully" });
   } catch (error) {
     console.error("Delete business error:", error);
-    res.status(500).json({ message: "Error deleting business" });
+    return res.status(500).json({ message: "Error deleting business" });
   }
 };
 

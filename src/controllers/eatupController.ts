@@ -36,6 +36,50 @@ const parseSortParam = (
   return Object.keys(sortObj).length ? sortObj : defaultSort;
 };
 
+const canAccessEatup = async (
+  userId: string,
+  userType: string,
+  eatupId: string
+): Promise<boolean> => {
+  // Admins can access everything
+  if (userType === "Admin") return true;
+
+  const eatup = await EatupModel.findById(eatupId).lean();
+  if (!eatup) return false;
+
+  // Author can access their own eatup
+  if (eatup.authorId.toString() === userId) return true;
+
+  // Municipality users can access eatups in their city
+  if (userType === "Municipality") {
+    const city = await CityModel.findById(eatup.city).lean();
+    return (
+      city?.municipalityUsers.map((id) => id.toString()).includes(userId) ||
+      false
+    );
+  }
+
+  // Soldiers can access eatups they're invited to
+  if (userType === "Soldier") {
+    // If it's a city eatup, check if soldier belongs to city
+    if (eatup.hosting === "city") {
+      const city = await CityModel.findById(eatup.city).lean();
+      return (
+        city?.soldiers.map((id) => id.toString()).includes(userId) || false
+      );
+    }
+    // For other eatups, all soldiers can access
+    return true;
+  }
+
+  // Organizations and Donors can see all eatups
+  if (["Organization", "Donor"].includes(userType)) {
+    return true;
+  }
+
+  return false;
+};
+
 // Get my eatups
 export const getMyEatups = async (req: Request, res: Response) => {
   const userInfo = ensureUser(req, res);
@@ -140,20 +184,30 @@ export const getAllEatups = async (req: Request, res: Response) => {
 
 // Get single eatup by ID
 export const getEatupById = async (req: Request, res: Response) => {
-  const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
-
   try {
     const { eatupId } = req.params;
+    const userInfo = ensureUser(req, res);
+    if (!userInfo) return;
 
     if (!mongoose.Types.ObjectId.isValid(eatupId)) {
       return res.status(400).json({ message: "Invalid eatup ID format" });
     }
 
+    const hasAccess = await canAccessEatup(
+      userInfo.userId,
+      userInfo.type,
+      eatupId
+    );
+    if (!hasAccess) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to access this eatup" });
+    }
+
     const eatup = await EatupModel.findById(eatupId)
-      .populate("author", "firstName lastName email phone")
-      .populate("cityDetails", "name zone")
-      .populate("guestDetails", "firstName lastName email phone")
+      .populate("author", "-password")
+      .populate("cityDetails")
+      .populate("guestDetails", "-password")
       .lean();
 
     if (!eatup) {
@@ -304,59 +358,56 @@ export const unsubscribeFromEatup = async (req: Request, res: Response) => {
 
 // Update eatup
 export const updateEatup = async (req: Request, res: Response) => {
-  const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
-
   try {
     const { eatupId } = req.params;
-    const updates = req.body;
+    const userInfo = ensureUser(req, res);
+    if (!userInfo) return;
 
     if (!mongoose.Types.ObjectId.isValid(eatupId)) {
       return res.status(400).json({ message: "Invalid eatup ID format" });
     }
 
-    // Find eatup and check permissions
-    const existingEatup = await EatupModel.findById(eatupId);
-    if (!existingEatup) {
-      return res.status(404).json({ message: "Eatup not found" });
-    }
-
-    // Check if eatup date has passed
-    if (existingEatup.date <= new Date()) {
-      return res.status(400).json({ message: "Cannot update past eatup" });
-    }
-
-    // Check permissions
-    const isAuthor = existingEatup.authorId.toString() === userInfo.userId;
-    if (!isAuthor && userInfo.type !== "Admin") {
+    const hasAccess = await canAccessEatup(
+      userInfo.userId,
+      userInfo.type,
+      eatupId
+    );
+    if (!hasAccess) {
       return res
         .status(403)
         .json({ message: "Not authorized to update this eatup" });
     }
 
-    // Remove fields that shouldn't be updated
-    delete updates.authorId;
-    delete updates.guests;
-    delete updates.createdAt;
-
-    // If updating city, validate it exists
-    if (updates.city) {
-      const city = await CityModel.findById(updates.city);
-      if (!city) {
-        return res.status(400).json({ message: "City not found" });
-      }
+    const eatup = await EatupModel.findById(eatupId);
+    if (!eatup) {
+      return res.status(404).json({ message: "Eatup not found" });
     }
 
-    const eatup = await EatupModel.findByIdAndUpdate(
+    // Only author or admin can update
+    if (
+      eatup.authorId.toString() !== userInfo.userId &&
+      userInfo.type !== "Admin"
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Only the author or admin can update this eatup" });
+    }
+
+    // Don't allow updates to past events
+    if (new Date(eatup.date) < new Date()) {
+      return res.status(400).json({ message: "Cannot update past events" });
+    }
+
+    const updatedEatup = await EatupModel.findByIdAndUpdate(
       eatupId,
-      { $set: updates },
+      { $set: req.body },
       { new: true, runValidators: true }
     )
-      .populate("author", "firstName lastName email phone")
-      .populate("cityDetails", "name zone")
-      .populate("guestDetails", "firstName lastName email phone");
+      .populate("author", "-password")
+      .populate("cityDetails")
+      .populate("guestDetails", "-password");
 
-    return res.json(eatup);
+    return res.json(updatedEatup);
   } catch (error) {
     if (error instanceof mongoose.Error.ValidationError) {
       return res.status(400).json({
@@ -372,14 +423,24 @@ export const updateEatup = async (req: Request, res: Response) => {
 
 // Delete eatup
 export const deleteEatup = async (req: Request, res: Response) => {
-  const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
-
   try {
     const { eatupId } = req.params;
+    const userInfo = ensureUser(req, res);
+    if (!userInfo) return;
 
     if (!mongoose.Types.ObjectId.isValid(eatupId)) {
       return res.status(400).json({ message: "Invalid eatup ID format" });
+    }
+
+    const hasAccess = await canAccessEatup(
+      userInfo.userId,
+      userInfo.type,
+      eatupId
+    );
+    if (!hasAccess) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this eatup" });
     }
 
     const eatup = await EatupModel.findById(eatupId);
@@ -387,20 +448,22 @@ export const deleteEatup = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Eatup not found" });
     }
 
-    // Check if eatup date has passed
-    if (eatup.date <= new Date()) {
-      return res.status(400).json({ message: "Cannot delete past eatup" });
-    }
-
-    // Check permissions
-    const isAuthor = eatup.authorId.toString() === userInfo.userId;
-    if (!isAuthor && userInfo.type !== "Admin") {
+    // Only author or admin can delete
+    if (
+      eatup.authorId.toString() !== userInfo.userId &&
+      userInfo.type !== "Admin"
+    ) {
       return res
         .status(403)
-        .json({ message: "Not authorized to delete this eatup" });
+        .json({ message: "Only the author or admin can delete this eatup" });
     }
 
-    await eatup.deleteOne();
+    // Don't allow deletion of past events
+    if (new Date(eatup.date) < new Date()) {
+      return res.status(400).json({ message: "Cannot delete past events" });
+    }
+
+    await EatupModel.findByIdAndDelete(eatupId);
     return res.json({ message: "Eatup deleted successfully" });
   } catch (error) {
     console.error("Delete eatup error:", error);

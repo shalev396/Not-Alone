@@ -48,6 +48,37 @@ const parseSortParam = (
   return Object.keys(sortObj).length ? sortObj : defaultSort;
 };
 
+const canAccessRequest = async (
+  userId: string,
+  userType: string,
+  requestId: string
+): Promise<boolean> => {
+  // Admins can access everything
+  if (userType === "Admin") return true;
+
+  const request = await RequestModel.findById(requestId).lean();
+  if (!request) return false;
+
+  // Author can access their own request
+  if (request.authorId.toString() === userId) return true;
+
+  // Municipality users can access requests from their city
+  if (userType === "Municipality") {
+    const city = await CityModel.findById(request.city).lean();
+    return (
+      city?.municipalityUsers.map((id) => id.toString()).includes(userId) ||
+      false
+    );
+  }
+
+  // Organizations and Donors can only see approved requests
+  if (["Organization", "Donor"].includes(userType)) {
+    return request.status === "approved";
+  }
+
+  return false;
+};
+
 // Get all requests with filtering and pagination
 export const getRequests = async (req: Request, res: Response) => {
   const userInfo = ensureUser(req, res);
@@ -119,39 +150,33 @@ export const getRequests = async (req: Request, res: Response) => {
 
 // Get single request by ID
 export const getRequestById = async (req: Request, res: Response) => {
-  const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
-
   try {
     const { requestId } = req.params;
+    const userInfo = ensureUser(req, res);
+    if (!userInfo) return;
 
     if (!mongoose.Types.ObjectId.isValid(requestId)) {
       return res.status(400).json({ message: "Invalid request ID format" });
     }
 
+    const hasAccess = await canAccessRequest(
+      userInfo.userId,
+      userInfo.type,
+      requestId
+    );
+    if (!hasAccess) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to access this request" });
+    }
+
     const request = await RequestModel.findById(requestId)
-      .populate("author", "firstName lastName email phone")
-      .populate("cityDetails", "name zone")
+      .populate("author", "-password")
+      .populate("cityDetails")
       .lean();
 
     if (!request) {
       return res.status(404).json({ message: "Request not found" });
-    }
-
-    // Check permissions
-    if (userInfo.type !== "Admin") {
-      const isAuthor = request.authorId.toString() === userInfo.userId;
-      const userCity = await CityModel.findOne({
-        municipalityUsers: userInfo.userId,
-      });
-      const isCityMunicipality =
-        userCity && userCity._id.toString() === request.city.toString();
-
-      if (!isAuthor && !isCityMunicipality) {
-        return res
-          .status(403)
-          .json({ message: "Not authorized to view this request" });
-      }
     }
 
     return res.json(request);
@@ -212,62 +237,47 @@ export const createRequest = async (req: Request, res: Response) => {
 
 // Update request
 export const updateRequest = async (req: Request, res: Response) => {
-  const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
-
   try {
     const { requestId } = req.params;
-    const updates = req.body;
+    const userInfo = ensureUser(req, res);
+    if (!userInfo) return;
 
     if (!mongoose.Types.ObjectId.isValid(requestId)) {
       return res.status(400).json({ message: "Invalid request ID format" });
     }
 
-    // Find request and check permissions
-    const existingRequest = await RequestModel.findById(requestId);
-    if (!existingRequest) {
-      return res.status(404).json({ message: "Request not found" });
-    }
-
-    // Only allow updates if request is "in process"
-    if (existingRequest.status !== "in process") {
-      return res
-        .status(400)
-        .json({ message: "Cannot update request that is not in process" });
-    }
-
-    // Check permissions
-    const isAuthor = existingRequest.authorId.toString() === userInfo.userId;
-    if (!isAuthor && userInfo.type !== "Admin") {
+    const hasAccess = await canAccessRequest(
+      userInfo.userId,
+      userInfo.type,
+      requestId
+    );
+    if (!hasAccess) {
       return res
         .status(403)
         .json({ message: "Not authorized to update this request" });
     }
 
-    // Remove fields that shouldn't be updated
-    delete updates.authorId;
-    delete updates.status;
-    delete updates.createdAt;
+    const request = await RequestModel.findById(requestId);
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
 
-    const request = await RequestModel.findByIdAndUpdate(
+    // Only allow updates if request is in process
+    if (request.status !== "in process") {
+      return res
+        .status(400)
+        .json({ message: "Can only update pending requests" });
+    }
+
+    const updatedRequest = await RequestModel.findByIdAndUpdate(
       requestId,
-      { $set: updates },
+      { $set: req.body },
       { new: true, runValidators: true }
     )
-      .populate("author", "firstName lastName email phone")
-      .populate("cityDetails", "name zone");
+      .populate("author", "-password")
+      .populate("cityDetails");
 
-    // Create audit log
-    await AuditLogModel.create({
-      action: "REQUEST_UPDATE",
-      userId: userInfo.userId,
-      targetId: requestId,
-      changes: updates,
-      ipAddress: req.ip,
-      userAgent: req.get("user-agent") || "",
-    });
-
-    return res.json(request);
+    return res.json(updatedRequest);
   } catch (error) {
     if (error instanceof mongoose.Error.ValidationError) {
       return res.status(400).json({
@@ -386,14 +396,24 @@ export const denyRequest = async (req: Request, res: Response) => {
 
 // Delete request
 export const deleteRequest = async (req: Request, res: Response) => {
-  const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
-
   try {
     const { requestId } = req.params;
+    const userInfo = ensureUser(req, res);
+    if (!userInfo) return;
 
     if (!mongoose.Types.ObjectId.isValid(requestId)) {
       return res.status(400).json({ message: "Invalid request ID format" });
+    }
+
+    const hasAccess = await canAccessRequest(
+      userInfo.userId,
+      userInfo.type,
+      requestId
+    );
+    if (!hasAccess) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this request" });
     }
 
     const request = await RequestModel.findById(requestId);
@@ -401,32 +421,14 @@ export const deleteRequest = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Request not found" });
     }
 
-    // Only allow deletion if request is "in process"
+    // Only allow deletion if request is in process
     if (request.status !== "in process") {
       return res
         .status(400)
-        .json({ message: "Cannot delete request that is not in process" });
+        .json({ message: "Can only delete pending requests" });
     }
 
-    // Check permissions
-    const isAuthor = request.authorId.toString() === userInfo.userId;
-    if (!isAuthor && userInfo.type !== "Admin") {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to delete this request" });
-    }
-
-    await request.deleteOne();
-
-    // Create audit log
-    await AuditLogModel.create({
-      action: "REQUEST_DELETE",
-      userId: userInfo.userId,
-      targetId: requestId,
-      ipAddress: req.ip,
-      userAgent: req.get("user-agent") || "",
-    });
-
+    await RequestModel.findByIdAndDelete(requestId);
     return res.json({ message: "Request deleted successfully" });
   } catch (error) {
     console.error("Delete request error:", error);
