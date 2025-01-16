@@ -1,10 +1,15 @@
 import mongoose from "mongoose";
 import { clearUsers } from "./userHelper";
+import { clearCities } from "./cityHelper";
+import { clearBusinesses } from "./bussinessHelper";
 
 const cleanup = async () => {
   try {
     // Clear users.json
     clearUsers();
+    clearCities();
+    clearBusinesses();
+
 
     // Drop all collections
     if (mongoose.connection.readyState === 1) {
