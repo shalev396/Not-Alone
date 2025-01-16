@@ -19,6 +19,10 @@ export interface User extends Document {
   approvalStatus: ApprovalStatus;
   approvalDate?: Date;
   denialReason?: string;
+  preferences: {
+    language: "en" | "he";
+    notifications: boolean;
+  };
   createdAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
@@ -67,23 +71,6 @@ const userSchema = new Schema(
       ] as UserType[],
       required: true,
     },
-    // Additional fields for Profile
-    nickname: {
-      type: String,
-      default: "",
-    },
-    bio: {
-      type: String,
-      default: "",
-    },
-    profileImage: {
-      type: String,
-      default: "",
-    },
-    receiveNotifications: {
-      type: Boolean,
-      default: false,
-    },
     // Approval fields
     approvalStatus: {
       type: String,
@@ -95,6 +82,17 @@ const userSchema = new Schema(
     },
     denialReason: {
       type: String,
+    },
+    preferences: {
+      language: {
+        type: String,
+        default: "en",
+        enum: ["en", "he"],
+      },
+      notifications: {
+        type: Boolean,
+        default: false,
+      },
     },
   },
   {

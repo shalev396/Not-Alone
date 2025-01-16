@@ -5,6 +5,7 @@
 - implement join to cities that will need municipality approval
   for now users cant leave cities after they are approved
   -only users and cities are optimized for now
+  -add mini login in the body of "/api/users/pending/:userId"
 
 ### Progress
 

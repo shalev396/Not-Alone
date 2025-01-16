@@ -1,62 +1,84 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
-const citySchema = new mongoose.Schema(
+export interface ICity extends Document {
+  name: string;
+  zone: string;
+  soldiers: mongoose.Types.ObjectId[];
+  municipalityUsers: mongoose.Types.ObjectId[];
+  media: string[];
+  bio: string;
+  approvalStatus: "pending" | "approved" | "denied";
+  approvalDate?: Date;
+  denialReason?: string;
+  pendingJoins: {
+    userId: mongoose.Types.ObjectId;
+    type: "Soldier" | "Municipality";
+  }[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const citySchema = new Schema<ICity>(
   {
     name: {
       type: String,
       required: true,
       trim: true,
+      unique: true,
     },
     zone: {
       type: String,
       required: true,
-      enum: ["north", "center", "south"],
+      trim: true,
+      index: true,
     },
     soldiers: [
       {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: "User",
+        index: true,
       },
     ],
     municipalityUsers: [
       {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: "User",
+        index: true,
       },
     ],
-    media: {
-      type: [String],
-      default: [],
-    },
+    media: [String],
     bio: {
       type: String,
-      required: true,
       trim: true,
+      maxlength: [1000, "Bio cannot exceed 1000 characters"],
     },
     approvalStatus: {
       type: String,
-      required: true,
       enum: ["pending", "approved", "denied"],
       default: "pending",
+      index: true,
     },
-    approvalDate: {
-      type: Date,
-    },
-    denialReason: {
-      type: String,
-      trim: true,
-    },
+    approvalDate: Date,
+    denialReason: String,
+    pendingJoins: [
+      {
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+          index: true,
+        },
+        type: {
+          type: String,
+          enum: ["Soldier", "Municipality"],
+          required: true,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
   }
 );
 
-// Define indexes separately
-citySchema.index({ name: 1 }, { unique: true });
-citySchema.index({ zone: 1 });
-citySchema.index({ soldiers: 1 });
-citySchema.index({ municipalityUsers: 1 });
-citySchema.index({ approvalStatus: 1 });
-
-export const CityModel = mongoose.model("City", citySchema);
+export const CityModel = mongoose.model<ICity>("City", citySchema);

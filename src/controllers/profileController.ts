@@ -31,12 +31,8 @@ const canAccessProfile = async (
   if (!profile) return false;
 
   // Check visibility settings
-  if (profile.preferences.visibility === "public") return true;
-  if (profile.preferences.visibility === "private")
-    return userId === profileUserId;
-  // For "friends" visibility, we could add friend system later
-
-  return false;
+  if (profile.visibility === "public") return true;
+  return userId === profileUserId; // Private profiles only visible to owner
 };
 
 // Get my profile
@@ -53,12 +49,7 @@ export const getMyProfile = async (req: Request, res: Response) => {
       // Create default profile if it doesn't exist
       const newProfile = await ProfileModel.create({
         userId: userInfo.userId,
-        preferences: {
-          language: "en",
-          notifications: true,
-          emailUpdates: true,
-          visibility: "public",
-        },
+        visibility: "public",
       });
 
       return res.json(
@@ -188,28 +179,5 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       });
     }
     return res.status(500).json({ message: "Error updating profile" });
-  }
-};
-
-// Update last active timestamp
-export const updateLastActive = async (req: Request, res: Response) => {
-  try {
-    const userInfo = ensureUser(req, res);
-    if (!userInfo) return;
-
-    const profile = await ProfileModel.findOne({ userId: userInfo.userId });
-    if (!profile) {
-      return res.status(404).json({ message: "Profile not found" });
-    }
-
-    profile.lastActive = new Date();
-    await profile.save();
-
-    return res.json({ message: "Last active timestamp updated" });
-  } catch (error) {
-    console.error("Update last active error:", error);
-    return res
-      .status(500)
-      .json({ message: "Error updating last active timestamp" });
   }
 };

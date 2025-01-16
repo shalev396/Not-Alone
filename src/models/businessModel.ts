@@ -100,7 +100,6 @@ const businessSchema = new Schema<IBusiness>(
 );
 
 // Indexes for efficient querying
-businessSchema.index({ name: 1 }, { unique: true });
 businessSchema.index({ owner: 1 });
 businessSchema.index({ workers: 1 });
 businessSchema.index({ status: 1 });

@@ -6,7 +6,6 @@ import {
   getProfileByUserId,
   updateMyProfile,
   updateUserProfile,
-  updateLastActive,
 } from "../controllers/profileController";
 
 const router = express.Router();
@@ -20,8 +19,5 @@ router.get("/:userId", auth, getProfileByUserId);
 
 // Admin only - update any user's profile
 router.put("/:userId", auth, checkUserType(["Admin"]), updateUserProfile);
-
-// Update last active timestamp
-router.post("/last-active", auth, updateLastActive);
 
 export default router;

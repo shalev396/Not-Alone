@@ -12,14 +12,14 @@ export const loginUser = async (
 
     // Basic validation
     if (!email || !password) {
-      return res.status(400).json({
+      return res.status(403).json({
         errors: [{ msg: "Email and password are required" }],
       });
     }
 
     // Email format validation
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({
+      return res.status(403).json({
         errors: [{ msg: "Invalid email format" }],
       });
     }

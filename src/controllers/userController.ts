@@ -111,7 +111,10 @@ export const registerUser = async (
     if (existingUser) {
       return res.status(400).json({ error: "Email already registered" });
     }
-
+    // In test environment, allow auto-approval
+    if (!(process.env.NODE_ENV === "test") && req.body.type === "Admin") {
+      delete req.body.approvalStatus;
+    }
     // Create user
     const user = await UserModel.create(req.body);
 

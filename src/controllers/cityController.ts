@@ -115,48 +115,44 @@ const citySchema = new Schema(
 );
 
 // Update joinCityAsMunicipality to handle pending approval
-export const joinCityAsMunicipality = async (req: Request, res: Response) => {
+export const joinCityAsMunicipality = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
+  if (userInfo === undefined)
+    return res.status(401).json({ message: "Authentication required" });
 
   try {
     const { cityId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(cityId)) {
-      return res.status(400).json({ message: "Invalid city ID format" });
+      return res.status(400).json({ error: "Invalid city ID format" });
     }
 
-    // Check if user is already in a city
+    // Check if user is already in another city
     const existingCity = await CityModel.findOne({
-      municipalityUsers: userInfo.userId,
-    }).lean();
+      $or: [
+        { municipalityUsers: userInfo.userId },
+        { "pendingJoins.userId": userInfo.userId },
+      ],
+    })
+      .select("name")
+      .lean();
 
     if (existingCity) {
       return res.status(400).json({
-        message: "Already assigned to a city",
+        error: "Already assigned to city or have a pending request",
         cityName: existingCity.name,
       });
     }
 
-    // Check if already has a pending request
-    const pendingCity = await CityModel.findOne({
-      "pendingJoins.userId": userInfo.userId,
-      "pendingJoins.type": "Municipality",
-    }).lean();
-
-    if (pendingCity) {
-      return res.status(400).json({
-        message: "Already have a pending join request",
-        cityName: pendingCity.name,
-      });
-    }
-
-    // Add to pending joins
+    // Add user to pending joins
     const city = await CityModel.findOneAndUpdate(
       {
         _id: cityId,
         approvalStatus: "approved",
-        municipalityUsers: { $ne: userInfo.userId },
+        "pendingJoins.userId": { $ne: userInfo.userId },
       },
       {
         $addToSet: {
@@ -167,13 +163,14 @@ export const joinCityAsMunicipality = async (req: Request, res: Response) => {
           },
         },
       },
-      { new: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     ).lean();
 
     if (!city) {
-      return res
-        .status(404)
-        .json({ message: "City not found or not approved" });
+      return res.status(404).json({ error: "City not found or not approved" });
     }
 
     // Create audit log
@@ -183,44 +180,52 @@ export const joinCityAsMunicipality = async (req: Request, res: Response) => {
       targetId: cityId,
     });
 
-    return res.json({ message: "Join request submitted successfully", city });
+    return res.json({ city });
   } catch (error) {
     console.error("Join city error:", error);
-    return res.status(500).json({ message: "Error joining city" });
+    return res.status(500).json({ error: "Error joining city" });
   }
 };
 
 // Update joinCityAsSoldier to handle pending approval
-export const joinCityAsSoldier = async (req: Request, res: Response) => {
+export const joinCityAsSoldier = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const userInfo = ensureUser(req, res);
-  if (!userInfo) return;
+  if (userInfo === undefined)
+    return res.status(401).json({ message: "Authentication required" });
 
   try {
     const { cityId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(cityId)) {
-      return res.status(400).json({ message: "Invalid city ID format" });
+      return res.status(400).json({ error: "Invalid city ID format" });
     }
 
-    // Check if already has a pending request
-    const pendingCity = await CityModel.findOne({
-      "pendingJoins.userId": userInfo.userId,
-      "pendingJoins.type": "Soldier",
-    }).lean();
+    // Check if user is already in another city
+    const existingCity = await CityModel.findOne({
+      $or: [
+        { soldiers: userInfo.userId },
+        { "pendingJoins.userId": userInfo.userId },
+      ],
+    })
+      .select("name")
+      .lean();
 
-    if (pendingCity) {
+    if (existingCity) {
       return res.status(400).json({
-        message: "Already have a pending join request",
-        cityName: pendingCity.name,
+        error: "Already assigned to city or have a pending request",
+        cityName: existingCity.name,
       });
     }
 
-    // Add to pending joins
+    // Add user to pending joins
     const city = await CityModel.findOneAndUpdate(
       {
         _id: cityId,
         approvalStatus: "approved",
-        soldiers: { $ne: userInfo.userId },
+        "pendingJoins.userId": { $ne: userInfo.userId },
       },
       {
         $addToSet: {
@@ -231,13 +236,14 @@ export const joinCityAsSoldier = async (req: Request, res: Response) => {
           },
         },
       },
-      { new: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     ).lean();
 
     if (!city) {
-      return res
-        .status(404)
-        .json({ message: "City not found or not approved" });
+      return res.status(404).json({ error: "City not found or not approved" });
     }
 
     // Create audit log
@@ -247,10 +253,10 @@ export const joinCityAsSoldier = async (req: Request, res: Response) => {
       targetId: cityId,
     });
 
-    return res.json({ message: "Join request submitted successfully", city });
+    return res.json({ city });
   } catch (error) {
     console.error("Join city error:", error);
-    return res.status(500).json({ message: "Error joining city" });
+    return res.status(500).json({ error: "Error joining city" });
   }
 };
 
@@ -263,10 +269,6 @@ export const handleJoinRequest = async (req: Request, res: Response) => {
     const { cityId, userId } = req.params;
     const { action } = req.body;
 
-    if (!["approve", "deny"].includes(action)) {
-      return res.status(400).json({ message: "Invalid action" });
-    }
-
     if (
       !mongoose.Types.ObjectId.isValid(cityId) ||
       !mongoose.Types.ObjectId.isValid(userId)
@@ -274,15 +276,15 @@ export const handleJoinRequest = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid ID format" });
     }
 
-    // Check if user is municipality member or admin
     const city = await CityModel.findById(cityId);
     if (!city) {
       return res.status(404).json({ message: "City not found" });
     }
 
-    const isMunicipality = city.municipalityUsers.includes(
-      new mongoose.Types.ObjectId(userInfo.userId)
-    );
+    // Check if user is municipality member or admin
+    const isMunicipality = city.municipalityUsers
+      .map((id) => id.toString())
+      .includes(userInfo.userId);
     if (!isMunicipality && userInfo.type !== "Admin") {
       return res
         .status(403)
@@ -299,35 +301,38 @@ export const handleJoinRequest = async (req: Request, res: Response) => {
     }
 
     if (action === "approve") {
-      // Add user to appropriate array based on type
-      const updateField =
-        pendingJoin.type === "Municipality" ? "municipalityUsers" : "soldiers";
-      await CityModel.findByIdAndUpdate(cityId, {
-        $addToSet: { [updateField]: userId },
-        $pull: {
-          pendingJoins: { userId: new mongoose.Types.ObjectId(userId) },
-        },
-      });
+      // Add user to appropriate array based on their type
+      if (pendingJoin.type === "Soldier") {
+        await CityModel.findByIdAndUpdate(cityId, {
+          $push: { soldiers: userId },
+          $pull: { pendingJoins: { userId: userId } },
+        });
+      } else {
+        await CityModel.findByIdAndUpdate(cityId, {
+          $push: { municipalityUsers: userId },
+          $pull: { pendingJoins: { userId: userId } },
+        });
+      }
     } else {
-      // Just remove from pending joins
+      // Just remove the pending request if denying
       await CityModel.findByIdAndUpdate(cityId, {
-        $pull: {
-          pendingJoins: { userId: new mongoose.Types.ObjectId(userId) },
-        },
+        $pull: { pendingJoins: { userId: userId } },
       });
     }
 
+    // Get updated city
+    const updatedCity = await CityModel.findById(cityId).lean();
+
     // Create audit log
     await AuditLogModel.create({
-      action: action === "approve" ? "CITY_JOIN_APPROVE" : "CITY_JOIN_DENY",
+      action: `CITY_JOIN_${action.toUpperCase()}`,
       userId: userInfo.userId,
       targetId: cityId,
       changes: { userId, action },
     });
 
-    const updatedCity = await CityModel.findById(cityId).lean();
     return res.json({
-      message: `Join request ${action}d successfully`,
+      message: `Join request ${action}ed successfully`,
       city: updatedCity,
     });
   } catch (error) {

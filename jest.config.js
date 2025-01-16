@@ -1,8 +1,11 @@
+/** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
-  testMatch: ["**/tests/**/*.test.ts"],
-  moduleFileExtensions: ["ts", "js"],
+  testMatch: ["**/*.test.ts"],
+  setupFiles: ["dotenv/config"],
+  globalSetup: "./tests/pretest.ts",
+  globalTeardown: "./tests/posttest.ts",
   transform: {
     "^.+\\.ts$": [
       "ts-jest",
@@ -11,8 +14,7 @@ module.exports = {
       },
     ],
   },
-  setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
-  testTimeout: 30000,
-  forceExit: true,
-  detectOpenHandles: true,
+  moduleNameMapper: {
+    "^@/(.*)$": "<rootDir>/src/$1",
+  },
 };

@@ -1,0 +1,182 @@
+import mongoose from "mongoose";
+import request from "supertest";
+import { app } from "../src/index";
+import {
+  getUsersArray,
+  setUsersArray,
+  clearUsers,
+  types,
+  users,
+} from "./userHelper";
+import { UserModel } from "../src/models/userModel";
+
+const testUsers = [
+  {
+    type: "Admin" as types,
+    firstName: "Test",
+    lastName: "Admin",
+    email: "testadmin@example.com",
+    password: "Test123!@#",
+    phone: "0501234567",
+    passport: "123456789",
+    approvalStatus: "approved",
+  },
+  {
+    type: "Soldier" as types,
+    firstName: "Test",
+    lastName: "Soldier",
+    email: "testsoldier@example.com",
+    password: "Test123!@#",
+    phone: "0501234568",
+    passport: "123456790",
+  },
+  {
+    type: "Municipality" as types,
+    firstName: "Test",
+    lastName: "Municipality",
+    email: "testmunicipality@example.com",
+    password: "Test123!@#",
+    phone: "0501234569",
+    passport: "123456791",
+  },
+  {
+    type: "Donor" as types,
+    firstName: "Test",
+    lastName: "Donor",
+    email: "testdonor@example.com",
+    password: "Test123!@#",
+    phone: "0501234570",
+    passport: "123456792",
+  },
+  {
+    type: "Organization" as types,
+    firstName: "Test",
+    lastName: "Organization",
+    email: "testorganization@example.com",
+    password: "Test123!@#",
+    phone: "0501234571",
+    passport: "123456793",
+  },
+  {
+    type: "Business" as types,
+    firstName: "Test",
+    lastName: "Business",
+    email: "testbusiness@example.com",
+    password: "Test123!@#",
+    phone: "0501234572",
+    passport: "123456794",
+  },
+];
+
+const setupTestUsers = async () => {
+  try {
+    // Clear existing users
+    clearUsers();
+    await UserModel.deleteMany({});
+
+    // Create users array for userHelper
+    const usersForJson = testUsers.map((user) => ({
+      type: user.type,
+      email: user.email,
+      password: user.password,
+    }));
+    setUsersArray(usersForJson);
+
+    // First register admin
+    const adminUser = testUsers[0];
+    const registerAdminResponse = await request(app)
+      .post("/api/auth/register")
+      .send(adminUser);
+
+    if (registerAdminResponse.status !== 201) {
+      throw new Error("Failed to register admin user");
+    }
+
+    // Login as admin to get token
+    const adminLogin = await request(app).post("/api/auth/login").send({
+      email: adminUser.email,
+      password: adminUser.password,
+    });
+
+    if (adminLogin.status !== 200 || !adminLogin.body.token) {
+      throw new Error("Failed to login as admin");
+    }
+
+    const adminToken = adminLogin.body.token;
+
+    // Update users.json with admin token and ID
+    const users = getUsersArray();
+    const jsonAdminUser = users.find(
+      (u: { type: types }) => u.type === "Admin"
+    );
+    if (jsonAdminUser) {
+      jsonAdminUser.email = adminUser.email;
+      jsonAdminUser.password = adminUser.password;
+      jsonAdminUser.token = adminToken;
+      jsonAdminUser.id = registerAdminResponse.body.user._id;
+      setUsersArray(users);
+    }
+
+    // Register other users
+    for (const user of testUsers.slice(1)) {
+      const registerResponse = await request(app)
+        .post("/api/auth/register")
+        .send(user);
+
+      if (registerResponse.status !== 201) {
+        throw new Error(`Failed to register ${user.type} user`);
+      }
+
+      const userId = registerResponse.body.user._id;
+
+      // Approve user using admin token
+      const approveResponse = await request(app)
+        .post(`/api/users/approve/${userId}`)
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      if (approveResponse.status !== 200) {
+        throw new Error(`Failed to approve ${user.type} user`);
+      }
+
+      // Login user to get token
+      const loginResponse = await request(app).post("/api/auth/login").send({
+        email: user.email,
+        password: user.password,
+      });
+
+      if (loginResponse.status !== 200 || !loginResponse.body.token) {
+        throw new Error(`Failed to login as ${user.type}`);
+      }
+
+      // Update user in users.json
+      const updatedUsers = getUsersArray();
+      const jsonUser = updatedUsers.find((u: users) => u.email === user.email);
+      if (jsonUser) {
+        jsonUser.email = user.email;
+        jsonUser.password = user.password;
+        jsonUser.token = loginResponse.body.token;
+        jsonUser.id = userId;
+        setUsersArray(updatedUsers);
+      }
+    }
+
+    console.log("Test users setup completed successfully");
+  } catch (error) {
+    console.error("Error setting up test users:", error);
+    throw error;
+  }
+};
+
+// Export setup function for Jest
+export default async () => {
+  try {
+    await mongoose.connect(
+      process.env.MONGODB_URI_TEST || "mongodb://localhost:27017/not-alone-test"
+    );
+    await setupTestUsers();
+    await mongoose.connection.close();
+  } catch (error) {
+    console.error("Setup failed:", error);
+    throw error;
+  }
+};
