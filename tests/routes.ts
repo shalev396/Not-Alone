@@ -1,4 +1,4 @@
-import { types } from "./userHelper";
+import { types, getUsersArray } from "./userHelper";
 
 type route = {
   path: string;
@@ -51,10 +51,13 @@ export const authRoutes: route[] = [
       "Organization",
       "Business",
     ],
-    body: (type: types) => ({
-      email: `test${type.toLowerCase()}@example.com`,
-      password: "Test123!@#",
-    }),
+    body: (type: types) => {
+      const user = getUsersArray().find((u: any) => u.type === type);
+      return {
+        email: user.email,
+        password: "Test123!@#",
+      };
+    },
   },
 ];
 
