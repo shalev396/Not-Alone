@@ -23,6 +23,8 @@ import {
 import { UserModel } from "../src/models/userModel";
 import { CityModel } from "../src/models/cityModel";
 import { BusinessModel } from "../src/models/businessModel";
+import { clearDiscounts, setDiscountsArray } from "./discountHelper";
+import { DiscountModel } from "../src/models/discountModel";
 
 const testUsers = [
   {
@@ -88,9 +90,11 @@ const setupTestUsers = async () => {
     clearUsers();
     clearCities();
     clearBusinesses();
+    clearDiscounts();
     await UserModel.deleteMany({});
     await CityModel.deleteMany({});
     await BusinessModel.deleteMany({});
+    await DiscountModel.deleteMany({});
 
     // Create users array for userHelper
     const usersForJson = testUsers.map((user) => ({
@@ -247,6 +251,29 @@ const setupTestUsers = async () => {
       ...createBusinessResponse.body,
     };
     setBusinessesArray([businessToSave]);
+
+    // Create a test discount for the business
+    const discountData = {
+      name: "Test Discount",
+      discount: "50% off",
+      expireDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    };
+
+    const createDiscountResponse: any = await request(app)
+      .post(`/api/discounts/business/${businessId}`)
+      .set("Authorization", `Bearer ${businessUser.token}`)
+      .send(discountData);
+
+    if (createDiscountResponse.status !== 201) {
+      throw new Error("Failed to create test discount");
+    }
+
+    // Store discount in discounts.json
+    const discountToSave = {
+      ...createDiscountResponse.body,
+      businessId: businessId,
+    };
+    setDiscountsArray([discountToSave]);
 
     console.log("Test users setup completed successfully");
   } catch (error) {

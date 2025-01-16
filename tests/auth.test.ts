@@ -10,7 +10,13 @@ import {
 } from "./userHelper";
 import { getCitiesArray } from "./cityHelper";
 import { UserModel } from "../src/models/userModel";
-import { authRoutes, userRoutes, cityRoutes, businessRoutes } from "./routes";
+import {
+  authRoutes,
+  userRoutes,
+  cityRoutes,
+  businessRoutes,
+  discountRoutes,
+} from "./routes";
 
 // Increase timeout for all tests in this file
 jest.setTimeout(30000);
@@ -21,6 +27,7 @@ describe("Route Access Tests", () => {
     ...userRoutes,
     ...cityRoutes,
     ...businessRoutes,
+    ...discountRoutes,
   ];
   let users: users[];
 
@@ -223,7 +230,7 @@ describe("Route Access Tests", () => {
               const bodyData =
                 typeof route.body === "function"
                   ? route.body(userType)
-                  : route.body;
+                  : { ...route.body }; // Clone the object to avoid mutations
               req = req.send(bodyData);
             }
 

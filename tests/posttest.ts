@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { clearUsers } from "./userHelper";
 import { clearCities } from "./cityHelper";
 import { clearBusinesses } from "./bussinessHelper";
+import { clearDiscounts } from "./discountHelper";
 
 const cleanup = async () => {
   try {
@@ -9,8 +10,9 @@ const cleanup = async () => {
     clearUsers();
     clearCities();
     clearBusinesses();
+    clearDiscounts();
 
-
+    // Drop all collections
     // Drop all collections
     if (mongoose.connection.readyState === 1) {
       const collections = await mongoose.connection.db?.collections();

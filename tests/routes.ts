@@ -372,7 +372,71 @@ export const businessRoutes: route[] = [
   },
 ];
 
-export const discountRoutes: route[] = [];
+export const discountRoutes: route[] = [
+  // Public routes (still need authentication)
+  {
+    path: "/api/discounts/business/:businessId",
+    method: "GET",
+    auth: true,
+    allowedTypes: [
+      "Admin",
+      "Business",
+      "Soldier",
+      "Municipality",
+      "Donor",
+      "Organization",
+    ],
+    params: "businessId",
+  },
+  {
+    path: "/api/discounts/:discountId",
+    method: "GET",
+    auth: true,
+    allowedTypes: [
+      "Admin",
+      "Business",
+      "Soldier",
+      "Municipality",
+      "Donor",
+      "Organization",
+    ],
+    params: "discountId",
+  },
+
+  // Business owner and admin routes
+  {
+    path: "/api/discounts/business/:businessId",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Business", "Admin"],
+    params: "businessId",
+    body: {
+      name: "Test Discount",
+      discount: "50% off",
+      expireDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    },
+  },
+  {
+    path: "/api/discounts/business/:businessId/:discountId",
+    method: "PUT",
+    auth: true,
+    allowedTypes: ["Business", "Admin"],
+    params: "businessId",
+    body: {
+      name: "Updated Discount",
+      discount: "75% off",
+      expireDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
+    },
+  },
+  {
+    path: "/api/discounts/business/:businessId/:discountId",
+    method: "DELETE",
+    auth: true,
+    allowedTypes: ["Business", "Admin"],
+    params: "businessId",
+  },
+];
+
 export const donationRoutes: route[] = [];
 export const eatUpRoutes: route[] = [];
 export const requestRoutes: route[] = [];
