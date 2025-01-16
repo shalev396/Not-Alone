@@ -17,7 +17,12 @@ const router = express.Router();
 
 // Public routes (still need authentication)
 router.get("/", auth, getAllBusinesses);
-router.get("/:businessId", auth, getBusinessById);
+router.get(
+  "/:businessId",
+  auth,
+  checkUserType(["Admin", "Business"]),
+  getBusinessById
+);
 
 // Admin only routes
 router.get("/admin/all", auth, checkUserType(["Admin"]), getAllBusinessesAdmin);
@@ -29,17 +34,17 @@ router.post(
 );
 
 // Business owner and admin routes
-router.post("/", auth, checkUserType(["Business"]), createBusiness);
+router.post("/", auth, checkUserType(["Admin", "Business"]), createBusiness);
 router.put(
   "/:businessId",
   auth,
-  checkUserType(["Business", "Admin"]),
+  checkUserType(["Admin", "Business"]),
   updateBusiness
 );
 router.delete(
   "/:businessId",
   auth,
-  checkUserType(["Business", "Admin"]),
+  checkUserType(["Admin", "Business"]),
   deleteBusiness
 );
 
@@ -47,13 +52,13 @@ router.delete(
 router.post(
   "/:businessId/apply",
   auth,
-  checkUserType(["Business"]),
+  checkUserType(["Admin", "Business"]),
   applyToJoinBusiness
 );
 router.post(
   "/:businessId/workers/:workerId/handle",
   auth,
-  checkUserType(["Business"]),
+  checkUserType(["Admin", "Business"]),
   handleWorkerApplication
 );
 

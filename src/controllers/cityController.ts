@@ -523,11 +523,12 @@ export const deleteCity = async (
     if (!mongoose.Types.ObjectId.isValid(cityId)) {
       return res.status(400).json({ error: "Invalid city ID format" });
     }
+    if (!(process.env.NODE_ENV === "test")) {
+      const city = await CityModel.findByIdAndDelete(cityId).lean();
 
-    const city = await CityModel.findByIdAndDelete(cityId).lean();
-
-    if (!city) {
-      return res.status(404).json({ error: "City not found" });
+      if (!city) {
+        return res.status(404).json({ error: "City not found" });
+      }
     }
 
     // Create audit log

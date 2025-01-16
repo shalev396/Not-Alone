@@ -282,7 +282,96 @@ export const cityRoutes: route[] = [
   },
 ];
 
-export const businessRoutes: route[] = [];
+export const businessRoutes: route[] = [
+  // Public routes (still need authentication)
+  {
+    path: "/api/businesses",
+    method: "GET",
+    auth: true,
+    allowedTypes: [
+      "Admin",
+      "Soldier",
+      "Municipality",
+      "Donor",
+      "Organization",
+      "Business",
+    ],
+  },
+  {
+    path: "/api/businesses/:businessId",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Business"],
+    params: "businessId",
+  },
+  {
+    path: "/api/businesses/admin/all",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin"],
+  },
+
+  // Business owner and admin routes
+  {
+    path: "/api/businesses",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Business"],
+    body: (type: types) => ({
+      name: `Test Business ${Math.random().toString(36).substring(7)}`,
+      slogan: "Test business slogan",
+    }),
+  },
+  {
+    path: "/api/businesses/:businessId",
+    method: "PUT",
+    auth: true,
+    allowedTypes: ["Business", "Admin"],
+    params: "businessId",
+    body: {
+      name: "Updated Business",
+    },
+  },
+  {
+    path: "/api/businesses/:businessId",
+    method: "DELETE",
+    auth: true,
+    allowedTypes: ["Business", "Admin"],
+    params: "businessId",
+  },
+
+  // Admin only routes
+  {
+    path: "/api/businesses/:businessId/status",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin"],
+    params: "businessId",
+    body: {
+      status: "approved",
+    },
+  },
+
+  // Worker application routes
+  {
+    path: "/api/businesses/:businessId/apply",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Business"],
+    params: "businessId",
+  },
+  {
+    path: "/api/businesses/:businessId/workers/:workerId/handle",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Business"],
+    params: "businessId",
+    body: {
+      action: "approve",
+    },
+  },
+];
+
 export const discountRoutes: route[] = [];
 export const donationRoutes: route[] = [];
 export const eatUpRoutes: route[] = [];

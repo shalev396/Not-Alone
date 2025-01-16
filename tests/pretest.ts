@@ -14,8 +14,15 @@ import {
   clearCities,
   city,
 } from "./cityHelper";
+import {
+  getBusinessesArray,
+  setBusinessesArray,
+  clearBusinesses,
+  business,
+} from "./bussinessHelper";
 import { UserModel } from "../src/models/userModel";
 import { CityModel } from "../src/models/cityModel";
+import { BusinessModel } from "../src/models/businessModel";
 
 const testUsers = [
   {
@@ -77,11 +84,13 @@ const testUsers = [
 
 const setupTestUsers = async () => {
   try {
-    // Clear existing users and cities
+    // Clear existing users, cities, and businesses
     clearUsers();
     clearCities();
+    clearBusinesses();
     await UserModel.deleteMany({});
     await CityModel.deleteMany({});
+    await BusinessModel.deleteMany({});
 
     // Create users array for userHelper
     const usersForJson = testUsers.map((user) => ({
@@ -203,6 +212,41 @@ const setupTestUsers = async () => {
     // Store city in cities.json
     const cityToSave: city = createCityResponse._body;
     setCitiesArray([cityToSave]);
+
+    // Create a test business using Business user
+    const businessUser = getUsersArray().find(
+      (u: users) => u.type === "Business"
+    );
+    if (!businessUser || !businessUser.token) {
+      throw new Error("Business user not found or not logged in");
+    }
+
+    const businessData = {
+      name: "Test Business",
+      slogan: "Test business slogan",
+    };
+
+    const createBusinessResponse: any = await request(app)
+      .post("/api/businesses")
+      .set("Authorization", `Bearer ${businessUser.token}`)
+      .send(businessData);
+
+    if (createBusinessResponse.status !== 201) {
+      throw new Error("Failed to create test business");
+    }
+
+    // Approve the business using admin token
+    const businessId = createBusinessResponse.body._id;
+    await request(app)
+      .post(`/api/businesses/${businessId}/status`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "approved" });
+
+    // Store business in businesses.json
+    const businessToSave: business = {
+      ...createBusinessResponse.body,
+    };
+    setBusinessesArray([businessToSave]);
 
     console.log("Test users setup completed successfully");
   } catch (error) {
