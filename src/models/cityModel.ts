@@ -29,8 +29,7 @@ const citySchema = new Schema<ICity>(
     zone: {
       type: String,
       required: true,
-      trim: true,
-      index: true,
+      enum: ["north", "south", "center"],
     },
     soldiers: [
       {

@@ -8,14 +8,15 @@ import {
   users,
   setUsersArray,
 } from "./userHelper";
+import { getCitiesArray } from "./cityHelper";
 import { UserModel } from "../src/models/userModel";
-import { authRoutes, userRoutes } from "./routes";
+import { authRoutes, userRoutes, cityRoutes } from "./routes";
 
 // Increase timeout for all tests in this file
 jest.setTimeout(30000);
 
 describe("Route Access Tests", () => {
-  const allRoutes = [...authRoutes, ...userRoutes];
+  const allRoutes = [...authRoutes, ...userRoutes, ...cityRoutes];
   let users: users[];
 
   beforeAll(async () => {
@@ -167,14 +168,27 @@ describe("Route Access Tests", () => {
             // Replace route parameters with actual values
             let path = route.path;
             if (route.params) {
-              // For admin operations, use a different user's ID
-              const targetUser =
-                userType === "Admin"
-                  ? users.find((u) => u.type === "Soldier") // Use Soldier as target for admin operations
-                  : users.find((u) => u.type === userType);
-              if (!targetUser) throw new Error("No test user found");
-              const paramPattern = `:${route.params}`;
-              path = path.split(paramPattern).join(targetUser.id);
+              // For city routes, use the city ID from cities.json
+              if (path.includes("/api/cities/")) {
+                const cities = getCitiesArray();
+
+                if (cities.length === 0) {
+                  throw new Error("No test city found in cities.json");
+                }
+                const cityId = cities[0]._id;
+
+                const paramPattern = `:${route.params}`;
+                path = path.split(paramPattern).join(cityId);
+              } else {
+                // For admin operations on users, use a Soldier user's ID
+                const targetUser =
+                  userType === "Admin"
+                    ? users.find((u) => u.type === "Soldier")
+                    : users.find((u) => u.type === userType);
+                if (!targetUser) throw new Error("No test user found");
+                const paramPattern = `:${route.params}`;
+                path = path.split(paramPattern).join(targetUser.id);
+              }
             }
 
             // Prepare request
@@ -240,13 +254,25 @@ describe("Route Access Tests", () => {
               // Replace route parameters with actual values
               let path = route.path;
               if (route.params) {
-                const targetUser =
-                  userType === "Admin"
-                    ? users.find((u) => u.type === "Soldier") // Use Soldier as target for admin operations
-                    : users.find((u) => u.type === userType);
-                if (!targetUser) throw new Error("No test user found");
-                const paramPattern = `:${route.params}`;
-                path = path.split(paramPattern).join(targetUser.id);
+                // For city routes, use the city ID from cities.json
+                if (path.includes("/api/cities/")) {
+                  const cities = getCitiesArray();
+                  if (cities.length === 0) {
+                    throw new Error("No test city found in cities.json");
+                  }
+                  const cityId = cities[0]._id;
+                  const paramPattern = `:${route.params}`;
+                  path = path.split(paramPattern).join(cityId);
+                } else {
+                  // For admin operations on users, use a Soldier user's ID
+                  const targetUser =
+                    userType === "Admin"
+                      ? users.find((u) => u.type === "Soldier")
+                      : users.find((u) => u.type === userType);
+                  if (!targetUser) throw new Error("No test user found");
+                  const paramPattern = `:${route.params}`;
+                  path = path.split(paramPattern).join(targetUser.id);
+                }
               }
 
               // Prepare request

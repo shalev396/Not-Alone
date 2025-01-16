@@ -8,7 +8,14 @@ import {
   types,
   users,
 } from "./userHelper";
+import {
+  getCitiesArray,
+  setCitiesArray,
+  clearCities,
+  city,
+} from "./cityHelper";
 import { UserModel } from "../src/models/userModel";
+import { CityModel } from "../src/models/cityModel";
 
 const testUsers = [
   {
@@ -70,9 +77,11 @@ const testUsers = [
 
 const setupTestUsers = async () => {
   try {
-    // Clear existing users
+    // Clear existing users and cities
     clearUsers();
+    clearCities();
     await UserModel.deleteMany({});
+    await CityModel.deleteMany({});
 
     // Create users array for userHelper
     const usersForJson = testUsers.map((user) => ({
@@ -159,6 +168,41 @@ const setupTestUsers = async () => {
         setUsersArray(updatedUsers);
       }
     }
+
+    // Create a test city using Municipality user
+    const municipalityUser = getUsersArray().find(
+      (u: users) => u.type === "Municipality"
+    );
+    if (!municipalityUser || !municipalityUser.token) {
+      throw new Error("Municipality user not found or not logged in");
+    }
+
+    const cityData = {
+      name: "Test City",
+      zone: "north",
+      bio: "Test city description",
+    };
+
+    const createCityResponse: any = await request(app)
+      .post("/api/cities")
+      .set("Authorization", `Bearer ${municipalityUser.token}`)
+      .send(cityData);
+
+    if (createCityResponse.status !== 201) {
+      throw new Error("Failed to create test city");
+    }
+
+    // Approve the city using admin token
+    // console.log(createCityResponse._body._id);
+    //do not touch this
+    const cityId = createCityResponse._body._id;
+    await request(app)
+      .post(`/api/cities/${cityId}/approve`)
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    // Store city in cities.json
+    const cityToSave: city = createCityResponse._body;
+    setCitiesArray([cityToSave]);
 
     console.log("Test users setup completed successfully");
   } catch (error) {

@@ -175,7 +175,113 @@ export const userRoutes: route[] = [
   },
 ];
 
-export const cityRoutes: route[] = [];
+export const cityRoutes: route[] = [
+  // Public routes
+  {
+    path: "/api/cities",
+    method: "GET",
+    auth: false,
+    allowedTypes: [
+      "Admin",
+      "Soldier",
+      "Municipality",
+      "Donor",
+      "Organization",
+      "Business",
+    ],
+  },
+
+  // Protected routes - Create city
+  {
+    path: "/api/cities",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality"],
+    body: {
+      name: "Test City",
+      zone: "north",
+      bio: "Test city description",
+      media: ["http://example.com/image.jpg"],
+    },
+  },
+
+  // Join requests
+  {
+    path: "/api/cities/:cityId/join/municipality",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality"],
+    params: "cityId",
+  },
+  {
+    path: "/api/cities/:cityId/join/soldier",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier"],
+    params: "cityId",
+  },
+
+  // Handle join requests
+  {
+    path: "/api/cities/:cityId/join-requests",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Municipality", "Admin"],
+    params: "cityId",
+  },
+  {
+    path: "/api/cities/:cityId/join-requests/:userId",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Municipality", "Admin"],
+    params: "cityId",
+    body: {
+      action: "approve",
+    },
+  },
+
+  // City management
+  {
+    path: "/api/cities/:cityId",
+    method: "PUT",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality"],
+    params: "cityId",
+    body: {
+      name: "Updated City",
+      zone: "south",
+      bio: "Updated city description",
+      media: ["http://example.com/new-image.jpg"],
+    },
+  },
+
+  // Admin routes
+  {
+    path: "/api/cities/:cityId/approve",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin"],
+    params: "cityId",
+  },
+  {
+    path: "/api/cities/:cityId/deny",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin"],
+    params: "cityId",
+    body: {
+      reason: "Denial reason",
+    },
+  },
+  {
+    path: "/api/cities/:cityId",
+    method: "DELETE",
+    auth: true,
+    allowedTypes: ["Admin"],
+    params: "cityId",
+  },
+];
+
 export const businessRoutes: route[] = [];
 export const discountRoutes: route[] = [];
 export const donationRoutes: route[] = [];

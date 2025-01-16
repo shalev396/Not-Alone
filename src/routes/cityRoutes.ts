@@ -26,14 +26,16 @@ router.post("/", auth, checkUserType(["Admin", "Municipality"]), createCity);
 router.post(
   "/:cityId/join/municipality",
   auth,
-  checkUserType(["Municipality"]),
+  checkUserType(["Admin", "Municipality"]),
   joinCityAsMunicipality
 );
 
 router.post(
   "/:cityId/join/soldier",
+
   auth,
-  checkUserType(["Soldier"]),
+
+  checkUserType(["Admin", "Soldier"]),
   joinCityAsSoldier
 );
 
@@ -53,7 +55,7 @@ router.post(
 );
 
 // City management
-router.patch(
+router.put(
   "/:cityId",
   auth,
   checkUserType(["Admin", "Municipality"]),
