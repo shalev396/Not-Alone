@@ -33,9 +33,13 @@ const testUsers = [
     lastName: "Admin",
     email: "testadmin@example.com",
     password: "Test123!@#",
-    phone: "0501234567",
+    phone: "+972501234567",
     passport: "123456789",
     approvalStatus: "approved",
+    preferences: {
+      language: "en",
+      notifications: false,
+    },
   },
   {
     type: "Soldier" as types,
@@ -43,8 +47,12 @@ const testUsers = [
     lastName: "Soldier",
     email: "testsoldier@example.com",
     password: "Test123!@#",
-    phone: "0501234568",
+    phone: "+972501234568",
     passport: "123456790",
+    preferences: {
+      language: "en",
+      notifications: false,
+    },
   },
   {
     type: "Municipality" as types,
@@ -52,8 +60,12 @@ const testUsers = [
     lastName: "Municipality",
     email: "testmunicipality@example.com",
     password: "Test123!@#",
-    phone: "0501234569",
+    phone: "+972501234569",
     passport: "123456791",
+    preferences: {
+      language: "en",
+      notifications: false,
+    },
   },
   {
     type: "Donor" as types,
@@ -61,8 +73,12 @@ const testUsers = [
     lastName: "Donor",
     email: "testdonor@example.com",
     password: "Test123!@#",
-    phone: "0501234570",
+    phone: "+972501234570",
     passport: "123456792",
+    preferences: {
+      language: "en",
+      notifications: false,
+    },
   },
   {
     type: "Organization" as types,
@@ -70,8 +86,12 @@ const testUsers = [
     lastName: "Organization",
     email: "testorganization@example.com",
     password: "Test123!@#",
-    phone: "0501234571",
+    phone: "+972501234571",
     passport: "123456793",
+    preferences: {
+      language: "en",
+      notifications: false,
+    },
   },
   {
     type: "Business" as types,
@@ -79,8 +99,12 @@ const testUsers = [
     lastName: "Business",
     email: "testbusiness@example.com",
     password: "Test123!@#",
-    phone: "0501234572",
+    phone: "+972501234572",
     passport: "123456794",
+    preferences: {
+      language: "en",
+      notifications: false,
+    },
   },
 ];
 

@@ -31,7 +31,9 @@ export const authRoutes: route[] = [
         .toString(36)
         .substring(7)}@example.com`,
       password: "Test123!@#",
-      phone: `05012345${Math.floor(Math.random() * 100)}`,
+      phone: `+97250${Math.floor(Math.random() * 10000000)
+        .toString()
+        .padStart(7, "0")}`,
       type: type,
       preferences: {
         language: "en",
