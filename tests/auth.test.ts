@@ -9,6 +9,7 @@ import {
   setUsersArray,
 } from "./userHelper";
 import { getCitiesArray } from "./cityHelper";
+import { getDonationsArray } from "./donationHelper";
 import { UserModel } from "../src/models/userModel";
 import {
   authRoutes,
@@ -16,6 +17,7 @@ import {
   cityRoutes,
   businessRoutes,
   discountRoutes,
+  donationRoutes,
 } from "./routes";
 
 // Increase timeout for all tests in this file
@@ -28,6 +30,7 @@ describe("Route Access Tests", () => {
     ...cityRoutes,
     ...businessRoutes,
     ...discountRoutes,
+    ...donationRoutes,
   ];
   let users: users[];
 
@@ -183,14 +186,29 @@ describe("Route Access Tests", () => {
               // For city routes, use the city ID from cities.json
               if (path.includes("/api/cities/")) {
                 const cities = getCitiesArray();
-
                 if (cities.length === 0) {
                   throw new Error("No test city found in cities.json");
                 }
                 const cityId = cities[0]._id;
-
                 const paramPattern = `:${route.params}`;
                 path = path.split(paramPattern).join(cityId);
+              }
+              // For donation routes, use the donation ID from donations.json
+              else if (path.includes("/api/donations/")) {
+                const donations = getDonationsArray();
+                if (donations.length === 0) {
+                  throw new Error("No test donation found in donations.json");
+                }
+                const donationId = donations[0]._id;
+                const paramPattern = `:donationId`;
+                path = path.split(paramPattern).join(donationId);
+                // Handle soldier assignment route
+                if (path.includes("/assign/:soldierId")) {
+                  const soldierUser = users.find((u) => u.type === "Soldier");
+                  if (!soldierUser) throw new Error("No test soldier found");
+                  const soldierPattern = `:soldierId`;
+                  path = path.split(soldierPattern).join(soldierUser.id);
+                }
               } else {
                 // For admin operations on users, use a Soldier user's ID
                 const targetUser =

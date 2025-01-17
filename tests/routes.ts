@@ -1,4 +1,6 @@
-import { types, getUsersArray } from "./userHelper";
+import { types, getUsersArray, users } from "./userHelper";
+import { getDiscountsArray } from "./discountHelper";
+import { getCitiesArray } from "./cityHelper";
 
 type route = {
   path: string;
@@ -439,7 +441,103 @@ export const discountRoutes: route[] = [
   },
 ];
 
-export const donationRoutes: route[] = [];
+export const donationRoutes: route[] = [
+  // Get my donations
+  {
+    path: "/api/donations/my",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Donor"],
+  },
+
+  // Create donation
+  {
+    path: "/api/donations",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Donor"],
+    body: {
+      title: "Test Donation",
+      description: "Test donation description",
+      category: "Furniture",
+      address: "Test Address 123",
+      city: getCitiesArray()[0]._id,
+      media: ["http://example.com/image.jpg"],
+    },
+  },
+
+  // Get all donations
+  {
+    path: "/api/donations",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality"],
+  },
+
+  // Get city donations and available soldiers
+  {
+    path: "/api/donations/city-matching",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality"],
+  },
+
+  // Get single donation
+  {
+    path: "/api/donations/:donationId",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality", "Donor", "Soldier"],
+    params: "donationId",
+  },
+
+  // Update donation
+  {
+    path: "/api/donations/:donationId",
+    method: "PUT",
+    auth: true,
+    allowedTypes: ["Admin", "Donor"],
+    params: "donationId",
+    body: {
+      title: "Updated Donation",
+      description: "Updated donation description",
+      category: "Clothes",
+      address: "Updated Address 123",
+      media: ["http://example.com/new-image.jpg"],
+    },
+  },
+
+  // Delete donation
+  {
+    path: "/api/donations/:donationId",
+    method: "DELETE",
+    auth: true,
+    allowedTypes: ["Admin", "Donor"],
+    params: "donationId",
+  },
+
+  // Assign donation to soldier
+  {
+    path: "/api/donations/:donationId/assign/:soldierId",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality"],
+    params: "donationId",
+  },
+
+  // Update donation status
+  {
+    path: "/api/donations/:donationId/status",
+    method: "PUT",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality", "Donor", "Soldier"],
+    params: "donationId",
+    body: {
+      status: "assigned",
+    },
+  },
+];
+
 export const eatUpRoutes: route[] = [];
 export const requestRoutes: route[] = [];
 export const profileRoutes: route[] = [];

@@ -25,6 +25,8 @@ import { CityModel } from "../src/models/cityModel";
 import { BusinessModel } from "../src/models/businessModel";
 import { clearDiscounts, setDiscountsArray } from "./discountHelper";
 import { DiscountModel } from "../src/models/discountModel";
+import { clearDonations, setDonationsArray } from "./donationHelper";
+import { DonationModel } from "../src/models/donationModel";
 
 const testUsers = [
   {
@@ -115,10 +117,12 @@ const setupTestUsers = async () => {
     clearCities();
     clearBusinesses();
     clearDiscounts();
+    clearDonations();
     await UserModel.deleteMany({});
     await CityModel.deleteMany({});
     await BusinessModel.deleteMany({});
     await DiscountModel.deleteMany({});
+    await DonationModel.deleteMany({});
 
     // Create users array for userHelper
     const usersForJson = testUsers.map((user) => ({
@@ -298,6 +302,39 @@ const setupTestUsers = async () => {
       businessId: businessId,
     };
     setDiscountsArray([discountToSave]);
+
+    // Create a test donation using Donor user
+    const donorUser = getUsersArray().find((u: users) => u.type === "Donor");
+    if (!donorUser || !donorUser.token) {
+      throw new Error("Donor user not found or not logged in");
+    }
+
+    const donationData = {
+      title: "Test Donation",
+      description: "Test donation description",
+      category: "Furniture",
+      address: "Test Address 123",
+      city: cityId,
+      media: ["http://example.com/image.jpg"],
+    };
+
+    const createDonationResponse: any = await request(app)
+      .post("/api/donations")
+      .set("Authorization", `Bearer ${donorUser.token}`)
+      .send(donationData);
+
+    if (createDonationResponse.status !== 201) {
+      throw new Error("Failed to create test donation");
+    }
+
+    // Store donation in donations.json
+    const donationToSave = {
+      ...createDonationResponse.body,
+      donorId: donorUser.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setDonationsArray([donationToSave]);
 
     console.log("Test users setup completed successfully");
   } catch (error) {
