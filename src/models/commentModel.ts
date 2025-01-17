@@ -4,6 +4,7 @@ export interface IComment extends Document {
   authorId: mongoose.Types.ObjectId;
   postId: mongoose.Types.ObjectId;
   content: string;
+  likes: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +37,12 @@ const commentSchema = new Schema<IComment>(
       minlength: [1, "Content must be at least 1 character long"],
       maxlength: [1000, "Content cannot exceed 1000 characters"],
     },
+    likes: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   {
     timestamps: true,
@@ -65,7 +72,10 @@ commentSchema.virtual("post", {
 // Ensure virtuals are included in JSON output
 commentSchema.set("toJSON", { virtuals: true });
 commentSchema.set("toObject", { virtuals: true });
-
+// Virtual for likes count
+commentSchema.virtual("likesCount").get(function () {
+  return this.likes.length;
+});
 // Pre-save middleware to ensure post exists
 commentSchema.pre("save", async function (next) {
   try {
