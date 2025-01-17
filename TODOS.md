@@ -12,12 +12,12 @@
 - [V] User Tested
 - [V] City Tested
 - [V] Request 
-- [V] Eat Up 
+- [V] Eat Up Tested
 - [V] Donation Tested
 - [V] Discount Tested
 - [V] Business Tested
-- [V] Profile
--waiting
+- [V] Profile 
+- waiting
 - [ ] Post
 - [ ] Comment
 - sockets
