@@ -11,13 +11,12 @@
 
 - [V] User Tested
 - [V] City Tested
-- [V] Request 
+- [V] Request Tested
 - [V] Eat Up Tested
 - [V] Donation Tested
 - [V] Discount Tested
 - [V] Business Tested
-- [V] Profile 
-- waiting
+- [V] Profile Tested
 - [ ] Post
 - [ ] Comment
 - sockets
@@ -25,27 +24,22 @@
 - [ ] Message
 
 ## MVC
-- [V-MRC] User Tested
-- [V-MRC] City Tested
-- [V-MRC] Request 
-- [V-MRC] Eat Up 
-- [V-MRC] Donation Tested
-- [V-MRC] Discount Tested
-- [V-MRC] Business Tested
-- [ ] Profile
 
----
-
-### On Hold
-
-- [ ] Post
-
----
-
-### Sockets
-
+- [V-MRC] User
+- [V-MRC] City
+- [V-MRC] Request
+- [V-MRC] Eat Up
+- [V-MRC] Donation
+- [V-MRC] Discount
+- [V-MRC] Business
+- [V-MRC] Profile
+- [M] Post
+- [M] Comment
+- sockets
 - [ ] Channel
 - [ ] Message
+
+---
 
 # user routes
 
