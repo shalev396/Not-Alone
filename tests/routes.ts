@@ -538,6 +538,98 @@ export const donationRoutes: route[] = [
   },
 ];
 
-export const eatUpRoutes: route[] = [];
+export const eatUpRoutes: route[] = [
+  // Get all eatups (public but authenticated)
+  {
+    path: "/api/eatups",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality", "Organization", "Soldier"],
+    query: ["city", "hosting", "date", "kosher", "page", "limit", "sort"],
+  },
+
+  // Get my eatups (created by the authenticated user)
+  {
+    path: "/api/eatups/my",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality", "Organization", "Donor"],
+    query: ["page", "limit", "sort"],
+  },
+
+  // Get single eatup
+  {
+    path: "/api/eatups/:eatupId",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality", "Organization", "Donor", "Soldier"],
+    params: "eatupId",
+  },
+
+  // Create eatup
+  {
+    path: "/api/eatups",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality", "Organization", "Donor"],
+    body: {
+      city: getCitiesArray()[0]._id,
+      title: "Test Eatup",
+      media: ["http://example.com/image.jpg"],
+      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      kosher: true,
+      description: "Test eatup description",
+      languages: ["Hebrew", "English"],
+      hosting: "organization",
+      limit: 20,
+    },
+  },
+
+  // Subscribe to eatup
+  {
+    path: "/api/eatups/:eatupId/subscribe",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier"],
+    params: "eatupId",
+  },
+
+  // Unsubscribe from eatup
+  {
+    path: "/api/eatups/:eatupId/unsubscribe",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier"],
+    params: "eatupId",
+  },
+
+  // Update eatup
+  {
+    path: "/api/eatups/:eatupId",
+    method: "PUT",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality", "Organization", "Donor"],
+    params: "eatupId",
+    body: {
+      title: "Updated Eatup",
+      description: "Updated eatup description",
+      media: ["http://example.com/new-image.jpg"],
+      date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
+      kosher: false,
+      languages: ["English"],
+      limit: 30,
+    },
+  },
+
+  // Delete eatup
+  {
+    path: "/api/eatups/:eatupId",
+    method: "DELETE",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality", "Organization", "Donor"],
+    params: "eatupId",
+  },
+];
+
 export const requestRoutes: route[] = [];
 export const profileRoutes: route[] = [];

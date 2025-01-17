@@ -18,7 +18,9 @@ import {
   businessRoutes,
   discountRoutes,
   donationRoutes,
+  eatUpRoutes,
 } from "./routes";
+import { getEatupArray } from "./eatupHelper";
 
 // Increase timeout for all tests in this file
 jest.setTimeout(30000);
@@ -31,6 +33,7 @@ describe("Route Access Tests", () => {
     ...businessRoutes,
     ...discountRoutes,
     ...donationRoutes,
+    ...eatUpRoutes,
   ];
   let users: users[];
 
@@ -219,6 +222,26 @@ describe("Route Access Tests", () => {
                 const paramPattern = `:${route.params}`;
                 path = path.split(paramPattern).join(targetUser.id);
               }
+            }
+
+            // Handle donation routes
+            if (path.includes("/api/donations/")) {
+              const donations = getDonationsArray();
+              if (donations.length === 0) {
+                throw new Error("No test donation found");
+              }
+              const donationId = donations[0]._id;
+              path = path.split("/:donationId").join(`/${donationId}`);
+            }
+
+            // Handle eatup routes
+            if (path.includes("/api/eatups/")) {
+              const eatups = getEatupArray();
+              if (eatups.length === 0) {
+                throw new Error("No test eatup found");
+              }
+              const eatupId = eatups[0]._id;
+              path = path.split("/:eatupId").join(`/${eatupId}`);
             }
 
             // Prepare request

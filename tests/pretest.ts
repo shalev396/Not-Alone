@@ -27,6 +27,8 @@ import { clearDiscounts, setDiscountsArray } from "./discountHelper";
 import { DiscountModel } from "../src/models/discountModel";
 import { clearDonations, setDonationsArray } from "./donationHelper";
 import { DonationModel } from "../src/models/donationModel";
+import { clearEatup, setEatupArray } from "./eatupHelper";
+import { EatupModel } from "../src/models/eatupModel";
 
 const testUsers = [
   {
@@ -118,11 +120,13 @@ const setupTestUsers = async () => {
     clearBusinesses();
     clearDiscounts();
     clearDonations();
+    clearEatup();
     await UserModel.deleteMany({});
     await CityModel.deleteMany({});
     await BusinessModel.deleteMany({});
     await DiscountModel.deleteMany({});
     await DonationModel.deleteMany({});
+    await EatupModel.deleteMany({});
 
     // Create users array for userHelper
     const usersForJson = testUsers.map((user) => ({
@@ -335,6 +339,45 @@ const setupTestUsers = async () => {
       updatedAt: new Date(),
     };
     setDonationsArray([donationToSave]);
+
+    // Create a test eatup using Organization user
+    const organizationUser = getUsersArray().find(
+      (u: users) => u.type === "Organization"
+    );
+    if (!organizationUser || !organizationUser.token) {
+      throw new Error("Organization user not found or not logged in");
+    }
+
+    const eatupData = {
+      city: cityId,
+      title: "Test Eatup",
+      media: ["http://example.com/image.jpg"],
+      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      kosher: true,
+      description: "Test eatup description for testing purposes",
+      languages: ["Hebrew", "English"],
+      hosting: "organization",
+      limit: 20,
+    };
+
+    const createEatupResponse: any = await request(app)
+      .post("/api/eatups")
+      .set("Authorization", `Bearer ${organizationUser.token}`)
+      .send(eatupData);
+
+    if (createEatupResponse.status !== 201) {
+      throw new Error("Failed to create test eatup");
+    }
+
+    // Store eatup in eatup.json
+    const eatupToSave = {
+      ...createEatupResponse.body,
+      authorId: organizationUser.id,
+      guests: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setEatupArray([eatupToSave]);
 
     console.log("Test users setup completed successfully");
   } catch (error) {

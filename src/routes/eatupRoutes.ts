@@ -18,7 +18,7 @@ const router = express.Router();
 router.get(
   "/",
   auth,
-  checkUserType(["Admin", "Municipality", "Organization", "Donor", "Soldier"]),
+  checkUserType(["Admin", "Municipality", "Organization", "Soldier"]),
   getAllEatups
 );
 
