@@ -724,4 +724,64 @@ export const requestRoutes: route[] = [
   },
 ];
 
-export const profileRoutes: route[] = [];
+export const profileRoutes: route[] = [
+  // Get my profile
+  {
+    path: "/api/profiles/me",
+    method: "GET",
+    auth: true,
+    allowedTypes: [
+      "Admin",
+      "Soldier",
+      "Municipality",
+      "Donor",
+      "Organization",
+      "Business",
+    ],
+  },
+
+  // Update my profile
+  {
+    path: "/api/profiles/me",
+    method: "PUT",
+    auth: true,
+    allowedTypes: [
+      "Admin",
+      "Soldier",
+      "Municipality",
+      "Donor",
+      "Organization",
+      "Business",
+    ],
+    body: {
+      nickname: "Test Nickname",
+      bio: "Test bio description",
+      profileImage: "http://example.com/image.jpg",
+      visibility: "public",
+    },
+  },
+
+  // Get profile by user ID
+  {
+    path: "/api/profiles/:userId",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality", "Organization", "Soldier"],
+    params: "userId",
+  },
+
+  // Update user's profile (admin only)
+  {
+    path: "/api/profiles/:userId",
+    method: "PUT",
+    auth: true,
+    allowedTypes: ["Admin"],
+    params: "userId",
+    body: {
+      nickname: "Updated Nickname",
+      bio: "Updated bio description",
+      profileImage: "http://example.com/new-image.jpg",
+      visibility: "private",
+    },
+  },
+];

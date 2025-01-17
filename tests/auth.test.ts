@@ -20,9 +20,11 @@ import {
   donationRoutes,
   eatUpRoutes,
   requestRoutes,
+  profileRoutes,
 } from "./routes";
 import { getEatupArray } from "./eatupHelper";
 import { getRequestsArray } from "./requestHelper";
+import { getProfileArray } from "./profileHelper";
 
 // Increase timeout for all tests in this file
 jest.setTimeout(30000);
@@ -37,6 +39,7 @@ describe("Route Access Tests", () => {
     ...donationRoutes,
     ...eatUpRoutes,
     ...requestRoutes,
+    ...profileRoutes,
   ];
   let users: users[];
 
@@ -255,6 +258,17 @@ describe("Route Access Tests", () => {
               }
               const requestId = requests[0]._id;
               path = path.split("/:requestId").join(`/${requestId}`);
+            }
+
+            // Handle profile routes
+            if (path.includes("/api/profiles/")) {
+              // Replace :userId with actual profile user ID
+              const profiles = getProfileArray();
+              if (!profiles || profiles.length === 0) {
+                throw new Error("No test profile found");
+              }
+              const profileUserId = profiles[0].userId;
+              path = path.split(":userId").join(profileUserId);
             }
 
             // Prepare request

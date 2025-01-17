@@ -15,7 +15,12 @@ router.get("/me", auth, getMyProfile);
 router.put("/me", auth, updateMyProfile);
 
 // Get profile by user ID (with visibility checks)
-router.get("/:userId", auth, getProfileByUserId);
+router.get(
+  "/:userId",
+  auth,
+  checkUserType(["Admin", "Municipality", "Organization", "Soldier"]),
+  getProfileByUserId
+);
 
 // Admin only - update any user's profile
 router.put("/:userId", auth, checkUserType(["Admin"]), updateUserProfile);

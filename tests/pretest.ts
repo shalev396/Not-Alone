@@ -31,6 +31,8 @@ import { clearEatup, setEatupArray } from "./eatupHelper";
 import { EatupModel } from "../src/models/eatupModel";
 import { clearRequests, setRequestsArray } from "./requestHelper";
 import { RequestModel } from "../src/models/requestModel";
+import { clearProfile, setProfileArray } from "./profileHelper";
+import { ProfileModel } from "../src/models/profileModel";
 
 const testUsers = [
   {
@@ -124,6 +126,7 @@ const setupTestUsers = async () => {
     clearDonations();
     clearEatup();
     clearRequests();
+    clearProfile();
     await UserModel.deleteMany({});
     await CityModel.deleteMany({});
     await BusinessModel.deleteMany({});
@@ -131,6 +134,7 @@ const setupTestUsers = async () => {
     await DonationModel.deleteMany({});
     await EatupModel.deleteMany({});
     await RequestModel.deleteMany({});
+    await ProfileModel.deleteMany({});
 
     // Create users array for userHelper
     const usersForJson = testUsers.map((user) => ({
@@ -419,6 +423,22 @@ const setupTestUsers = async () => {
       updatedAt: new Date(),
     };
     setRequestsArray([requestToSave]);
+
+    // Create and save test profile
+    const userForProfile = users[0]; // Using first user for profile
+    const profileToSave = {
+      userId: userForProfile.id,
+      nickname: "Test Nickname",
+      bio: "Test bio description",
+      profileImage: "http://example.com/image.jpg",
+      visibility: "public" as "public" | "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // Save profile in profiles.json
+    setProfileArray([profileToSave]);
+    console.log("Test profile created and saved");
 
     console.log("Test users setup completed successfully");
   } catch (error) {
