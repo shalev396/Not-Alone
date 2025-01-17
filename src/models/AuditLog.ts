@@ -30,6 +30,12 @@ const auditLogSchema = new mongoose.Schema<AuditLog>({
       "CITY_APPROVE",
       "CITY_DENY",
       "CITY_JOIN",
+      "REQUEST_CREATE",
+      "REQUEST_UPDATE",
+      "REQUEST_DELETE",
+      "REQUEST_APPROVE",
+      "REQUEST_DENY",
+      "REQUEST_PAY",
     ],
   },
   userId: {

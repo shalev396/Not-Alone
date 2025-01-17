@@ -5,6 +5,7 @@ import { clearBusinesses } from "./bussinessHelper";
 import { clearDiscounts } from "./discountHelper";
 import { clearDonations } from "./donationHelper";
 import { clearEatup } from "./eatupHelper";
+import { clearRequests } from "./requestHelper";
 
 const cleanup = async () => {
   try {
@@ -15,6 +16,7 @@ const cleanup = async () => {
     clearDiscounts();
     clearDonations();
     clearEatup();
+    clearRequests();
 
     // Drop all collections
     // Drop all collections

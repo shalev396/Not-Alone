@@ -631,5 +631,97 @@ export const eatUpRoutes: route[] = [
   },
 ];
 
-export const requestRoutes: route[] = [];
+export const requestRoutes: route[] = [
+  // Get all requests (filtered by user role)
+  {
+    path: "/api/requests",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality", "Organization"],
+  },
+
+  // Get all requests by the authenticated user
+  {
+    path: "/api/requests/my",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier"],
+  },
+
+  // Get single request
+  {
+    path: "/api/requests/:requestId",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality", "Organization"],
+    params: "requestId",
+  },
+
+  // Create request (only soldiers can create requests)
+  {
+    path: "/api/requests",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier"],
+    body: {
+      title: "Test Request",
+      description: "Test request description",
+      category: "Furniture",
+      city: getCitiesArray()[0]._id,
+      media: ["http://example.com/image.jpg"],
+    },
+  },
+
+  // Update request (author or admin only)
+  {
+    path: "/api/requests/:requestId",
+    method: "PUT",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier"],
+    params: "requestId",
+    body: {
+      title: "Updated Request",
+      description: "Updated request description",
+      category: "Clothes",
+      media: ["http://example.com/new-image.jpg"],
+    },
+  },
+
+  // Approve request
+  {
+    path: "/api/requests/:requestId/approve",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality"],
+    params: "requestId",
+  },
+
+  // Deny request
+  {
+    path: "/api/requests/:requestId/deny",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Municipality"],
+    params: "requestId",
+  },
+
+  // Pay for request
+  {
+    path: "/api/requests/:requestId/pay",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Donor", "Organization", "Municipality"],
+    params: "requestId",
+  },
+
+  // Delete request (author or admin only)
+  {
+    path: "/api/requests/:requestId",
+    method: "DELETE",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier"],
+    params: "requestId",
+  },
+];
+
 export const profileRoutes: route[] = [];

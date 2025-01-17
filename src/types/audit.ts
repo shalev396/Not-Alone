@@ -12,7 +12,13 @@ export type AuditAction =
   | "ADMIN_ACTION"
   | "CITY_CREATE"
   | "CITY_JOIN"
-  | "CITY_UPDATE";
+  | "CITY_UPDATE"
+  | "REQUEST_CREATE"
+  | "REQUEST_UPDATE"
+  | "REQUEST_DELETE"
+  | "REQUEST_APPROVE"
+  | "REQUEST_DENY"
+  | "REQUEST_PAY";
 
 export interface AuditLog extends Document {
   action: AuditAction;

@@ -29,6 +29,8 @@ import { clearDonations, setDonationsArray } from "./donationHelper";
 import { DonationModel } from "../src/models/donationModel";
 import { clearEatup, setEatupArray } from "./eatupHelper";
 import { EatupModel } from "../src/models/eatupModel";
+import { clearRequests, setRequestsArray } from "./requestHelper";
+import { RequestModel } from "../src/models/requestModel";
 
 const testUsers = [
   {
@@ -121,12 +123,14 @@ const setupTestUsers = async () => {
     clearDiscounts();
     clearDonations();
     clearEatup();
+    clearRequests();
     await UserModel.deleteMany({});
     await CityModel.deleteMany({});
     await BusinessModel.deleteMany({});
     await DiscountModel.deleteMany({});
     await DonationModel.deleteMany({});
     await EatupModel.deleteMany({});
+    await RequestModel.deleteMany({});
 
     // Create users array for userHelper
     const usersForJson = testUsers.map((user) => ({
@@ -378,6 +382,43 @@ const setupTestUsers = async () => {
       updatedAt: new Date(),
     };
     setEatupArray([eatupToSave]);
+
+    // Create a test request using Soldier user
+    const soldierUser = getUsersArray().find(
+      (u: users) => u.type === "Soldier"
+    );
+    if (!soldierUser || !soldierUser.token) {
+      throw new Error("Soldier user not found or not logged in");
+    }
+
+    const requestData = {
+      service: "Regular",
+      item: "Test Item",
+      itemDescription: "Test item description",
+      quantity: 1,
+      zone: "north",
+      city: cityId,
+      agreeToShareDetails: true,
+    };
+
+    const createRequestResponse: any = await request(app)
+      .post("/api/requests")
+      .set("Authorization", `Bearer ${soldierUser.token}`)
+      .send(requestData);
+
+    if (createRequestResponse.status !== 201) {
+      console.error("Request creation failed:", createRequestResponse.body);
+      throw new Error("Failed to create test request");
+    }
+
+    // Store request in request.json
+    const requestToSave = {
+      ...createRequestResponse.body,
+      authorId: soldierUser.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setRequestsArray([requestToSave]);
 
     console.log("Test users setup completed successfully");
   } catch (error) {
