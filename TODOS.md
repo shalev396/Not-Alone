@@ -9,13 +9,29 @@
 
 ### Progress
 
-- [V-MRC] User
-- [V-MRC] City
-- [V-MRC] Request
-- [V-MRC] Eat Up
-- [V-MRC] Donation
-- [V-MRC] Discount
-- [V-MRC] Business
+- [V] User Tested
+- [V] City Tested
+- [ ] Request 
+- [ ] Eat Up 
+- [V] Donation Tested
+- [V] Discount Tested
+- [V] Business Tested
+- [ ] Profile
+-waiting
+- [ ] Post
+- [ ] Comment
+- sockets
+- [ ] Channel
+- [ ] Message
+
+## MVC
+- [V-MRC] User Tested
+- [V-MRC] City Tested
+- [V-MRC] Request 
+- [V-MRC] Eat Up 
+- [V-MRC] Donation Tested
+- [V-MRC] Discount Tested
+- [V-MRC] Business Tested
 - [ ] Profile
 
 ---
