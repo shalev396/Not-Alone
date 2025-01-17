@@ -11,12 +11,12 @@
 
 - [V] User Tested
 - [V] City Tested
-- [ ] Request 
-- [ ] Eat Up 
+- [V] Request 
+- [V] Eat Up 
 - [V] Donation Tested
 - [V] Discount Tested
 - [V] Business Tested
-- [ ] Profile
+- [V] Profile
 -waiting
 - [ ] Post
 - [ ] Comment
