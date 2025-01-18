@@ -22,11 +22,13 @@ import {
   requestRoutes,
   profileRoutes,
   postRoutes,
+  commentRoutes,
 } from "./routes";
 import { getEatupArray } from "./eatupHelper";
 import { getRequestsArray } from "./requestHelper";
 import { getProfileArray } from "./profileHelper";
 import { getPostsArray } from "./postsHelper";
+import { getCommentsArray } from "./commentsHelper";
 
 // Increase timeout for all tests in this file
 jest.setTimeout(30000);
@@ -43,6 +45,7 @@ describe("Route Access Tests", () => {
     ...requestRoutes,
     ...profileRoutes,
     ...postRoutes,
+    ...commentRoutes,
   ];
   let users: users[];
 
@@ -284,6 +287,16 @@ describe("Route Access Tests", () => {
               path = path.split("/:postId").join(`/${postId}`);
             }
 
+            // Handle comment routes
+            if (path.includes("/api/comments/")) {
+              const comments = getCommentsArray();
+              if (comments.length === 0) {
+                throw new Error("No test comment found");
+              }
+              const commentId = comments[0]._id;
+              path = path.split("/:commentId").join(`/${commentId}`);
+            }
+
             // Prepare request
             const method = route.method.toLowerCase() as
               | "get"
@@ -366,16 +379,6 @@ describe("Route Access Tests", () => {
                   const paramPattern = `:${route.params}`;
                   path = path.split(paramPattern).join(targetUser.id);
                 }
-              }
-
-              // Handle post routes
-              if (path.includes("/api/posts/")) {
-                const posts = getPostsArray();
-                if (posts.length === 0) {
-                  throw new Error("No test post found");
-                }
-                const postId = posts[0]._id;
-                path = path.split("/:postId").join(`/${postId}`);
               }
 
               // Prepare request

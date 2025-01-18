@@ -1,6 +1,7 @@
 import { types, getUsersArray, users } from "./userHelper";
 import { getDiscountsArray } from "./discountHelper";
 import { getCitiesArray } from "./cityHelper";
+import { getPostsArray } from "./postsHelper";
 
 type route = {
   path: string;
@@ -857,4 +858,70 @@ export const postRoutes: route[] = [
   },
 ];
 
-export const commentRoutes: route[] = [];
+export const commentRoutes: route[] = [
+  // Get all comments (Admin only)
+  {
+    path: "/api/comments",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin"],
+    query: ["page", "limit", "sort", "postId", "authorId"],
+  },
+
+  // Get comment by ID (Admin only)
+  {
+    path: "/api/comments/:commentId",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin"],
+    params: "commentId",
+  },
+
+  // Create comment (Admin, Soldier, Municipality, Organization)
+  {
+    path: "/api/comments",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier", "Municipality", "Organization"],
+    body: () => {
+      const posts = getPostsArray();
+      if (posts.length === 0) {
+        throw new Error("No test post found");
+      }
+      return {
+        postId: posts[0]._id,
+        content: "Test comment content",
+      };
+    },
+  },
+
+  // Toggle like on comment (Admin, Soldier, Municipality, Organization)
+  {
+    path: "/api/comments/:commentId/like",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier", "Municipality", "Organization"],
+    params: "commentId",
+  },
+
+  // Update comment (Admin, Soldier, Municipality, Organization)
+  {
+    path: "/api/comments/:commentId",
+    method: "PUT",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier", "Municipality", "Organization"],
+    params: "commentId",
+    body: {
+      content: "Updated comment content",
+    },
+  },
+
+  // Delete comment (Admin, Soldier, Municipality, Organization)
+  {
+    path: "/api/comments/:commentId",
+    method: "DELETE",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier", "Municipality", "Organization"],
+    params: "commentId",
+  },
+];

@@ -17,9 +17,9 @@ router.get("/", auth, checkUserType(["Admin"]), getAllComments);
 router.get("/:commentId", auth, checkUserType(["Admin"]), getCommentById);
 
 // Routes for authenticated users
-router.post("/", auth, createComment);
-router.post("/:commentId/like", auth, toggleLike);
-router.put("/:commentId", auth, updateComment);
-router.delete("/:commentId", auth, deleteComment);
+router.post("/", auth, checkUserType(["Admin", "Soldier", "Municipality", "Organization"]), createComment);
+router.post("/:commentId/like", auth, checkUserType(["Admin", "Soldier", "Municipality", "Organization"]), toggleLike);
+router.put("/:commentId", auth, checkUserType(["Admin", "Soldier", "Municipality", "Organization"]), updateComment);
+router.delete("/:commentId", auth, checkUserType(["Admin", "Soldier", "Municipality", "Organization"]), deleteComment);
 
 export default router;

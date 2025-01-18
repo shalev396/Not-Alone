@@ -35,6 +35,8 @@ import { clearProfile, setProfileArray } from "./profileHelper";
 import { ProfileModel } from "../src/models/profileModel";
 import { setPostsArray, clearPosts } from "./postsHelper";
 import { PostModel } from "../src/models/postModel";
+import { clearComments, setCommentsArray } from "./commentsHelper";
+import { CommentModel } from "../src/models/commentModel";
 
 const testUsers = [
   {
@@ -130,6 +132,7 @@ const setupTestUsers = async () => {
     clearRequests();
     clearProfile();
     clearPosts();
+    clearComments();
     await UserModel.deleteMany({});
     await CityModel.deleteMany({});
     await BusinessModel.deleteMany({});
@@ -139,6 +142,7 @@ const setupTestUsers = async () => {
     await RequestModel.deleteMany({});
     await ProfileModel.deleteMany({});
     await PostModel.deleteMany({});
+    await CommentModel.deleteMany({});
 
     // Create users array for userHelper
     const usersForJson = testUsers.map((user) => ({
@@ -454,6 +458,34 @@ const setupTestUsers = async () => {
     };
     setPostsArray([postToSave]);
     console.log("Test post created and saved");
+
+    // Create a test comment on the post using the same soldier user
+    const commentData = {
+      postId: createPostResponse.body._id,
+      content: "Test comment content from soldier",
+    };
+
+    const createCommentResponse: any = await request(app)
+      .post("/api/comments")
+      .set("Authorization", `Bearer ${soldierUser.token}`)
+      .send(commentData);
+
+    if (createCommentResponse.status !== 201) {
+      console.error("Comment creation failed:", createCommentResponse.body);
+      throw new Error("Failed to create test comment");
+    }
+
+    // Store comment in comments.json
+    const commentToSave = {
+      ...createCommentResponse.body,
+      authorId: soldierUser.id,
+      postId: createPostResponse.body._id,
+      likes: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setCommentsArray([commentToSave]);
+    console.log("Test comment created and saved");
 
     // Create and save test profile
     const userForProfile = users[0]; // Using first user for profile
