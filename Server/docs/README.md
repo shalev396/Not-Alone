@@ -22,26 +22,27 @@ This documentation provides detailed information about the Not Alone API, includ
 
 ## API Routes
 
-- [User Routes](./userDoc.md)
-- [Business Routes](./businessDocs.md)
-- [Channel Routes](./channelDoc.md)
-- [City Routes](./cityDoc.md)
-- [Comment Routes](./commentDoc.md)
-- [Discount Routes](./discountDocs.md)
-- [Donation Routes](./donationDoc.md)
-- [Eatup Routes](./eatupDoc.md)
-- [Message Routes](./messageDoc.md)
-- [Post Routes](./postDoc.md)
-- [Profile Routes](./profileDoc.md)
-- [Request Routes](./requestDoc.md)
+- [Authentication Routes](./routes/authRoutes.md)
+- [User Routes](./routes/userRoutes.md)
+- [Business Routes](./routes/businessRoutes.md)
+- [Channel Routes](./routes/channelRoutes.md)
+- [City Routes](./routes/cityRoutes.md)
+- [Comment Routes](./routes/commentRoutes.md)
+- [Discount Routes](./routes/discountRoutes.md)
+- [Donation Routes](./routes/donationRoutes.md)
+- [Eatup Routes](./routes/eatupRoutes.md)
+- [Message Routes](./routes/messageRoutes.md)
+- [Post Routes](./routes/postRoutes.md)
+- [Profile Routes](./routes/profileRoutes.md)
+- [Request Routes](./routes/requestRoutes.md)
 
 ## Services
 
-- [Socket Service](./socketDoc.md)
+- [Socket Service](./services/socketService.md)
 
 ## Tests
 
-- [Auth Tests](./tests/authTestDoc.md)
+- [Authentication Testing](./tests/authTestDoc.md)
 
 ## Common Patterns
 
@@ -83,4 +84,36 @@ Example:
 
 ```
 GET /api/users?page=2&limit=10
+```
+
+### Error Responses
+
+All error responses follow this format:
+
+```json
+{
+  "error": "Error message description",
+  "details": {} // Optional additional error details
+}
+```
+
+### Request Headers
+
+Common headers required for API requests:
+
+```
+Content-Type: application/json
+Authorization: Bearer <token>  // For protected routes
+```
+
+### Response Format
+
+Successful responses typically follow this format:
+
+```json
+{
+  "data": {}, // Response data
+  "message": "", // Optional success message
+  "metadata": {} // Optional metadata (pagination, etc.)
+}
 ```

@@ -38,6 +38,8 @@ npm run dev
 - `npm start`: Start the production server
 - `npm run lint`: Run ESLint
 - `npm test`: Run tests
+- `npm run test:watch`: Run tests in watch mode
+- `npm run test:coverage`: Generate test coverage report
 
 ## Project Structure
 
@@ -51,15 +53,11 @@ src/
 └── index.ts        # App entry point
 ```
 
-## API Endpoints
+## Documentation
 
-### Users
+### API Documentation
 
-- POST /api/users - Create a new user
-- GET /api/users - Get all users
-- GET /api/users/:id - Get user by ID
-- PUT /api/users/:id - Update user
-- DELETE /api/users/:id - Delete user
+[API Documentation](./docs/README.md)
 
 ## License
 
