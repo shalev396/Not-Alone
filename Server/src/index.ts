@@ -1,3 +1,5 @@
+//imports
+//node modules
 import express, { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -5,54 +7,76 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import path from "path";
 import helmet from "helmet";
+import { createServer, Server } from "http";
+import { fileURLToPath } from "url";
+//routes
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
 import cityRoutes from "./routes/cityRoutes";
 import requestRoutes from "./routes/requestRoutes";
 import donationRoutes from "./routes/donationRoutes";
-import { validateEnv } from "./utils/validateEnv";
-import { Server } from "http";
 import businessRoutes from "./routes/businessRoutes";
 import discountRoutes from "./routes/discountRoutes";
 import profileRoutes from "./routes/profileRoutes";
 import eatupRoutes from "./routes/eatupRoutes";
 import postRoutes from "./routes/postRoutes";
 import commentRoutes from "./routes/commentRoutes";
+//sockets
+import SocketService from "./services/socketService";
+//utils
+import { validateEnv } from "./utils/validateEnv";
 
 // Load and validate environment variables
 dotenv.config();
 validateEnv();
-
-// Create Express app instance
+//server setup
+const PORT = process.env.PORT || 5000;
 const app = express();
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+const httpServer = createServer(app);
+const socketService = new SocketService(httpServer);
 let server: Server | null = null;
 
 // Security middleware
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["*", "data:"],
+      },
+    },
+  })
+);
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "*",
+    origin: [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "https://not-alone.onrender.com",
+      "http://localhost:5000",
+      "http://shalevpc.servehttp.com:5173",
+      "http://localhost:5174",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
-
-// Logging and parsing middleware
-app.use(morgan("dev"));
-app.use(express.json({ limit: "10kb" }));
-app.use(express.urlencoded({ extended: true, limit: "10kb" }));
-
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, "../public")));
-
-// Security headers middleware
 app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-XSS-Protection", "1; mode=block");
   next();
 });
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+// Logging middleware
+app.use(morgan("dev"));
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, "../public")));
 
 // API routes
 app.use("/api/auth", authRoutes);
@@ -66,6 +90,9 @@ app.use("/api/profiles", profileRoutes);
 app.use("/api/eatups", eatupRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/index.html"));
+});
 
 // Global error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
@@ -85,7 +112,7 @@ export const connectDB = async (retries = 5): Promise<void> => {
   const uri =
     process.env.NODE_ENV === "test"
       ? process.env.MONGODB_URI_TEST
-      : process.env.MONGODB_URI;
+      : process.env.MONGO_URI;
 
   if (!uri) {
     throw new Error("MongoDB URI environment variable is required");
@@ -124,20 +151,32 @@ export const closeServer = async (): Promise<void> => {
   }
 };
 
-// Only start server if this file is run directly (not in tests)
+// This block only executes when the file is run directly (not imported as a module)
+// This prevents the server from starting during test runs where we import the app
 if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
+  // Get port from environment variable or default to 3000
+  const PORT = process.env.PORT || 5000;
+
+  // Connect to MongoDB first before starting Express server
   connectDB()
     .then(() => {
+      // Start Express server and store reference for cleanup
       server = app.listen(PORT, () => {
         console.log(`Server is running on port http://localhost:${PORT}`);
       });
 
-      // Graceful shutdown
+      // Set up graceful shutdown handler for SIGTERM signal
+      // SIGTERM is commonly sent by container orchestrators (e.g. Kubernetes)
+      // to request graceful termination
       process.on("SIGTERM", () => {
         console.log("SIGTERM received. Shutting down gracefully...");
+
+        // Close Express server first to stop accepting new connections
         closeServer().then(() => {
           console.log("Server closed. Exiting process...");
+
+          // Then close MongoDB connection (false = no force close)
+          // Finally exit process with success code
           mongoose.connection.close(false).then(() => {
             process.exit(0);
           });
@@ -145,6 +184,7 @@ if (require.main === module) {
       });
     })
     .catch((error) => {
+      // Log any startup errors and exit with failure code
       console.error("Failed to start server:", error);
       process.exit(1);
     });
