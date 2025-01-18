@@ -33,6 +33,8 @@ import { clearRequests, setRequestsArray } from "./requestHelper";
 import { RequestModel } from "../src/models/requestModel";
 import { clearProfile, setProfileArray } from "./profileHelper";
 import { ProfileModel } from "../src/models/profileModel";
+import { setPostsArray, clearPosts } from "./postsHelper";
+import { PostModel } from "../src/models/postModel";
 
 const testUsers = [
   {
@@ -127,6 +129,7 @@ const setupTestUsers = async () => {
     clearEatup();
     clearRequests();
     clearProfile();
+    clearPosts();
     await UserModel.deleteMany({});
     await CityModel.deleteMany({});
     await BusinessModel.deleteMany({});
@@ -135,6 +138,7 @@ const setupTestUsers = async () => {
     await EatupModel.deleteMany({});
     await RequestModel.deleteMany({});
     await ProfileModel.deleteMany({});
+    await PostModel.deleteMany({});
 
     // Create users array for userHelper
     const usersForJson = testUsers.map((user) => ({
@@ -423,6 +427,33 @@ const setupTestUsers = async () => {
       updatedAt: new Date(),
     };
     setRequestsArray([requestToSave]);
+
+    // Create a test post using the same soldier user
+    const postData = {
+      content: "Test post content from soldier",
+      media: ["http://example.com/image.jpg"],
+    };
+
+    const createPostResponse: any = await request(app)
+      .post("/api/posts")
+      .set("Authorization", `Bearer ${soldierUser.token}`)
+      .send(postData);
+
+    if (createPostResponse.status !== 201) {
+      console.error("Post creation failed:", createPostResponse.body);
+      throw new Error("Failed to create test post");
+    }
+
+    // Store post in posts.json
+    const postToSave = {
+      ...createPostResponse.body,
+      authorId: soldierUser.id,
+      likes: [],
+      comments: [],
+      createdAt: new Date(),
+    };
+    setPostsArray([postToSave]);
+    console.log("Test post created and saved");
 
     // Create and save test profile
     const userForProfile = users[0]; // Using first user for profile

@@ -21,10 +21,12 @@ import {
   eatUpRoutes,
   requestRoutes,
   profileRoutes,
+  postRoutes,
 } from "./routes";
 import { getEatupArray } from "./eatupHelper";
 import { getRequestsArray } from "./requestHelper";
 import { getProfileArray } from "./profileHelper";
+import { getPostsArray } from "./postsHelper";
 
 // Increase timeout for all tests in this file
 jest.setTimeout(30000);
@@ -40,6 +42,7 @@ describe("Route Access Tests", () => {
     ...eatUpRoutes,
     ...requestRoutes,
     ...profileRoutes,
+    ...postRoutes,
   ];
   let users: users[];
 
@@ -271,6 +274,16 @@ describe("Route Access Tests", () => {
               path = path.split(":userId").join(profileUserId);
             }
 
+            // Handle post routes
+            if (path.includes("/api/posts/")) {
+              const posts = getPostsArray();
+              if (posts.length === 0) {
+                throw new Error("No test post found");
+              }
+              const postId = posts[0]._id;
+              path = path.split("/:postId").join(`/${postId}`);
+            }
+
             // Prepare request
             const method = route.method.toLowerCase() as
               | "get"
@@ -353,6 +366,16 @@ describe("Route Access Tests", () => {
                   const paramPattern = `:${route.params}`;
                   path = path.split(paramPattern).join(targetUser.id);
                 }
+              }
+
+              // Handle post routes
+              if (path.includes("/api/posts/")) {
+                const posts = getPostsArray();
+                if (posts.length === 0) {
+                  throw new Error("No test post found");
+                }
+                const postId = posts[0]._id;
+                path = path.split("/:postId").join(`/${postId}`);
               }
 
               // Prepare request

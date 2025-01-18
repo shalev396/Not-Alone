@@ -785,3 +785,76 @@ export const profileRoutes: route[] = [
     },
   },
 ];
+
+export const postRoutes: route[] = [
+  // Create post
+  {
+    path: "/api/posts",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier", "Municipality", "Organization"],
+    body: {
+      content: "Test post content",
+      media: ["http://example.com/image.jpg"],
+    },
+  },
+
+  // Get all posts
+  {
+    path: "/api/posts",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier", "Municipality", "Organization"],
+  },
+
+  // Get post by ID
+  {
+    path: "/api/posts/:postId",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier", "Municipality", "Organization"],
+    params: "postId",
+  },
+
+  // Get posts by user ID
+  {
+    path: "/api/posts/user/:userId",
+    method: "GET",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier", "Municipality", "Organization"],
+    params: "userId",
+  },
+
+  // Toggle like on post
+  {
+    path: "/api/posts/:postId/like",
+    method: "POST",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier", "Municipality", "Organization"],
+    params: "postId",
+  },
+
+  // Update post
+  {
+    path: "/api/posts/:postId",
+    method: "PUT",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier", "Municipality", "Organization"],
+    params: "postId",
+    body: {
+      content: "Updated post content",
+      media: ["http://example.com/new-image.jpg"],
+    },
+  },
+
+  // Delete post
+  {
+    path: "/api/posts/:postId",
+    method: "DELETE",
+    auth: true,
+    allowedTypes: ["Admin", "Soldier", "Municipality", "Organization"],
+    params: "postId",
+  },
+];
+
+export const commentRoutes: route[] = [];
