@@ -17,14 +17,14 @@ export type eatup = {
 };
 
 export const getEatupArray = () => {
-  const donations = fs.readFileSync("eatup.json", "utf8");
+  const donations = fs.readFileSync("tests/eatup.json", "utf8");
   return JSON.parse(donations);
 };
 export const setEatupArray = (donations: eatup[]) => {
-  fs.writeFileSync("eatup.json", JSON.stringify(donations));
+  fs.writeFileSync("tests/eatup.json", JSON.stringify(donations));
   console.log("saved");
 };
 export const clearEatup = () => {
-  fs.writeFileSync("eatup.json", "[]");
+  fs.writeFileSync("tests/eatup.json", "[]");
   console.log("cleared");
 };

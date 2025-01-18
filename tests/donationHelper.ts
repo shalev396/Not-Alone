@@ -15,14 +15,14 @@ export type donation = {
 };
 
 export const getDonationsArray = () => {
-  const donations = fs.readFileSync("donations.json", "utf8");
+  const donations = fs.readFileSync("tests/donations.json", "utf8");
   return JSON.parse(donations);
 };
 export const setDonationsArray = (donations: donation[]) => {
-  fs.writeFileSync("donations.json", JSON.stringify(donations));
+  fs.writeFileSync("tests/donations.json", JSON.stringify(donations));
   console.log("saved");
 };
 export const clearDonations = () => {
-  fs.writeFileSync("donations.json", "[]");
+  fs.writeFileSync("tests/donations.json", "[]");
   console.log("cleared");
 };

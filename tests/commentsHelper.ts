@@ -11,16 +11,16 @@ export type comment = {
 };
 
 export const getCommentsArray = () => {
-  const comments = fs.readFileSync("comments.json", "utf8");
+  const comments = fs.readFileSync("tests/comments.json", "utf8");
   return JSON.parse(comments);
 };
 
 export const setCommentsArray = (comments: comment[]) => {
-  fs.writeFileSync("comments.json", JSON.stringify(comments));
+  fs.writeFileSync("tests/comments.json", JSON.stringify(comments));
   console.log("saved");
 };
 
 export const clearComments = () => {
-  fs.writeFileSync("comments.json", "[]");
+  fs.writeFileSync("tests/comments.json", "[]");
   console.log("cleared");
 };

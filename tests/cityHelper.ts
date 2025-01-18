@@ -19,14 +19,14 @@ export type city = {
 };
 
 export const getCitiesArray = () => {
-  const cities = fs.readFileSync("cities.json", "utf8");
+  const cities = fs.readFileSync("tests/cities.json", "utf8");
   return JSON.parse(cities);
 };
 export const setCitiesArray = (cities: city[]) => {
-  fs.writeFileSync("cities.json", JSON.stringify(cities));
+  fs.writeFileSync("tests/cities.json", JSON.stringify(cities));
   console.log("saved");
 };
 export const clearCities = () => {
-  fs.writeFileSync("cities.json", "[]");
+  fs.writeFileSync("tests/cities.json", "[]");
   console.log("cleared");
 };

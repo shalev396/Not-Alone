@@ -9,14 +9,14 @@ export type discount = {
 };
 
 export const getDiscountsArray = () => {
-  const discounts = fs.readFileSync("discounts.json", "utf8");
+  const discounts = fs.readFileSync("tests/discounts.json", "utf8");
   return JSON.parse(discounts);
 };
 export const setDiscountsArray = (discounts: discount[]) => {
-  fs.writeFileSync("discounts.json", JSON.stringify(discounts));
+  fs.writeFileSync("tests/discounts.json", JSON.stringify(discounts));
   console.log("saved");
 };
 export const clearDiscounts = () => {
-  fs.writeFileSync("discounts.json", "[]");
+  fs.writeFileSync("tests/discounts.json", "[]");
   console.log("cleared");
 };

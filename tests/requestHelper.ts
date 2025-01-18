@@ -18,14 +18,14 @@ export type request = {
 };
 
 export const getRequestsArray = () => {
-  const requests = fs.readFileSync("requests.json", "utf8");
+  const requests = fs.readFileSync("tests/requests.json", "utf8");
   return JSON.parse(requests);
 };
 export const setRequestsArray = (requests: request[]) => {
-  fs.writeFileSync("requests.json", JSON.stringify(requests));
+  fs.writeFileSync("tests/requests.json", JSON.stringify(requests));
   console.log("saved");
 };
 export const clearRequests = () => {
-  fs.writeFileSync("requests.json", "[]");
+  fs.writeFileSync("tests/requests.json", "[]");
   console.log("cleared");
 };

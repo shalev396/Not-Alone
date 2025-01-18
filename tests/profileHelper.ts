@@ -11,14 +11,14 @@ export type profile = {
 };
 
 export const getProfileArray = () => {
-  const donations = fs.readFileSync("profiles.json", "utf8");
+  const donations = fs.readFileSync("tests/profiles.json", "utf8");
   return JSON.parse(donations);
 };
 export const setProfileArray = (profiles: profile[]) => {
-  fs.writeFileSync("profiles.json", JSON.stringify(profiles));
+  fs.writeFileSync("tests/profiles.json", JSON.stringify(profiles));
   console.log("saved");
 };
 export const clearProfile = () => {
-  fs.writeFileSync("profiles.json", "[]");
+  fs.writeFileSync("tests/profiles.json", "[]");
   console.log("cleared");
 };

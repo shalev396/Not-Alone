@@ -10,14 +10,14 @@ export type post = {
 };
 
 export const getPostsArray = () => {
-  const posts = fs.readFileSync("posts.json", "utf8");
+  const posts = fs.readFileSync("tests/posts.json", "utf8");
   return JSON.parse(posts);
 };
 export const setPostsArray = (posts: post[]) => {
-  fs.writeFileSync("posts.json", JSON.stringify(posts));
+  fs.writeFileSync("tests/posts.json", JSON.stringify(posts));
   console.log("saved");
 };
 export const clearPosts = () => {
-  fs.writeFileSync("posts.json", "[]");
+  fs.writeFileSync("tests/posts.json", "[]");
   console.log("cleared");
 };

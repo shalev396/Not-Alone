@@ -14,14 +14,14 @@ export type business = {
 };
 
 export const getBusinessesArray = () => {
-  const businesses = fs.readFileSync("businesses.json", "utf8");
+  const businesses = fs.readFileSync("tests/businesses.json", "utf8");
   return JSON.parse(businesses);
 };
 export const setBusinessesArray = (businesses: business[]) => {
-  fs.writeFileSync("businesses.json", JSON.stringify(businesses));
+  fs.writeFileSync("tests/businesses.json", JSON.stringify(businesses));
   console.log("saved");
 };
 export const clearBusinesses = () => {
-  fs.writeFileSync("businesses.json", "[]");
+  fs.writeFileSync("tests/businesses.json", "[]");
   console.log("cleared");
 };

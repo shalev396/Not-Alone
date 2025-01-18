@@ -17,14 +17,14 @@ export type users = {
 };
 
 export const getUsersArray = () => {
-  const users = fs.readFileSync("users.json", "utf8");
+  const users = fs.readFileSync("tests/users.json", "utf8");
   return JSON.parse(users);
 };
 export const setUsersArray = (users: users[]) => {
-  fs.writeFileSync("users.json", JSON.stringify(users));
+  fs.writeFileSync("tests/users.json", JSON.stringify(users));
   console.log("saved");
 };
 export const clearUsers = () => {
-  fs.writeFileSync("users.json", "[]");
+  fs.writeFileSync("tests/users.json", "[]");
   console.log("cleared");
 };
