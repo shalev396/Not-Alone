@@ -17,6 +17,7 @@ import discountRoutes from "./routes/discountRoutes";
 import profileRoutes from "./routes/profileRoutes";
 import eatupRoutes from "./routes/eatupRoutes";
 import postRoutes from "./routes/postRoutes";
+import commentRoutes from "./routes/commentRoutes";
 
 // Load and validate environment variables
 dotenv.config();
@@ -64,6 +65,7 @@ app.use("/api/discounts", discountRoutes);
 app.use("/api/profiles", profileRoutes);
 app.use("/api/eatups", eatupRoutes);
 app.use("/api/posts", postRoutes);
+app.use("/api/comments", commentRoutes);
 
 // Global error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
