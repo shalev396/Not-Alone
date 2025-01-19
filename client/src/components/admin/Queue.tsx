@@ -38,61 +38,94 @@ interface SignupRequest {
   _id: string;
   firstName: string;
   lastName: string;
+  passport: string;
   email: string;
   phone: string;
-  type: string;
-  progress: "submitted" | "under review" | "waiting kyc" | "completed";
+  type:
+    | "Soldier"
+    | "Municipality"
+    | "Donor"
+    | "Organization"
+    | "Business"
+    | "Admin";
+  approvalStatus: "pending" | "approved" | "denied";
+  approvalDate?: Date;
+  denialReason?: string;
   createdAt: string;
   updatedAt: string;
-  isKYC: boolean;
-  media: string[];
-  approved: "in queue" | "approved" | "deny";
-  reason?: string;
 }
 
 const fetchSignupRequests = async () => {
-  const response = await api.get("/signup-requests");
-  return response.data;
+  const response = await api.get("/users/pending");
+  return response.data.users || [];
 };
 
 const QueueSkeleton = () => (
-  <>
-    {Array.from({ length: 5 }).map((_, i) => (
-      <TableRow key={i}>
-        <TableCell>
-          <div className="flex gap-2">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-20" />
-          </div>
-        </TableCell>
-        <TableCell>
-          <Skeleton className="h-4 w-32" />
-        </TableCell>
-        <TableCell>
-          <Skeleton className="h-4 w-16" />
-        </TableCell>
-        <TableCell>
-          <Skeleton className="h-6 w-24 rounded-full" />
-        </TableCell>
-        <TableCell>
-          <Skeleton className="h-6 w-24 rounded-full" />
-        </TableCell>
-        <TableCell>
-          <Skeleton className="h-6 w-16 rounded-full" />
-        </TableCell>
-        <TableCell>
-          <Skeleton className="h-4 w-24" />
-        </TableCell>
-        <TableCell>
-          <Skeleton className="h-4 w-24" />
-        </TableCell>
-        <TableCell>
-          <Skeleton className="h-9 w-[100px]" />
-        </TableCell>
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead>Name</TableHead>
+        <TableHead>Email</TableHead>
+        <TableHead>Type</TableHead>
+        <TableHead>Status</TableHead>
+        <TableHead>Passport</TableHead>
+        <TableHead>Phone</TableHead>
+        <TableHead>Submitted</TableHead>
+        <TableHead>Updated</TableHead>
+        <TableHead>Action</TableHead>
       </TableRow>
-    ))}
-  </>
+    </TableHeader>
+    <TableBody>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <div className="flex gap-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-16" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-9 w-[100px]" />
+          </TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
 );
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "approved":
+      return "bg-green-500";
+    case "denied":
+      return "bg-red-500";
+    case "pending":
+      return "bg-yellow-500";
+    default:
+      return "bg-gray-500";
+  }
+};
 
 export default function AdminQueue() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -109,7 +142,6 @@ export default function AdminQueue() {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"createdAt" | "updatedAt">("createdAt");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const {
     data: requests = [],
@@ -124,10 +156,7 @@ export default function AdminQueue() {
 
   const acceptMutation = useMutation({
     mutationFn: async (id: string) => {
-      await api.put(`/signup-requests/${id}/status`, {
-        progress: "completed",
-        approved: "approved",
-      });
+      await api.post(`/users/approve/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["signupRequests"] });
@@ -136,11 +165,8 @@ export default function AdminQueue() {
   });
 
   const denyMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await api.put(`/signup-requests/${id}/status`, {
-        approved: "deny",
-        reason: window.prompt("Please provide a reason for denial:"),
-      });
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      await api.post(`/users/deny/${id}`, { reason });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["signupRequests"] });
@@ -153,44 +179,18 @@ export default function AdminQueue() {
   };
 
   const handleDeny = (id: string) => {
-    denyMutation.mutate(id);
-  };
-
-  const getProgressColor = (progress: string) => {
-    switch (progress) {
-      case "submitted":
-        return "bg-blue-500";
-      case "under review":
-        return "bg-yellow-500";
-      case "waiting kyc":
-        return "bg-purple-500";
-      case "completed":
-        return "bg-green-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const getApprovalColor = (approved: string) => {
-    switch (approved) {
-      case "approved":
-        return "bg-green-500";
-      case "deny":
-        return "bg-red-500";
-      case "in queue":
-        return "bg-yellow-500";
-      default:
-        return "bg-gray-500";
+    const reason = window.prompt("Please provide a reason for denial:");
+    if (reason) {
+      denyMutation.mutate({ id, reason });
     }
   };
 
   const filteredAndSortedRequests = requests
     .filter(
       (request: SignupRequest) =>
-        (request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          request.email.toLowerCase().includes(searchQuery.toLowerCase())) &&
-        (statusFilter === "all" || request.progress === statusFilter)
+        request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.email.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort(
       (a: SignupRequest, b: SignupRequest) =>
@@ -202,7 +202,7 @@ export default function AdminQueue() {
       <>
         <Navbar modes={"admin"} />
         <div className="container mx-auto py-10">
-          <h1 className="text-2xl font-bold mb-6">Signup Requests Queue</h1>
+          <h1 className="text-2xl font-bold mb-6">Pending Users Queue</h1>
           <QueueSkeleton />
         </div>
       </>
@@ -213,7 +213,7 @@ export default function AdminQueue() {
     <>
       <Navbar modes={"admin"} />
       <div className="container mx-auto py-10">
-        <h1 className="text-2xl font-bold mb-6">Signup Requests Queue</h1>
+        <h1 className="text-2xl font-bold mb-6">Pending Users Queue</h1>
         {error && <div className="text-red-500 mb-4">{error.message}</div>}
 
         <div className="flex flex-col gap-4 mb-6">
@@ -238,18 +238,6 @@ export default function AdminQueue() {
                 <SelectItem value="updatedAt">Last Updated</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="submitted">Submitted</SelectItem>
-                <SelectItem value="under review">Under Review</SelectItem>
-                <SelectItem value="waiting kyc">Waiting KYC</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
@@ -265,8 +253,8 @@ export default function AdminQueue() {
                   <span>
                     {request.firstName} {request.lastName}
                   </span>
-                  <Badge className={getProgressColor(request.progress)}>
-                    {request.progress}
+                  <Badge className={getStatusColor(request.approvalStatus)}>
+                    {request.approvalStatus}
                   </Badge>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -278,9 +266,9 @@ export default function AdminQueue() {
                       <strong>Type:</strong> {request.type}
                     </p>
                     <p>
-                      <strong>Approval:</strong>{" "}
-                      <Badge className={getApprovalColor(request.approved)}>
-                        {request.approved}
+                      <strong>Status:</strong>{" "}
+                      <Badge className={getStatusColor(request.approvalStatus)}>
+                        {request.approvalStatus}
                       </Badge>
                     </p>
                     <Button
@@ -302,8 +290,8 @@ export default function AdminQueue() {
                 <TableHead>Email</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Approval</TableHead>
-                <TableHead>KYC</TableHead>
+                <TableHead>Passport</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>Submitted</TableHead>
                 <TableHead>Updated</TableHead>
                 <TableHead>Action</TableHead>
@@ -318,20 +306,12 @@ export default function AdminQueue() {
                   <TableCell>{request.email}</TableCell>
                   <TableCell>{request.type}</TableCell>
                   <TableCell>
-                    <Badge className={getProgressColor(request.progress)}>
-                      {request.progress}
+                    <Badge className={getStatusColor(request.approvalStatus)}>
+                      {request.approvalStatus}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <Badge className={getApprovalColor(request.approved)}>
-                      {request.approved}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={request.isKYC ? "default" : "secondary"}>
-                      {request.isKYC ? "Verified" : "Pending"}
-                    </Badge>
-                  </TableCell>
+                  <TableCell>{request.passport}</TableCell>
+                  <TableCell>{request.phone}</TableCell>
                   <TableCell>
                     {new Date(request.createdAt).toLocaleDateString()}
                   </TableCell>
@@ -359,7 +339,7 @@ export default function AdminQueue() {
       >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Signup Request Details</DialogTitle>
+            <DialogTitle>User Details</DialogTitle>
           </DialogHeader>
           {selectedRequest && (
             <div className="space-y-4">
@@ -374,21 +354,24 @@ export default function AdminQueue() {
                 <strong>Type:</strong> {selectedRequest.type}
               </p>
               <p>
+                <strong>Passport:</strong> {selectedRequest.passport}
+              </p>
+              <p>
+                <strong>Phone:</strong> {selectedRequest.phone}
+              </p>
+              <p>
                 <strong>Status:</strong>{" "}
-                <Badge className={getProgressColor(selectedRequest.progress)}>
-                  {selectedRequest.progress}
+                <Badge
+                  className={getStatusColor(selectedRequest.approvalStatus)}
+                >
+                  {selectedRequest.approvalStatus}
                 </Badge>
               </p>
-              <p>
-                <strong>Approval:</strong>{" "}
-                <Badge className={getApprovalColor(selectedRequest.approved)}>
-                  {selectedRequest.approved}
-                </Badge>
-              </p>
-              <p>
-                <strong>KYC:</strong>{" "}
-                {selectedRequest.isKYC ? "Verified" : "Pending"}
-              </p>
+              {selectedRequest.denialReason && (
+                <p>
+                  <strong>Denial Reason:</strong> {selectedRequest.denialReason}
+                </p>
+              )}
               <p>
                 <strong>Submitted On:</strong>{" "}
                 {new Date(selectedRequest.createdAt).toLocaleDateString()}
@@ -397,19 +380,23 @@ export default function AdminQueue() {
                 <strong>Last Updated:</strong>{" "}
                 {new Date(selectedRequest.updatedAt).toLocaleDateString()}
               </p>
-              <Button
-                onClick={() => handleAccept(selectedRequest._id)}
-                className="w-full"
-              >
-                Approve
-              </Button>
-              <Button
-                onClick={() => handleDeny(selectedRequest._id)}
-                variant="destructive"
-                className="w-full"
-              >
-                Deny
-              </Button>
+              {selectedRequest.approvalStatus === "pending" && (
+                <>
+                  <Button
+                    onClick={() => handleAccept(selectedRequest._id)}
+                    className="w-full"
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    onClick={() => handleDeny(selectedRequest._id)}
+                    variant="destructive"
+                    className="w-full"
+                  >
+                    Deny
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </DialogContent>

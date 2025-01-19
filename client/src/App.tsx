@@ -4,7 +4,7 @@ import Profile from "./pages/Profile";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
-import NewPost from "./pages/NewPost";
+import NewPost from "./pages/NewEatup";
 import SignUp from "./pages/Signup";
 import Tos from "./pages/Tos";
 import YourRights from "./pages/YourRights";

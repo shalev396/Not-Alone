@@ -21,7 +21,7 @@ const eatupSchema = new Schema<IEatup>(
     city: {
       type: Schema.Types.ObjectId,
       ref: "City",
-      required: [true, "City is required"],
+      required: false,
       index: true,
     },
     title: {

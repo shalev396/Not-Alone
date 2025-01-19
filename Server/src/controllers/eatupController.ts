@@ -233,10 +233,12 @@ export const createEatup = async (req: Request, res: Response) => {
       authorId: userInfo.userId,
     };
 
-    // Validate city exists
-    const city = await CityModel.findById(eatupData.city);
-    if (!city) {
-      return res.status(400).json({ message: "City not found" });
+    // Only validate city if it's provided
+    if (eatupData.city) {
+      const city = await CityModel.findById(eatupData.city);
+      if (!city) {
+        return res.status(400).json({ message: "City not found" });
+      }
     }
 
     const eatup = await EatupModel.create(eatupData);

@@ -16,59 +16,106 @@ import {
 } from "@/components/ui/select";
 import { FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/shared/Navbar";
 
-// Import constants
-const zones = ["North", "Center", "South"] as const;
-const EatUpsHosting = ["Family", "Organization"] as const;
+// Constants
+const hostingTypes = ["organization", "donators", "city"] as const;
+const languages = [
+  "Hebrew",
+  "English",
+  "Arabic",
+  "Russian",
+  "Amharic",
+] as const;
+
+// Define city type to match backend response
+interface City {
+  _id: string;
+  name: string;
+  zone: string;
+  bio?: string;
+  media?: string[];
+  approvalStatus: string;
+}
+
+// Fetch cities query
+const fetchCities = async () => {
+  try {
+    const response = await api.get("/cities");
+    console.log("Cities response:", response.data); // For debugging
+    return response.data as City[];
+  } catch (error) {
+    console.error("Error fetching cities:", error);
+    return [];
+  }
+};
 
 // Zod schema for form validation
 const eatupSchema = z.object({
-  location: z.string().min(1, "Location is required"),
-  zone: z.enum(zones, {
-    required_error: "Please select a zone",
-  }),
-  date: z.string().min(1, "Date and time are required"),
+  city: z.string().nullable(),
+  title: z
+    .string()
+    .min(3, "Title must be at least 3 characters")
+    .max(100, "Title cannot exceed 100 characters"),
+  media: z.array(z.string()).max(10, "Cannot exceed 10 media items"),
+  date: z
+    .string()
+    .min(1, "Date and time are required")
+    .refine(
+      (date) => new Date(date) > new Date(),
+      "Date must be in the future"
+    ),
   kosher: z.boolean(),
-  hosting: z.enum(EatUpsHosting, {
+  description: z
+    .string()
+    .min(10, "Description must be at least 10 characters")
+    .max(1000, "Description cannot exceed 1000 characters"),
+  languages: z
+    .array(z.enum(languages))
+    .min(1, "At least one language is required")
+    .max(5, "Cannot exceed 5 languages"),
+  hosting: z.enum(hostingTypes, {
     required_error: "Please select a hosting type",
   }),
-  description: z.string().min(1, "Description is required"),
-  image: z.string().min(1, "Image is required"),
   limit: z
-    .string()
-    .transform((val) => (val ? parseInt(val) : undefined))
-    .optional(),
+    .number()
+    .min(2, "Minimum 2 guests required")
+    .max(100, "Cannot exceed 100 guests"),
 });
 
 type FormData = {
-  location: string;
-  zone: string;
-  description: string;
-  image: string;
+  city: string | null;
+  title: string;
+  media: string[];
   date: string;
   kosher: boolean;
+  description: string;
+  languages: string[];
   hosting: string;
-  limit: string;
+  limit: number;
 };
 
 type FormErrors = Partial<Record<keyof FormData, string>>;
 
-export default function NewPost() {
+export default function NewEatup() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { data: cities = [], isLoading: isLoadingCities } = useQuery<City[]>({
+    queryKey: ["cities"],
+    queryFn: fetchCities,
+  });
 
   // Form fields
   const [formData, setFormData] = useState<FormData>({
-    location: "",
-    zone: "",
-    description: "",
-    image: "",
+    city: null,
+    title: "",
+    media: [],
     date: "",
     kosher: false,
+    description: "",
+    languages: ["Hebrew"],
     hosting: "",
-    limit: "",
+    limit: 2,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -94,30 +141,21 @@ export default function NewPost() {
     }
   };
 
-  const handleCreatePost = async () => {
+  const handleCreateEatup = async () => {
     setServerError(null);
     if (!validateForm()) return;
 
     setLoading(true);
     try {
-      const postData = {
+      const eatupData = {
         ...formData,
         date: new Date(formData.date).toISOString(),
-        media: [formData.image],
         authorId: sessionStorage.getItem("id"),
-        title: formData.description,
-        owner: sessionStorage.getItem("id"),
-        language: "Hebrew",
-        limit: formData.limit ? parseInt(formData.limit) : undefined,
+        city: formData.city || undefined,
       };
 
-      const eatupResponse = await api.post("/eatups", postData);
-
-      // Invalidate and refetch channels
-      queryClient.invalidateQueries({ queryKey: ["channels"] });
-
-      // Navigate to the new channel
-      navigate(`/channel/${eatupResponse.data.data.channel._id}`);
+      await api.post("/eatups", eatupData);
+      navigate("/my-eatups");
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.error ||
@@ -143,42 +181,55 @@ export default function NewPost() {
 
             <div className="space-y-4">
               <FormItem>
-                <FormLabel>Location *</FormLabel>
-                <Input
-                  placeholder="Enter location"
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  className={errors.location ? "border-red-500" : ""}
-                />
-                {errors.location && (
-                  <FormMessage>{errors.location}</FormMessage>
-                )}
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Zone *</FormLabel>
+                <FormLabel>City</FormLabel>
                 <Select
-                  value={formData.zone}
+                  value={formData.city || "none"}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, zone: value })
+                    setFormData({
+                      ...formData,
+                      city: value === "none" ? null : value,
+                    })
                   }
                 >
                   <SelectTrigger
-                    className={errors.zone ? "border-red-500" : ""}
+                    className={errors.city ? "border-red-500" : ""}
                   >
-                    <SelectValue placeholder="Select zone" />
+                    <SelectValue placeholder="Select city (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {zones.map((zone) => (
-                      <SelectItem key={zone} value={zone}>
-                        {zone}
+                    <SelectItem value="none">None of these</SelectItem>
+                    {cities && cities.length > 0 ? (
+                      cities.map((city) => (
+                        <SelectItem key={city._id} value={city._id}>
+                          {city.name} (
+                          {city.zone.charAt(0).toUpperCase() +
+                            city.zone.slice(1)}
+                          )
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-cities" disabled>
+                        {isLoadingCities
+                          ? "Loading cities..."
+                          : "No approved cities available"}
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
-                {errors.zone && <FormMessage>{errors.zone}</FormMessage>}
+                {errors.city && <FormMessage>{errors.city}</FormMessage>}
+              </FormItem>
+
+              <FormItem>
+                <FormLabel>Title *</FormLabel>
+                <Input
+                  placeholder="Enter title"
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
+                  className={errors.title ? "border-red-500" : ""}
+                />
+                {errors.title && <FormMessage>{errors.title}</FormMessage>}
               </FormItem>
 
               <FormItem>
@@ -208,14 +259,40 @@ export default function NewPost() {
                     <SelectValue placeholder="Select hosting type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {EatUpsHosting.map((type) => (
+                    {hostingTypes.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {type}
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {errors.hosting && <FormMessage>{errors.hosting}</FormMessage>}
+              </FormItem>
+
+              <FormItem>
+                <FormLabel>Languages *</FormLabel>
+                <Select
+                  value={formData.languages[0]}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, languages: [value] })
+                  }
+                >
+                  <SelectTrigger
+                    className={errors.languages ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {languages.map((lang) => (
+                      <SelectItem key={lang} value={lang}>
+                        {lang}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.languages && (
+                  <FormMessage>{errors.languages}</FormMessage>
+                )}
               </FormItem>
 
               <FormItem>
@@ -237,14 +314,19 @@ export default function NewPost() {
               </FormItem>
 
               <FormItem>
-                <FormLabel>Guest Limit (Optional)</FormLabel>
+                <FormLabel>Guest Limit *</FormLabel>
                 <Input
                   type="number"
                   placeholder="Enter guest limit"
                   value={formData.limit}
                   onChange={(e) =>
-                    setFormData({ ...formData, limit: e.target.value })
+                    setFormData({
+                      ...formData,
+                      limit: parseInt(e.target.value) || 2,
+                    })
                   }
+                  min={2}
+                  max={100}
                 />
                 {errors.limit && <FormMessage>{errors.limit}</FormMessage>}
               </FormItem>
@@ -265,7 +347,7 @@ export default function NewPost() {
               </FormItem>
 
               <FormItem>
-                <FormLabel>Image *</FormLabel>
+                <FormLabel>Images</FormLabel>
                 <Input
                   type="file"
                   accept="image/*"
@@ -273,12 +355,20 @@ export default function NewPost() {
                     const file = e.target.files?.[0];
                     if (file) {
                       const imageUrl = await uploadImage(file);
-                      setFormData({ ...formData, image: imageUrl });
+                      setFormData({
+                        ...formData,
+                        media: [...formData.media, imageUrl],
+                      });
                     }
                   }}
-                  className={errors.image ? "border-red-500" : ""}
+                  className={errors.media ? "border-red-500" : ""}
                 />
-                {errors.image && <FormMessage>{errors.image}</FormMessage>}
+                {errors.media && <FormMessage>{errors.media}</FormMessage>}
+                {formData.media.length > 0 && (
+                  <div className="mt-2">
+                    <p>Uploaded images: {formData.media.length}</p>
+                  </div>
+                )}
               </FormItem>
 
               {serverError && (
@@ -289,7 +379,7 @@ export default function NewPost() {
               )}
 
               <Button
-                onClick={handleCreatePost}
+                onClick={handleCreateEatup}
                 className="w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90 transition-opacity"
                 disabled={loading}
               >

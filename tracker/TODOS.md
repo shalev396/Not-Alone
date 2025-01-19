@@ -2,7 +2,7 @@
 
 ## Pages
 
-1. AdminQueue.tsx
+1. AdminQueue.tsx[V]
 2. ChannelPage.tsx
 3. ContactUs.tsx [need fix]
 4. Contribute.tsx
@@ -12,7 +12,7 @@
 8. Login.tsx [V]
 9. Logout.tsx [V]
 10. MyEatUps.tsx
-11. NewPost.tsx
+11. NewEatup.tsx [V]
 12. PendingPage.tsx [V]
 13. Profile.tsx
 14. RequestForm.tsx
@@ -32,7 +32,8 @@ missing pages:
 5. city terminal.tsx (nathan is on it)
 6.
 
-### total pages: 8/20 + 5 missing
+### total pages: 10/20 + 5 missing
 
 ###complexity
-1.HomePage.tsx,ChannelPage.tsx,AdminQueue 2.
+1.HomePage.tsx,ChannelPage.tsx, 2.
+CreatePost / NewPost
