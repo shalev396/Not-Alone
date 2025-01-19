@@ -25,12 +25,13 @@ export const api = axios.create({
 
 // Add request interceptor to update token before each request
 api.interceptors.request.use((config) => {
-  const currentToken = sessionStorage.getItem("token");
-  if (currentToken) {
-    config.headers.Authorization = `Bearer ${currentToken}`;
+  const token = sessionStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
+
 
 api.interceptors.response.use(
   (response) => response,
@@ -57,3 +58,10 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+//nathan adding function to search user posts
+export const fetchUserPosts = async (userId: string) => {
+  const response = await api.get(`/posts/user/${userId}`);
+  return response.data || [];
+};
+

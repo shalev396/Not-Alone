@@ -23,28 +23,24 @@ export const createPost = async (req: Request, res: Response) => {
 
     const authorId = new mongoose.Types.ObjectId(userInfo.userId);
 
-    // Use aggregation pipeline for atomic creation and population
-    const [newPost] = await PostModel.create([
-      {
-        ...req.body,
-        authorId,
-        likes: [],
-      },
-    ]);
+    // Criação do post
+    const newPost = await PostModel.create({
+      ...req.body,
+      authorId,
+      likes: [],
+    });
 
-    const [populatedPost] = await PostModel.aggregate([
-      { $match: { _id: newPost._id } },
-      {
-        $lookup: {
-          from: "users",
-          localField: "authorId",
-          foreignField: "_id",
-          pipeline: [{ $project: { password: 0 } }],
-          as: "author",
-        },
-      },
-      { $unwind: "$author" },
-    ]);
+    // Popula os dados do autor no post criado
+    const populatedPost = await PostModel.findById(newPost._id)
+      .populate({
+        path: "author",
+        select: "firstName lastName profileImage nickname", // Campos que você deseja retornar do autor
+      })
+      .lean();
+
+    if (!populatedPost) {
+      return res.status(404).json({ message: "Post not found after creation" });
+    }
 
     return res.status(201).json(populatedPost);
   } catch (error) {
@@ -56,6 +52,7 @@ export const createPost = async (req: Request, res: Response) => {
         })),
       });
     }
+    console.error("Error creating post:", error);
     return res.status(500).json({ message: "Error creating post" });
   }
 };
@@ -71,11 +68,13 @@ export const getAllPosts = async (req: Request, res: Response) => {
     const sort = (req.query.sort as string) || "-createdAt";
     const authorId = req.query.authorId as string;
 
+    // Construindo o filtro (match)
     const match: mongoose.FilterQuery<typeof PostModel> = {};
     if (authorId) {
       match.authorId = new mongoose.Types.ObjectId(authorId);
     }
 
+    // Construindo o objeto de ordenação
     const sortObj = sort.split(",").reduce((acc: any, item) => {
       const [key, order] = item.startsWith("-")
         ? [item.slice(1), -1]
@@ -84,41 +83,43 @@ export const getAllPosts = async (req: Request, res: Response) => {
       return acc;
     }, {});
 
-    // Use a single aggregation pipeline
+    // Realizando a consulta com o aggregation pipeline
     const [result] = await PostModel.aggregate([
       {
         $facet: {
-          metadata: [{ $match: match }, { $count: "total" }],
+          metadata: [{ $match: match }, { $count: "total" }], // Metadados para contagem total
           posts: [
             { $match: match },
-            { $sort: sortObj },
-            { $skip: (page - 1) * limit },
-            { $limit: limit },
+            { $sort: sortObj }, // Ordenação
+            { $skip: (page - 1) * limit }, // Paginação
+            { $limit: limit }, // Limite de itens
             {
               $lookup: {
-                from: "users",
-                localField: "authorId",
-                foreignField: "_id",
-                pipeline: [{ $project: { password: 0 } }],
-                as: "author",
+                from: "users", // Nome da coleção de usuários
+                localField: "authorId", // Campo no Post
+                foreignField: "_id", // Campo no User
+                pipeline: [
+                  { $project: { password: 0, email: 0 } }, // Exclui campos sensíveis
+                ],
+                as: "author", // Nome do campo resultante
               },
             },
-            { $unwind: "$author" },
+            { $unwind: "$author" }, // Garante que cada post tenha apenas um `author`
           ],
         },
       },
       {
         $project: {
           posts: 1,
-          total: { $arrayElemAt: ["$metadata.total", 0] },
+          total: { $arrayElemAt: ["$metadata.total", 0] }, // Pega o total da contagem
         },
       },
     ]);
 
-    const total = result.total || 0;
+    const total = result?.total || 0;
 
     return res.json({
-      posts: result.posts,
+      posts: result?.posts || [],
       pagination: {
         page,
         limit,
@@ -127,7 +128,8 @@ export const getAllPosts = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ message: "Error fetching posts" });
+    console.error("Error fetching posts:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 

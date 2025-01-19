@@ -74,20 +74,28 @@ export const fetchResidences = async (): Promise<Residence[]> => {
     return [];
   }
 };
+
 export const fetchPosts = async (): Promise<posts[]> => {
   try {
     const res = await api.get("/posts");
-    console.log(res.data);
+    console.log("Posts fetched:", res.data);
 
-    if (Array.isArray(res.data)) {
-      return res.data;
+    if (Array.isArray(res.data.posts)) {
+      return res.data.posts.map((post: posts) => ({
+        ...post,
+        comments: post.comments || [],
+      }));
     }
-    return [];
+
+    return []; 
   } catch (error) {
     console.error("Error fetching posts:", error);
     return [];
   }
 };
+
+
+
 
 //Likes
 export const toggleLike = async (postId: string, userId: string) => {

@@ -3,6 +3,11 @@ import { fetchPosts, posts } from "@/tenstack/query";
 import { PostCard } from "@/components/social/PostCard";
 import { Post } from "@/components/social/PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import React from "react";
+
+interface PostFeedProps {
+  mode: string; 
+}
 
 export const PostSkeleton = () => {
   return (
@@ -18,23 +23,28 @@ export const PostSkeleton = () => {
   );
 };
 
-export function PostFeed() {
+export function PostFeed({ mode }: PostFeedProps) {
   const { data: postsData, isLoading: isPostsLoading } = useQuery({
     queryKey: ["posts"],
     queryFn: fetchPosts,
     staleTime: 1000 * 60 * 5,
   });
 
+
   if (isPostsLoading) {
     return <PostSkeleton />;
   }
 
-  if (!postsData || !Array.isArray(postsData)) {
-    return <div className="text-center py-4">No posts found</div>;
+  if (!postsData || postsData.length === 0) {
+    return <div className="text-center py-4">No post found</div>;
   }
+  
 
   return (
     <div className="space-y-4">
+      <h3 className="text-4xl font-bold mb-10 mt-20 ml-20">
+        Your <span className="text-green-500">Social</span>
+      </h3>
       {postsData.map((post: posts) => (
         <PostCard key={post._id} post={post as unknown as Post} />
       ))}

@@ -14,6 +14,7 @@ const initialState = {
     language: "",
     notifications: false,
   },
+  receiveNotifications: false, 
   nickname: "",
   bio: "",
   profileImage: "",

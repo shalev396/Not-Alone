@@ -37,6 +37,13 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
+    profileImage: { 
+      type: String,
+      default: "" },
+    nickname: {
+      type: String },
+    bio: {
+      type: String },
     passport: {
       type: String,
       required: true,

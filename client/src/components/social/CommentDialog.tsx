@@ -19,7 +19,7 @@ interface Comment {
     nickname: string;
     profileImage?: string;
   };
-  text: string;
+  content: string;
   image?: string;
   createdAt?: string;
 }
@@ -36,37 +36,28 @@ export function CommentDialog({
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [newCommentImage, setNewCommentImage] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null); // URL de pré-visualização
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { nickname, profileImage } = useSelector((state: any) => state.user);
-
+  // Fetch comments when dialog opens
   useEffect(() => {
-    const fetchCommentsWithDetails = async () => {
+    const fetchComments = async () => {
       try {
-        const detailedComments = await Promise.all(
-          post.comments.map(async (comment: any) => {
-            const userResponse = await api.get(`/users/${comment.user}`);
-            return {
-              ...comment,
-              user: {
-                nickname: userResponse.data.nickname,
-                profileImage: userResponse.data.profileImage,
-              },
-            };
-          })
-        );
-        setComments(detailedComments);
+        const response = await api.get(`/comments/post/${post._id}`); // Use novo endpoint
+        setComments(response.data.comments);
       } catch (error) {
-        console.error("Error fetching user details for comments:", error);
+        console.error("Error fetching comments:", error);
       }
     };
 
-    fetchCommentsWithDetails();
-  }, [post.comments]);
+    if (post._id) {
+      fetchComments();
+    }
+  }, [post._id]); // Dispara ao mudar o post
 
+  // Handle new comment addition
   const handleAddComment = async () => {
     setError(null);
 
@@ -87,25 +78,18 @@ export function CommentDialog({
       }
 
       const newCommentData = {
-        text: newComment,
+        content: newComment,
         image: imageUrl,
+        postId: post._id,
       };
+
       console.log("Sending comment data:", newCommentData);
 
-      // send comment to the backend
-      await api.post(`/posts/${post._id}/comment`, newCommentData);
+      // Enviar comentário para o backend
+      const response = await api.post(`/comments`, newCommentData);
 
-      // update list of comments
-      const newCommentWithDetails = {
-        ...newCommentData,
-        createdAt: new Date().toISOString(),
-        user: {
-          nickname,
-          profileImage,
-        },
-      };
-
-      setComments((prevComments) => [...prevComments, newCommentWithDetails]);
+      // Adicionar comentário retornado à lista
+      setComments((prevComments) => [...prevComments, response.data]);
       setNewComment("");
       setNewCommentImage(null);
       setPreviewUrl(null);
@@ -139,63 +123,28 @@ export function CommentDialog({
           <div className="bg-gray-900 rounded-lg shadow-lg w-full h-full flex flex-col">
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
               {post.image && (
-                <div className="hidden md:block w-full md:w-1/2 bg-black flex flex-col items-center justify-center overflow-hidden">
-                  <div
-                    className="flex items-center justify-center h-full w-full bg-black"
-                    style={{
-                      position: "relative",
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <div className="flex-1 w-full bg-black"></div>
-                    <img
-                      src={post.image}
-                      alt="Post"
-                      className="max-w-full max-h-full object-contain"
-                    />
-                    <div className="flex-1 w-full bg-black"></div>
-                  </div>
+                <div className="hidden md:block w-full md:w-1/2 bg-black flex items-center justify-center overflow-hidden">
+                  <img
+                    src={post.image}
+                    alt="Post"
+                    className="max-w-full max-h-full object-contain"
+                  />
                 </div>
               )}
-
-              <div
-                className={`flex-1 flex flex-col overflow-hidden ${
-                  post.image ? "md:w-1/2" : "w-full"
-                }`}
-              >
-                <div
-                  className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin max-h-[calc(100vh-150px)] sm:max-h-[calc(85vh-150px)]"
-                  style={{
-                    scrollbarWidth: "thin",
-                    scrollbarColor: "#4B5563 #1F2937",
-                  }}
-                >
+              <div className={`flex-1 flex flex-col overflow-hidden ${post.image ? "md:w-1/2" : "w-full"}`}>
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {comments.map((comment, index) => (
                     <div key={index} className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        <img
-                          src={
-                            comment.user.profileImage || "/default-avatar.png"
-                          }
-                          alt={comment.user.nickname}
-                          className="w-10 h-10 rounded-full bg-gray-800"
-                        />
-                      </div>
-                      <div className="flex-1">
+                      <img
+                        src={comment.user?.profileImage || "/default-avatar.png"}
+                        alt={comment.user?.nickname}
+                        className="w-10 h-10 rounded-full bg-gray-800"
+                      />
+                      <div>
                         <p className="text-sm">
-                          <span className="font-semibold text-primary">
-                            {comment.user.nickname || "Anonymous"}
-                          </span>{" "}
-                          <span
-                            className="break-words"
-                            style={{
-                              overflowWrap: "break-word",
-                              wordBreak: "break-word",
-                            }}
-                          >
-                            {comment.text}
-                          </span>
+                          <span className="font-semibold text-primary">{comment.user?.nickname || "Anonymous"}</span>
+                          {": "}
+                          {comment.content}
                         </p>
                         {comment.image && (
                           <img
@@ -208,63 +157,31 @@ export function CommentDialog({
                     </div>
                   ))}
                 </div>
-                <div className="bg-gray-800 p-4 border-t sticky bottom-0 z-15 relative">
-                  {/* Error Message */}
+                <div className="bg-gray-800 p-4">
                   {error && (
-                    <div className="absolute top-[-50px] left-0 w-full z-[1001]">
-                      <Alert
-                        variant="destructive"
-                        className="bg-destructive text-destructive-foreground rounded-lg"
-                      >
-                        <AlertTitle>Error</AlertTitle>
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    </div>
+                    <Alert variant="destructive">
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
                   )}
-
-                  {/* Preview Image */}
                   {previewUrl && (
-                    <div className="absolute bottom-[110px] right-[20px] z-[1000] bg-gray-900 p-1 rounded-lg shadow-lg">
-                      <div className="relative w-[200px] h-[200px]">
-                        <img
-                          src={previewUrl}
-                          alt="Preview"
-                          className="w-full h-full object-cover rounded-lg border border-gray-700"
-                        />
-                        <button
-                          onClick={handleRemoveImage}
-                          className="absolute top-[-10px] right-[-10px] bg-gray-200 rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-gray-300"
-                        >
-                          ❌
-                        </button>
-                      </div>
+                    <div className="relative w-[200px] h-[200px]">
+                      <img src={previewUrl} alt="Preview" className="object-cover rounded-lg" />
+                      <button onClick={handleRemoveImage}>❌</button>
                     </div>
                   )}
-                  {/* Form Elements */}
                   <div className="flex items-center space-x-2">
                     <Textarea
                       placeholder="Add a comment..."
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
-                      className="flex-1 resize-none bg-gray-700 text-gray-200 border border-gray-600 focus:ring-primary focus:border-primary rounded-lg"
+                      className="flex-1"
                     />
-                    <input
-                      type="file"
-                      id="file-upload"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className="cursor-pointer bg-pink-500 hover:bg-pink-400 text-white py-5 px-6 rounded-lg shadow-md inline-block"
-                    >
-                      <img src={upload} alt="upload" className="w-6 h-6" />
+                    <input type="file" id="file-upload" onChange={handleFileChange} className="hidden" />
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <img src={upload} alt="upload" />
                     </label>
-                    <Button
-                      onClick={handleAddComment}
-                      disabled={loading || uploading}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 py-8 px-6 rounded-lg transition-colors duration-200"
-                    >
+                    <Button onClick={handleAddComment} disabled={loading || uploading}>
                       {loading ? "Posting..." : "Add"}
                     </Button>
                   </div>
