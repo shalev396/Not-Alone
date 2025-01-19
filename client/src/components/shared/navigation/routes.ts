@@ -41,6 +41,10 @@ export const routeListSoldier: RouteProps[] = [
     label: "Vouchers@",
   },
   {
+    href: "/rights",
+    label: "Your Rights",
+  },
+  {
     href: "/profile",
     label: "Profile",
   },

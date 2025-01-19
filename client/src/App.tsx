@@ -50,7 +50,8 @@ function AppRoutes() {
         try {
           const response = await api.get("/users/me");
           console.log(response.data);
-          dispatch({ type: "user/setUser", payload: response.data });
+          alert(JSON.stringify(response.data));
+          dispatch({ type: "user/setUser", payload: response.data.user });
         } catch (error) {
           console.error("Failed to fetch user data:", error);
           localStorage.removeItem("token");

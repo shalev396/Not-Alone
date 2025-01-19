@@ -96,7 +96,7 @@ export const Team = () => {
         <span className="bg-gradient-to-b from-primary/60 to-primary text-transparent bg-clip-text">
           Meet Our{" "}
         </span>
-        Support Team
+        Team
       </h2>
 
       <p className="mt-4 mb-10 text-xl text-muted-foreground">

@@ -9,6 +9,8 @@ import path from "path";
 import helmet from "helmet";
 import { createServer, Server } from "http";
 import { fileURLToPath } from "url";
+import https from "https";
+import fs from "fs";
 //routes
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
@@ -25,6 +27,8 @@ import commentRoutes from "./routes/commentRoutes";
 import SocketService from "./services/socketService";
 //utils
 import { validateEnv } from "./utils/validateEnv";
+import channelRoutes from "./routes/channelRoutes";
+import messageRoutes from "./routes/messageRoutes";
 
 // Load and validate environment variables
 dotenv.config();
@@ -37,6 +41,11 @@ const app = express();
 const httpServer = createServer(app);
 const socketService = new SocketService(httpServer);
 let server: Server | null = null;
+//https config
+const httpsOptions = {
+  key: fs.readFileSync("./https/key.pem"), // Path to private key
+  cert: fs.readFileSync("./https/cert.pem"), // Path to certificate
+};
 
 // Security middleware
 app.use(
@@ -52,15 +61,28 @@ app.use(
 app.use(
   cors({
     origin: [
+      //local
       "http://localhost:5173",
-      "http://127.0.0.1:5173",
-      "https://not-alone.onrender.com",
-      "http://localhost:5000",
-      "http://shalevpc.servehttp.com:5173",
       "http://localhost:5174",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174",
+      "http://localhost:5000",
+      "http://localhost:3000",
+      //https
+      "https://localhost:3000",
+      //render
+      "https://not-alone.onrender.com",
+      //shalev PC
+      "http://shalevpc.servehttp.com:5173",
+      "http://shalevpc.servehttp.com",
+      "http://shalevpc.servehttp.com:3000",
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Access-Control-Allow-Methods", // Add this
+    ],
     credentials: true,
   })
 );
@@ -90,6 +112,8 @@ app.use("/api/profiles", profileRoutes);
 app.use("/api/eatups", eatupRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
+app.use("/api/channels", channelRoutes);
+app.use("/api/messages", messageRoutes);
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
@@ -161,9 +185,18 @@ if (require.main === module) {
   connectDB()
     .then(() => {
       // Start Express server and store reference for cleanup
-      server = app.listen(PORT, () => {
-        console.log(`Server is running on port http://localhost:${PORT}`);
-      });
+      if (process.env.NODE_ENV === "secure-development") {
+        // Start HTTPS server in test environment
+        const httpsServer = https.createServer(httpsOptions, app);
+        server = httpsServer.listen(PORT, () => {
+          console.log(`HTTPS Server is running on https://localhost:${PORT}`);
+        });
+      } else {
+        // Start HTTP server for other environments
+        server = app.listen(PORT, () => {
+          console.log(`HTTP Server is running on http://localhost:${PORT}`);
+        });
+      }
 
       // Set up graceful shutdown handler for SIGTERM signal
       // SIGTERM is commonly sent by container orchestrators (e.g. Kubernetes)

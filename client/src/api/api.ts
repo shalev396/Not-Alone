@@ -6,9 +6,9 @@ const token = sessionStorage.getItem("token");
 
 // List of endpoints that should not trigger auth redirect
 const EXCLUDED_ENDPOINTS = [
-  "/users/login",
-  "/users",
-  "/signup-requests",
+  "/login",
+  "/",
+  "/signup",
   // "/users/me",
 ];
 
@@ -16,7 +16,7 @@ export const api = axios.create({
   baseURL:
     process.env.NODE_ENV === "production"
       ? "/api"
-      : "http://localhost:5000/api",
+      : "http://localhost:3000/api",
   headers: {
     Authorization: `Bearer ${token}`,
     "Access-Control-Allow-Methods": "true",

@@ -216,7 +216,10 @@ export function SignupForm({
         });
       }
 
-      const response = await api.post("/signup-requests", submitData);
+      const response = await api.post("/auth/register", submitData);
+
+      // Save user data to session storage
+      sessionStorage.setItem("user", JSON.stringify(response.data.user));
 
       // Navigate to pending page with request data
       navigate("/pending", {

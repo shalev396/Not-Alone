@@ -47,7 +47,7 @@ const Profile: React.FC = () => {
   console.log(bio);
 
   const [receiveNotifications, setReceiveNotifications] = useState<boolean>(
-    user.receiveNotifications ?? false
+    user.preferences.notifications ?? false
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [error, setError] = useState("");

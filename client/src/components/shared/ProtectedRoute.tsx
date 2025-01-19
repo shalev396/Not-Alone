@@ -60,7 +60,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const fetchUserData = async () => {
     try {
       const response = await api.get("/users/me");
-      dispatch({ type: "user/setUser", payload: response.data });
+      dispatch({ type: "user/setUser", payload: response.data.user });
       return true;
     } catch (error) {
       console.error("Failed to fetch user data:", error);
@@ -95,6 +95,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   useEffect(() => {
     if (!isLoading && !user.email) {
+      console.log("user.email", user);
       navigate("/login");
       return;
     }

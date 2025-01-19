@@ -38,8 +38,11 @@ export const loginUser = async (
 
     // Check approval status
     if (user.approvalStatus === "pending") {
-      return res.status(403).json({
-        error: "Account not approved",
+      return res.json({
+        user: {
+          ...user.toObject(),
+          password: undefined,
+        },
         status: "pending",
       });
     }

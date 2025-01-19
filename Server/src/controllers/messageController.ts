@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { MessageModel } from "../models/messageModel";
 import { ChannelModel } from "../models/channelModel";
-import { AuditLogModel } from "../models/auditLogModel";
+import { AuditLogModel } from "../models/AuditLog";
 
 interface UserInfo {
   userId: string;

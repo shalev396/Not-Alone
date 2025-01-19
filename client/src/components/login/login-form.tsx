@@ -66,7 +66,13 @@ export function LoginForm({
 
     setLoading(true);
     try {
-      const res = await api.post("/users/login", formData);
+      const res = await api.post("/auth/login", formData);
+
+      if (res?.data?.user?.approvalStatus === "pending") {
+        sessionStorage.setItem("user", JSON.stringify(res.data.user));
+        navigate("/pending");
+        return;
+      }
 
       if (res?.data?.user?._id) {
         sessionStorage.setItem("token", res.data.token);
