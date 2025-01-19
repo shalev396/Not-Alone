@@ -1,6 +1,7 @@
 export interface EatUp {
   _id: string;
   location: string;
+  city?: string;
   zone: string;
   title: string;
   description: string;
@@ -15,4 +16,6 @@ export interface EatUp {
     _id: string;
   };
   authorId?: string;
+  languages?: string[];
+  
 }

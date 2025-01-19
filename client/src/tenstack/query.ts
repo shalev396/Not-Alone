@@ -108,7 +108,7 @@ export const fetchEatUps = async (): Promise<EatUp[]> => {
       return [];
     }
     const res = await api.get("/eatups");
-    return res.data;
+    return res.data.eatups || [];
   } catch (error) {
     console.error("Error fetching eatups:", error);
     if (

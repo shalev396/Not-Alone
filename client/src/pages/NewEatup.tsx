@@ -52,8 +52,12 @@ const fetchCities = async () => {
 };
 
 // Zod schema for form validation
-const eatupSchema = z.object({
+const formSchema = z.object({
   city: z.string().nullable(),
+  location: z
+    .string()
+    .min(3, "Location must be at least 3 characters")
+    .max(100, "Location cannot exceed 100 characters"),
   title: z
     .string()
     .min(3, "Title must be at least 3 characters")
@@ -84,17 +88,7 @@ const eatupSchema = z.object({
     .max(100, "Cannot exceed 100 guests"),
 });
 
-type FormData = {
-  city: string | null;
-  title: string;
-  media: string[];
-  date: string;
-  kosher: boolean;
-  description: string;
-  languages: string[];
-  hosting: string;
-  limit: number;
-};
+type FormData = z.infer<typeof formSchema>;
 
 type FormErrors = Partial<Record<keyof FormData, string>>;
 
@@ -108,13 +102,14 @@ export default function NewEatup() {
   // Form fields
   const [formData, setFormData] = useState<FormData>({
     city: null,
+    location: "",
     title: "",
     media: [],
     date: "",
     kosher: false,
     description: "",
     languages: ["Hebrew"],
-    hosting: "",
+    hosting: "organization" as const,
     limit: 2,
   });
 
@@ -124,7 +119,7 @@ export default function NewEatup() {
 
   const validateForm = () => {
     try {
-      eatupSchema.parse(formData);
+      formSchema.parse(formData);
       setErrors({});
       return true;
     } catch (error) {
@@ -147,14 +142,18 @@ export default function NewEatup() {
 
     setLoading(true);
     try {
-      const eatupData = {
+      const submitData = {
         ...formData,
         date: new Date(formData.date).toISOString(),
-        authorId: sessionStorage.getItem("id"),
-        city: formData.city || undefined,
+        media: [formData.media[0]],
+        authorId: sessionStorage.getItem("userId"),
+        title: formData.description,
+        owner: sessionStorage.getItem("userId"),
+        language: "Hebrew",
+        limit: formData.limit ? formData.limit.toString() : undefined,
       };
 
-      await api.post("/eatups", eatupData);
+      await api.post("/eatups", submitData);
       navigate("/my-eatups");
     } catch (error: any) {
       const errorMessage =
@@ -220,6 +219,21 @@ export default function NewEatup() {
               </FormItem>
 
               <FormItem>
+                <FormLabel>Location *</FormLabel>
+                <Input
+                  placeholder="Enter specific location (e.g., address, venue name)"
+                  value={formData.location}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
+                  className={errors.location ? "border-red-500" : ""}
+                />
+                {errors.location && (
+                  <FormMessage>{errors.location}</FormMessage>
+                )}
+              </FormItem>
+
+              <FormItem>
                 <FormLabel>Title *</FormLabel>
                 <Input
                   placeholder="Enter title"
@@ -249,7 +263,7 @@ export default function NewEatup() {
                 <FormLabel>Hosting Type *</FormLabel>
                 <Select
                   value={formData.hosting}
-                  onValueChange={(value) =>
+                  onValueChange={(value: (typeof hostingTypes)[number]) =>
                     setFormData({ ...formData, hosting: value })
                   }
                 >
@@ -273,7 +287,7 @@ export default function NewEatup() {
                 <FormLabel>Languages *</FormLabel>
                 <Select
                   value={formData.languages[0]}
-                  onValueChange={(value) =>
+                  onValueChange={(value: (typeof languages)[number]) =>
                     setFormData({ ...formData, languages: [value] })
                   }
                 >
@@ -357,7 +371,7 @@ export default function NewEatup() {
                       const imageUrl = await uploadImage(file);
                       setFormData({
                         ...formData,
-                        media: [...formData.media, imageUrl],
+                        media: [imageUrl],
                       });
                     }
                   }}

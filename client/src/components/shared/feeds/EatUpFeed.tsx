@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "../DatePickerWithRange";
-import { addDays } from "date-fns";
+import { addDays, startOfDay, endOfDay } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -17,9 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const zones = ["North", "Center", "South", "all"];
 const EatUpsKosher = ["Kosher", "Not Kosher", "all"];
-const EatUpsHosting = ["Family", "Organization", "all"];
+const EatUpsHosting = ["organization", "donators", "city", "all"];
 
 const EatUpSkeleton = () => {
   return (
@@ -44,11 +43,10 @@ const EatUpSkeleton = () => {
 
 export function EatUpFeed() {
   const [search, setSearch] = useState("");
-  const [zone, setZone] = useState("all");
   const [kosher, setKosher] = useState("all");
   const [hosting, setHosting] = useState("all");
   const [date, setDate] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -365),
+    from: startOfDay(new Date()),
     to: addDays(new Date(), 365),
   });
 
@@ -61,10 +59,10 @@ export function EatUpFeed() {
   const filterEatUps = (eatupsData: EatUp[]) => {
     if (!eatupsData) return [];
     return eatupsData.filter((eatup) => {
-      const matchesSearch = eatup.title
-        ? eatup.title.toLowerCase().includes(search.toLowerCase())
-        : true;
-      const matchesZone = zone === "all" || eatup.zone === zone;
+      const matchesSearch =
+        search === "" ||
+        eatup.title?.toLowerCase().includes(search.toLowerCase()) ||
+        eatup.location?.toLowerCase().includes(search.toLowerCase());
       const matchesKosher =
         kosher === "all" ||
         (kosher === "Kosher" ? eatup.kosher : !eatup.kosher);
@@ -74,16 +72,9 @@ export function EatUpFeed() {
       const matchesDate =
         !date?.from ||
         !date?.to ||
-        (eatupDate.getTime() >= date.from.getTime() &&
-          eatupDate.getTime() <= date.to.getTime());
+        (eatupDate >= startOfDay(date.from) && eatupDate <= endOfDay(date.to));
 
-      return (
-        matchesSearch &&
-        matchesZone &&
-        matchesKosher &&
-        matchesHosting &&
-        matchesDate
-      );
+      return matchesSearch && matchesKosher && matchesHosting && matchesDate;
     });
   };
 
@@ -93,25 +84,13 @@ export function EatUpFeed() {
         <div className="relative">
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
           <Input
-            placeholder="Search eat-ups..."
+            placeholder="Search eat-ups by title or location..."
             className="pl-10 bg-background"
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
         <div className="flex flex-col md:flex-row gap-4">
-          <Select onValueChange={setZone}>
-            <SelectTrigger className="w-full md:w-[180px] bg-background">
-              <SelectValue placeholder="Zone" />
-            </SelectTrigger>
-            <SelectContent>
-              {zones.map((zone) => (
-                <SelectItem key={zone} value={zone}>
-                  {zone}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Select onValueChange={setKosher}>
             <SelectTrigger className="w-full md:w-[180px] bg-background">
               <SelectValue placeholder="Kosher" />
@@ -131,7 +110,7 @@ export function EatUpFeed() {
             <SelectContent>
               {EatUpsHosting.map((h) => (
                 <SelectItem key={h} value={h}>
-                  {h}
+                  {h.charAt(0).toUpperCase() + h.slice(1)}
                 </SelectItem>
               ))}
             </SelectContent>

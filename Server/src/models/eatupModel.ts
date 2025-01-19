@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface IEatup extends Document {
   city: Schema.Types.ObjectId;
+  location: string;
   title: string;
   authorId: Schema.Types.ObjectId;
   media: string[];
@@ -23,6 +24,13 @@ const eatupSchema = new Schema<IEatup>(
       ref: "City",
       required: false,
       index: true,
+    },
+    location: {
+      type: String,
+      required: [true, "Location is required"],
+      trim: true,
+      minlength: [3, "Location must be at least 3 characters long"],
+      maxlength: [100, "Location cannot exceed 100 characters"],
     },
     title: {
       type: String,
