@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/Redux/store";
 import { updateUser } from "@/Redux/userSlice";
@@ -13,7 +13,17 @@ import { useQuery } from "@tanstack/react-query";
 import { PostCard } from "@/components/social/PostCard";
 import { PostSkeleton } from "@/components/shared/feeds/PostFeed";
 
-type post = {
+type DonationRequest = {
+  _id: string;
+  soldierId: string;
+  content: string;
+  amountNeeded: number;
+  amountRaised: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type Post = {
   _id: string;
   authorId: string;
   content: string;
@@ -36,34 +46,14 @@ type post = {
   }>;
 };
 
-
-const nicknames = ["Bob", "Sweet", "Jon", "Juan", "Min", "Laila", "Pedro", "Jess", "Igor", "Cat"];
-const profileImages = [
-  "boy_1.svg",
-  "boy_2.svg",
-  "boy_3.svg",
-  "boy_4.svg",
-  "boy_5.svg",
-  "boy_6.svg",
-  "boy_7.svg",
-  "girl_1.svg",
-  "girl_2.svg",
-  "girl_4.svg",
-  "girl_5.svg",
-  "girl_6.svg",
-];
-const DEFAULT_PROFILE_IMAGE = "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
-
-const getRandomItem = <T,>(array: T[]): T => array[Math.floor(Math.random() * array.length)];
-
 const Profile: React.FC = () => {
   const user = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch();
   const [showAlternateTab, setShowAlternateTab] = useState(false);
-  const isSoldier = user.type === "soldier";
+  const isSoldier = user.type === "Soldier"; // Certifique-se de que "Soldier" está correto
 
-  const [nickname, setNickname] = useState(user.nickname || getRandomItem(nicknames));
-  const [profileImage, setProfileImage] = useState(user.profileImage || DEFAULT_PROFILE_IMAGE);
+  const [nickname, setNickname] = useState(user.nickname || "");
+  const [profileImage, setProfileImage] = useState(user.profileImage || "");
   const [email, setEmail] = useState(user.email || "");
   const [phone, setPhone] = useState(user.phone || "");
   const [bio, setBio] = useState(user.bio || "");
@@ -74,13 +64,22 @@ const Profile: React.FC = () => {
   const [error, setError] = useState("");
   const filter = new Filter();
 
+  // Fetch user posts
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
     queryKey: ["userPosts", user._id],
     queryFn: () => fetchUserPosts(user._id),
     enabled: !!user._id,
   });
-console.log(userPosts);
 
+  // Fetch donation requests for soldiers
+  const { data: donationRequests, isLoading: isLoadingDonations } = useQuery({
+    queryKey: ["donationRequests", user._id],
+    queryFn: async () => {
+      const response = await api.get(`/requests/my`); // Corrigido para usar o endpoint correto
+      return response.data.requests as DonationRequest[];
+    },
+    enabled: isSoldier,
+  });
 
   const handleNicknameChange = (value: string) => {
     if (value === "") {
@@ -101,13 +100,6 @@ console.log(userPosts);
     }
   };
 
-  const handleNicknameBlur = () => {
-    if (!nickname) {
-      setNickname(user.nickname || getRandomItem(nicknames));
-    }
-  };
-
-  // Função para salvar as alterações no perfil
   const handleSubmit = async () => {
     if (!nickname) {
       setError("Nickname cannot be empty.");
@@ -150,7 +142,6 @@ console.log(userPosts);
             Page
           </h1>
 
-          {/* Detalhes do perfil */}
           <div className="bg-card p-6 rounded-lg shadow-md">
             <div className="flex items-start space-x-4">
               <div className="flex-1">
@@ -158,17 +149,12 @@ console.log(userPosts);
                 <Input
                   value={nickname}
                   onChange={(e) => handleNicknameChange(e.target.value)}
-                  onBlur={handleNicknameBlur}
                   placeholder="Enter a unique nickname"
                 />
                 {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-
-                {/* Email */}
                 <label className="block text-sm font-medium mt-6 mb-1">Email</label>
                 <Input value={email} disabled />
               </div>
-
-              {/* Imagem do perfil */}
               <div className="flex-shrink-0">
                 <img
                   src={profileImage || DEFAULT_PROFILE_IMAGE}
@@ -237,7 +223,26 @@ console.log(userPosts);
             isSoldier ? (
               <div>
                 <h2 className="text-2xl font-bold mb-6">Your Donation Requests</h2>
-                <p>Feature under development...</p>
+                {isLoadingDonations ? (
+                  <PostSkeleton />
+                ) : donationRequests && donationRequests.length > 0 ? (
+                  donationRequests.map((request) => (
+                    <div
+                      key={request._id}
+                      className="bg-card p-4 rounded-lg mb-4 shadow"
+                    >
+                      <h3 className="font-bold text-lg">{request.content}</h3>
+                      <p>
+                        Amount Needed: <strong>${request.amountNeeded}</strong>
+                      </p>
+                      <p>
+                        Amount Raised: <strong>${request.amountRaised}</strong>
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p>No donation requests found.</p>
+                )}
               </div>
             ) : (
               <div>
@@ -251,10 +256,7 @@ console.log(userPosts);
               {isLoadingPosts ? (
                 <PostSkeleton />
               ) : userPosts && userPosts.posts.length > 0 ? (
-                userPosts.posts.map((post:post) => {
-                console.log(post);
-                
-                return <PostCard key={post._id} post={post} />})
+                userPosts.posts.map((post: Post) => <PostCard key={post._id} post={post} />)
               ) : (
                 <p>You haven’t posted anything yet.</p>
               )}

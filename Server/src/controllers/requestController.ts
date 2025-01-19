@@ -555,3 +555,20 @@ export const getRequestsByUser = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Error fetching user requests" });
   }
 };
+export const getRequestsByUser = async (req: Request, res: Response) => {
+  const userInfo = ensureUser(req, res);
+  if (!userInfo) return;
+
+  try {
+    const query = { authorId: userInfo.userId };
+    const requests = await RequestModel.find(query)
+      .populate("author", "firstName lastName email phone")
+      .populate("cityDetails", "name zone")
+      .lean();
+
+    return res.json({ requests });
+  } catch (error) {
+    console.error("Get user requests error:", error);
+    return res.status(500).json({ message: "Error fetching user requests" });
+  }
+};
