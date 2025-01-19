@@ -12,13 +12,13 @@ export const AuthButtons = ({ user, navigate }: AuthButtonsProps) => {
       case "admin":
         return "/admin/queue";
       case "soldier":
-        return "/home/eatup";
+        return "/social";
       case "municipality":
-        return "/requests";
+        return "/social";
       case "donor":
         return "/requests/approved";
       case "organization":
-        return "/events/create";
+        return "/social";
       case "business":
         return "/discounts";
       default:

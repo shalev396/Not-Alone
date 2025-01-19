@@ -12,6 +12,8 @@ import {
   deleteCity,
   handleJoinRequest,
   getPendingJoinRequests,
+  getPendingCities,
+  getMyCity
 } from "../controllers/cityController";
 
 const router = express.Router();
@@ -19,9 +21,13 @@ const router = express.Router();
 // Public routes
 router.get("/", getAllCities);
 
+// Admin routes
+router.get("/pending", auth, checkUserType(["Admin"]), getPendingCities);
+
 // Protected routes
 router.post("/", auth, checkUserType(["Admin", "Municipality"]), createCity);
 
+router.get("/me", auth, checkUserType(["Admin", "Municipality"]), getMyCity);
 // Join requests
 router.post(
   "/:cityId/join/municipality",
