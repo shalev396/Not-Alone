@@ -28,29 +28,28 @@ export function EatUpDialog({ eatup }: EatUpDialogProps) {
 
     setIsLoading(true);
     try {
-      console.log("Attempting to subscribe to EatUp:", eatup._id);
-      const response = await api.post(`/eatups/${eatup._id}/subscribe`);
+      console.log("Attempting to toggle subscription for EatUp:", eatup._id);
+      const endpoint = isSubscribed ? "unsubscribe" : "subscribe";
+      const response = await api.post(`/eatups/${eatup._id}/${endpoint}`);
       console.log("Subscription response:", response.data);
 
       if (response.data) {
         setIsSubscribed(!isSubscribed);
-        setGuestCount(response.data.eatup.guests?.length || 0);
+        setGuestCount(response.data.guests?.length || 0);
         queryClient.invalidateQueries({ queryKey: ["channels"] });
 
-        if (eatup.limit && response.data.eatup.guests?.length >= eatup.limit) {
+        if (eatup.limit && response.data.guests?.length >= eatup.limit) {
           setIsLimitReached(true);
         } else {
           setIsLimitReached(false);
         }
-
-        alert(response.data.message);
       }
     } catch (error: any) {
       console.error("Subscription error:", error);
       console.error("Error response:", error.response);
 
       if (error.response?.status === 404) {
-        alert(error.response.data.message || "Channel not found");
+        alert(error.response.data.message || "EatUp not found");
       } else if (error.response?.status === 400) {
         alert(error.response.data.message);
         if (error.response.data.message === "Guest limit reached") {
@@ -66,13 +65,11 @@ export function EatUpDialog({ eatup }: EatUpDialogProps) {
 
   useEffect(() => {
     if (eatup) {
-      const currentUserId = sessionStorage.getItem("id");
+      const currentUserId = sessionStorage.getItem("userId");
       console.log("Current user ID:", currentUserId);
       console.log("EatUp guests:", eatup.guests);
-
       const subscribed = eatup.guests?.includes(currentUserId || "") || false;
       console.log("Is subscribed:", subscribed);
-
       setIsSubscribed(subscribed);
       setGuestCount(eatup.guests?.length || 0);
 

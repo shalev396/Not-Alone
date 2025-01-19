@@ -6,17 +6,19 @@ import { EatUp } from "@/types/EatUps";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/shared/Navbar";
+import { EditEatupDialog } from "@/components/myeatups/EditEatupDialog";
 
 export default function MyEatUps() {
   const [eatups, setEatUps] = useState<EatUp[]>([]);
-  const userId = sessionStorage.getItem("id");
+  const [selectedEatup, setSelectedEatup] = useState<EatUp | null>(null);
+  const userId = sessionStorage.getItem("userId");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const fetchEatUps = async () => {
     try {
       const response = await api.get("/eatups");
-      const eatupsData = response.data;
+      const eatupsData = response.data.eatups || [];
 
       const userEatups = eatupsData.filter(
         (item: EatUp) => item.owner === userId || item.authorId === userId
@@ -43,6 +45,14 @@ export default function MyEatUps() {
     } catch (error) {
       console.error("Error deleting EatUp:", error);
     }
+  };
+
+  const handleEdit = (eatup: EatUp) => {
+    setSelectedEatup(eatup);
+  };
+
+  const handleSaveEdit = async () => {
+    await fetchEatUps();
   };
 
   const formatDate = (dateString: string) => {
@@ -112,10 +122,13 @@ export default function MyEatUps() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm font-medium">Location</p>
-                          <p className="text-muted-foreground">
-                            {eatup.location} ({eatup.zone})
-                          </p>
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Location</p>
+                            <p className="text-muted-foreground">
+                              {eatup.location}
+                              {eatup.city && ` (${eatup.city})`}
+                            </p>
+                          </div>
                         </div>
                         <div>
                           <p className="text-sm font-medium">Date & Time</p>
@@ -168,6 +181,13 @@ export default function MyEatUps() {
                           View Channel
                         </Button>
                         <Button
+                          onClick={() => handleEdit(eatup)}
+                          variant="outline"
+                          className="hover:bg-[#F596D3]/10"
+                        >
+                          Edit EatUp
+                        </Button>
+                        <Button
                           variant="destructive"
                           onClick={() => handleDelete(eatup._id)}
                         >
@@ -178,6 +198,16 @@ export default function MyEatUps() {
                   </div>
                 </Card>
               ))
+            )}
+
+            {/* Add EditEatupDialog */}
+            {selectedEatup && (
+              <EditEatupDialog
+                eatup={selectedEatup}
+                isOpen={!!selectedEatup}
+                onClose={() => setSelectedEatup(null)}
+                onSave={handleSaveEdit}
+              />
             )}
           </div>
         </div>

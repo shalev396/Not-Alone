@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import mongoose, { SortOrder } from "mongoose";
 import { EatupModel } from "../models/eatupModel";
 import { CityModel } from "../models/cityModel";
+import { ChannelModel } from "../models/channelModel";
 
 interface UserInfo {
   userId: string;
@@ -242,6 +243,16 @@ export const createEatup = async (req: Request, res: Response) => {
     }
 
     const eatup = await EatupModel.create(eatupData);
+
+    // Create a channel for the eatup
+    await ChannelModel.create({
+      name: eatupData.title,
+      type: "eatup",
+      members: [userInfo.userId],
+      eatupId: eatup._id,
+      isPublic: true,
+    });
+
     const populatedEatup = await EatupModel.findById(eatup._id)
       .populate("author", "firstName lastName email phone")
       .populate("cityDetails", "name zone");
