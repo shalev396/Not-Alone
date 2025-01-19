@@ -27,6 +27,14 @@ import ChannelPage from "./pages/ChannelPage";
 import MyEatUps from "./pages/MyEatUps";
 import ProtectedRoute from "./components/shared/ProtectedRoute";
 import VouchersGrid from "./pages/VouchersGrid";
+import NewDonation from "./pages/NewDonation";
+import MyDonations from "./pages/MyDonations";
+import CreateCity from "./pages/CreateCity";
+import AdminCityQueue from "./pages/AdminCityQueue";
+import MyRequests from "./pages/MyRequests";
+import CityRequestQueue from "./pages/CityRequestQueue";
+import CityUserApprovalQueue from "./pages/CityUserApprovalQueue";
+import JoinCityRequest from "./pages/JoinCityRequest";
 
 // Public routes that don't need protection
 // const publicRoutes = [
@@ -50,7 +58,7 @@ function AppRoutes() {
         try {
           const response = await api.get("/users/me");
           console.log(response.data);
-          alert(JSON.stringify(response.data));
+          // alert(JSON.stringify(response.data));
           dispatch({ type: "user/setUser", payload: response.data.user });
         } catch (error) {
           console.error("Failed to fetch user data:", error);
@@ -202,7 +210,70 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-
+      <Route
+        path="/create-donation"
+        element={
+          <ProtectedRoute>
+            <NewDonation />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-donations"
+        element={
+          <ProtectedRoute>
+            <MyDonations />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create-city"
+        element={
+          <ProtectedRoute>
+            <CreateCity />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/cities"
+        element={
+          <ProtectedRoute>
+            <AdminCityQueue />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-requests"
+        element={
+          <ProtectedRoute>
+            <MyRequests />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/city-requests"
+        element={
+          <ProtectedRoute>
+            <CityRequestQueue />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/city-approval"
+        element={
+          <ProtectedRoute>
+            <CityUserApprovalQueue />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/join-city"
+        element={
+          <ProtectedRoute>
+            <JoinCityRequest/>
+          </ProtectedRoute>
+        }
+      />
       {/* 404 Route */}
       <Route path="*" element={<h1>404</h1>} />
     </Routes>

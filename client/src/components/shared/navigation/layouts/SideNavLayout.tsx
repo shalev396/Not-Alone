@@ -33,11 +33,11 @@ export const SideNavLayout = ({
 
       {isVertical && (
         <aside
-          className={`flex flex-col h-screen bg-background border-r border-border p-4 fixed top-0 z-40 shadow-lg transition-all duration-300 ${
+          className={`flex flex-col h-screen bg-background border-r border-border fixed top-0 z-40 shadow-lg transition-all duration-300 ${
             accordionOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full"
           }`}
         >
-          <div className="flex items-center mb-6">
+          <div className="flex-none p-4 border-b border-border">
             <h1 className="ml-2 font-bold text-xl">
               <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text ml-10">
                 Not Alone
@@ -45,9 +45,9 @@ export const SideNavLayout = ({
             </h1>
           </div>
 
-          {renderContent()}
+          <div className="flex-1 overflow-y-auto p-4">{renderContent()}</div>
 
-          <div className="mt-auto">
+          <div className="flex-none p-4 border-t border-border">
             <ModeToggle />
           </div>
         </aside>

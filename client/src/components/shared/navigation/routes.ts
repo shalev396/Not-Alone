@@ -29,6 +29,10 @@ export const routeListSoldier: RouteProps[] = [
     label: "Request Form",
   },
   {
+    href: "/my-requests",
+    label: "My Requests",
+  },
+  {
     href: "/social",
     label: "Social",
   },
@@ -76,6 +80,22 @@ export const routeListMunicipality: RouteProps[] = [
     label: "My EatUps",
   },
   {
+    href: "/city-requests",
+    label: "City Requests",
+  },
+  {
+    href: "/create-city",
+    label: "Create City",
+  },
+  {
+    href: "/city-approval",
+    label: "City Approval",
+  },
+  {
+    href: "/join-city",
+    label: "Join City",
+  },
+  {
     href: "/profile",
     label: "Profile",
   },
@@ -107,9 +127,14 @@ export const routeListDonor: RouteProps[] = [
     label: "My EatUps",
   },
   {
-    href: "/profile",
-    label: "Profile",
+    href: "/my-donations",
+    label: "My Donations",
   },
+  {
+    href: "/create-donation",
+    label: "Create Donation",
+  },
+
   {
     href: "/logout",
     label: "Logout",
@@ -187,8 +212,8 @@ export const routeListAdmin: AdminRouteSection[] = [
         label: "Manage Posts @",
       },
       {
-        href: "/admin/events",
-        label: "Manage Events @",
+        href: "/admin/cities",
+        label: "Manage Cities",
       },
       {
         href: "/admin/vouchers",
