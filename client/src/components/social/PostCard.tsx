@@ -26,10 +26,23 @@ export interface Post {
   createdAt: Date | string;
 }
 
+
 export function PostCard({ post }: { post: Post }) {
   const [likes, setLikes] = useState(post.likes.length);
   const [isLiked, setIsLiked] = useState(false);
   const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
+  const nicknames = [
+    "Ace", "Blaze", "Shadow", "Luna", "Nova", 
+    "Spike", "Hunter", "Echo", "Phoenix", "Starlight",
+    "Jinx", "Rogue", "Frost", "Hawk", "Storm",
+    "Bolt", "Raven", "Mystic", "Flare", "Viper",
+  ];
+  
+  // Função para randomizar um apelido
+  const getRandomNickname = (): string => {
+    return nicknames[Math.floor(Math.random() * nicknames.length)];
+  };
+  
 
   useEffect(() => {
     const userId = sessionStorage.getItem("id");
@@ -58,20 +71,26 @@ export function PostCard({ post }: { post: Post }) {
       setLikes((prev) => (isLiked ? prev + 1 : prev - 1));
     }
   };
+  console.log(post.author.profileImage);
   
 
   return (
     <>
       <Card className="p-6 mb-6 max-w-2xl mx-auto shadow-lg bg-card text-card-foreground rounded-lg">
         <div className="flex items-center mb-14">
-          <img
-            src={post.author.profileImage || "/default-avatar.png"}
-            alt={post.author.firstName}
-            className="w-12 h-12 rounded-full border border-muted mr-4"
-          />
+        <img
+  src={
+    post.author.profileImage && post.author.profileImage.trim() !== ""
+      ? `${window.location.origin}${post.author.profileImage.startsWith("/") ? "" : "/"}${post.author.profileImage}`
+      : `${window.location.origin}/assets/profilePictures/default.svg`
+  }
+  alt={post.author.firstName}
+  className="w-12 h-12 rounded-full border border-muted mr-4"
+/>
+
           <div>
             <h3 className="font-bold text-base text-primary">
-              {post.author.nickname || `${post.author.firstName} ${post.author.lastName}`}
+              ? {post.author.nickname} : {}
             </h3>
             <p className="text-sm text-muted-foreground">
               {new Date(post.createdAt).toLocaleDateString()}

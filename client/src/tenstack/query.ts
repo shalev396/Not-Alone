@@ -7,7 +7,12 @@ import { logout } from "@/Redux/authSlice";
 import { AxiosError } from "axios";
 
 export interface posts {
-  author: string;
+  author: {
+    firstName: string;
+    lastName: string;
+    profileImage?: string; 
+    nickname?: string; 
+  };
   content: string;
   image: string;
   likes: string[];
@@ -15,6 +20,7 @@ export interface posts {
   createdAt: Date;
   comments: comments[];
 }
+
 
 export interface comments {
   user: string;
@@ -80,19 +86,21 @@ export const fetchPosts = async (): Promise<posts[]> => {
     const res = await api.get("/posts");
     console.log("Posts fetched:", res.data);
 
-    if (Array.isArray(res.data.posts)) {
-      return res.data.posts.map((post: posts) => ({
-        ...post,
-        comments: post.comments || [],
-      }));
-    }
-
-    return []; 
+    return res.data.posts.map((post: any) => ({
+      ...post,
+      comments: post.comments || [],
+      author: {
+        ...post.author,
+        profileImage: post.author?.profileImage || "/assets/profilePictures/default.svg", // Fallback
+      },
+    }));
   } catch (error) {
     console.error("Error fetching posts:", error);
     return [];
   }
 };
+
+
 
 
 
