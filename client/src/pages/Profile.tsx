@@ -27,7 +27,7 @@ type Post = {
   _id: string;
   authorId: string;
   content: string;
-  media: string[];
+  media: string;
   likes: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -54,7 +54,7 @@ const Profile: React.FC = () => {
 
   const [nickname, setNickname] = useState(user.nickname || "");
   const [profileImage, setProfileImage] = useState(user.profileImage || "");
-  const [email, setEmail] = useState(user.email || "");
+  const [email] = useState(user.email || "");
   const [phone, setPhone] = useState(user.phone || "");
   const [bio, setBio] = useState(user.bio || "");
   const [receiveNotifications, setReceiveNotifications] = useState<boolean>(
@@ -63,7 +63,21 @@ const Profile: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [error, setError] = useState("");
   const filter = new Filter();
-
+  const profileImages = [
+    "boy_1.svg",
+    "boy_2.svg",
+    "boy_3.svg",
+    "boy_4.svg",
+    "boy_5.svg",
+    "boy_6.svg",
+    "boy_7.svg",
+    "girl_1.svg",
+    "girl_2.svg",
+    "girl_4.svg",
+    "girl_5.svg",
+    "girl_6.svg",
+  ];
+  const DEFAULT_PROFILE_IMAGE = "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
   // Fetch user posts
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
     queryKey: ["userPosts", user._id],
@@ -256,7 +270,7 @@ const Profile: React.FC = () => {
               {isLoadingPosts ? (
                 <PostSkeleton />
               ) : userPosts && userPosts.posts.length > 0 ? (
-                userPosts.posts.map((post: Post) => <PostCard key={post._id} post={post} />)
+                userPosts.posts.map((post: Post) => <PostCard key={post._id} post={post as unknown as Post} />)
               ) : (
                 <p>You haven’t posted anything yet.</p>
               )}

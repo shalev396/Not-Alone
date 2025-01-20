@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { uploadImage } from "@/components/shared/UploadPhoto";
 import { api } from "@/api/api";
-import { useSelector } from "react-redux";
 import upload from "@/assets/upload.png";
 
 interface Comment {

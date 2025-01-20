@@ -2,7 +2,6 @@ import { Navbar } from "@/components/shared/Navbar";
 import { PostFeed } from "@/components/shared/feeds/PostFeed";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import createIcon from "@/assets/createIcon.png"
 
 export default function Social() {
@@ -19,7 +18,7 @@ export default function Social() {
 
       {/* Feed */}
       <div className="flex-1 mx-10">
-        <PostFeed mode="post" />
+        <PostFeed/>
       </div>
 
       <Button

@@ -3,11 +3,6 @@ import { fetchPosts, posts } from "@/tenstack/query";
 import { PostCard } from "@/components/social/PostCard";
 import { Post } from "@/components/social/PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import React from "react";
-
-interface PostFeedProps {
-  mode: string; 
-}
 
 export const PostSkeleton = () => {
   return (
@@ -23,7 +18,7 @@ export const PostSkeleton = () => {
   );
 };
 
-export function PostFeed({ mode }: PostFeedProps) {
+export function PostFeed() {
   const { data: postsData, isLoading: isPostsLoading } = useQuery({
     queryKey: ["posts"],
     queryFn: fetchPosts,
