@@ -36,7 +36,7 @@ export default function JoinCityRequest() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Get user ID from session storage
-  const userId = sessionStorage.getItem("userId");
+  const userId = sessionStorage.getItem("id");
 
   // First fetch all cities
   const { data: cities = [], isLoading: loadingCities } = useQuery<City[]>({

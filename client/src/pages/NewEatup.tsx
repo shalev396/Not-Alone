@@ -146,9 +146,9 @@ export default function NewEatup() {
         ...formData,
         date: new Date(formData.date).toISOString(),
         media: [formData.media[0]],
-        authorId: sessionStorage.getItem("userId"),
+        authorId: sessionStorage.getItem("id"),
         title: formData.description,
-        owner: sessionStorage.getItem("userId"),
+        owner: sessionStorage.getItem("id"),
         language: "Hebrew",
         limit: formData.limit ? formData.limit.toString() : undefined,
       };

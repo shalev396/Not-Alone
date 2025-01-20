@@ -32,7 +32,7 @@ interface Donation {
 
 export default function MyDonations() {
   const [donations, setDonations] = useState<Donation[]>([]);
-  const userId = sessionStorage.getItem("userId");
+  const userId = sessionStorage.getItem("id");
   const navigate = useNavigate();
 
   const fetchDonations = async () => {

@@ -65,7 +65,7 @@ export function EatUpDialog({ eatup }: EatUpDialogProps) {
 
   useEffect(() => {
     if (eatup) {
-      const currentUserId = sessionStorage.getItem("userId");
+      const currentUserId = sessionStorage.getItem("id");
       console.log("Current user ID:", currentUserId);
       console.log("EatUp guests:", eatup.guests);
       const subscribed = eatup.guests?.includes(currentUserId || "") || false;

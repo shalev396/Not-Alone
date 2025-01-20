@@ -11,7 +11,7 @@ import { EditEatupDialog } from "@/components/myeatups/EditEatupDialog";
 export default function MyEatUps() {
   const [eatups, setEatUps] = useState<EatUp[]>([]);
   const [selectedEatup, setSelectedEatup] = useState<EatUp | null>(null);
-  const userId = sessionStorage.getItem("userId");
+  const userId = sessionStorage.getItem("id");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
