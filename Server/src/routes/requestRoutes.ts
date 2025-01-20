@@ -19,7 +19,7 @@ const router = express.Router();
 router.get(
   "/",
   auth,
-  checkUserType(["Admin", "Municipality", "Organization"]),
+  checkUserType(["Admin", "Municipality", "Organization", "Donor"]),
   getRequests
 );
 

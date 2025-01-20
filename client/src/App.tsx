@@ -35,6 +35,10 @@ import MyRequests from "./pages/MyRequests";
 import CityRequestQueue from "./pages/CityRequestQueue";
 import CityUserApprovalQueue from "./pages/CityUserApprovalQueue";
 import JoinCityRequest from "./pages/JoinCityRequest";
+import DonationStatus from "./pages/DonationStatus";
+import DonationAssignment from "./pages/DonationAssignment";
+import DonationControlPanel from "./pages/DonationControlPanel";
+import SoldierJoinCity from "./pages/SoldierJoinCity";
 
 // Public routes that don't need protection
 // const publicRoutes = [
@@ -70,7 +74,6 @@ function AppRoutes() {
       fetchUser();
     }
   }, [dispatch]);
-  
 
   return (
     <Routes>
@@ -82,6 +85,7 @@ function AppRoutes() {
       <Route path="/termofservice" element={<Tos />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/contact" element={<ContactUs />} />
+      <Route path="/donation-status/:donationId" element={<DonationStatus />} />
 
       {/* Protected Routes */}
       <Route
@@ -273,10 +277,44 @@ function AppRoutes() {
         path="/join-city"
         element={
           <ProtectedRoute>
-            <JoinCityRequest/>
+            <JoinCityRequest />
           </ProtectedRoute>
         }
       />
+      {/* fix later */}
+      {/* <Route
+        path="/donation-status/:donationId"
+        element={
+          <ProtectedRoute>
+            <DonationStatus />
+          </ProtectedRoute>
+        }
+      /> */}
+      <Route
+        path="/donation-assignment"
+        element={
+          <ProtectedRoute>
+            <DonationAssignment />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/donation-control-panel"
+        element={
+          <ProtectedRoute>
+            <DonationControlPanel />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/soldier-join-city"
+        element={
+          <ProtectedRoute>
+            <SoldierJoinCity />
+          </ProtectedRoute>
+        }
+      />
+
       {/* 404 Route */}
       <Route path="*" element={<h1>404</h1>} />
     </Routes>

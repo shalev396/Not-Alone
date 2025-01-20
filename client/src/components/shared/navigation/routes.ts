@@ -24,6 +24,7 @@ export const routeListSoldier: RouteProps[] = [
     href: "/",
     label: "Home",
   },
+
   {
     href: "/requestForm",
     label: "Request Form",
@@ -45,8 +46,16 @@ export const routeListSoldier: RouteProps[] = [
     label: "Vouchers@",
   },
   {
+    href: "/donation-status",
+    label: "Donation Status@",
+  },
+  {
     href: "/rights",
     label: "Your Rights",
+  },
+  {
+    href: "/soldier-join-city",
+    label: "Join City",
   },
   {
     href: "/profile",
@@ -71,6 +80,19 @@ export const routeListMunicipality: RouteProps[] = [
     href: "/social",
     label: "Social",
   },
+  {
+    href: "/donation-assignment",
+    label: "Donation Assignment",
+  },
+  {
+    href: "/donation-control-panel",
+    label: "Donation Control Panel",
+  },
+  {
+    href: "/donation-status",
+    label: "Donation Status @",
+  },
+
   {
     href: "/new-post",
     label: "Create Event",
@@ -114,6 +136,20 @@ export const routeListDonor: RouteProps[] = [
     href: "/contribute",
     label: "Pay Requests",
   },
+
+  {
+    href: "/create-donation",
+    label: "Create Donation",
+  },
+  {
+    href: "/donation-status",
+    label: "Donation Status",
+  },
+  {
+    href: "/my-donations",
+    label: "My Donations",
+  },
+
   {
     href: "/new-post",
     label: "Create EatUp",
@@ -121,14 +157,6 @@ export const routeListDonor: RouteProps[] = [
   {
     href: "/my-eatups",
     label: "My EatUps",
-  },
-  {
-    href: "/my-donations",
-    label: "My Donations",
-  },
-  {
-    href: "/create-donation",
-    label: "Create Donation",
   },
 
   {
