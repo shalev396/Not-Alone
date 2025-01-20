@@ -1,71 +1,121 @@
 import { AxiosError } from "axios";
 import { api } from "@/api/api";
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Navbar } from "@/components/shared/Navbar";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { z } from "zod";
 
-// Define the shape of the formData
-type FormDataType = {
-  service: string;
-  itemType: string;
-  itemDescription: string;
-  quantity: string;
-  urgency: string;
-  geographicArea: string;
-  notes: string;
-  agreeToShareDetails: boolean;
-};
+interface City {
+  _id: string;
+  name: string;
+  zone: "north" | "center" | "south";
+}
 
-function RequestForm() {
-  const [formData, setFormData] = useState<FormDataType>({
-    service: "",
-    itemType: "",
+const zones = ["north", "center", "south"] as const;
+
+const requestSchema = z.object({
+  service: z.enum(["Regular", "Reserves"]),
+  item: z
+    .string()
+    .min(2, "Item must be at least 2 characters")
+    .max(100, "Item cannot exceed 100 characters"),
+  itemDescription: z
+    .string()
+    .min(10, "Description must be at least 10 characters")
+    .max(1000, "Description cannot exceed 1000 characters"),
+  quantity: z.number().int().min(1, "Quantity must be at least 1"),
+  zone: z.enum(["north", "center", "south"]),
+  city: z.string().min(1, "City is required"),
+  agreeToShareDetails: z.boolean().refine((val) => val === true, {
+    message: "You must agree to share details",
+  }),
+});
+
+type RequestFormData = z.infer<typeof requestSchema>;
+
+export default function RequestForm() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState<RequestFormData>({
+    service: "Regular",
+    item: "",
     itemDescription: "",
-    quantity: "",
-    urgency: "Immediate",
-    geographicArea: "",
-    notes: "",
+    quantity: 1,
+    zone: "center",
+    city: "",
     agreeToShareDetails: false,
   });
+  const [cities, setCities] = useState<City[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // ChangeEvent for input fields
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value, type } = e.target;
-    const checked =
-      type === "checkbox" ? (e.target as HTMLInputElement).checked : undefined;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  // FormEvent for form submission
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      const response = await api.post("/requests", formData);
-      alert("Request submitted successfully!");
-      console.log(response.data);
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        console.error(
-          "Error submitting the request:",
-          error.response?.data || error.message
-        );
-        alert("Failed to submit the request. Please try again.");
-      } else {
-        console.error("Unexpected error:", error);
-        alert("An unexpected error occurred. Please try again.");
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await api.get("/cities");
+        setCities(response.data);
+      } catch (error) {
+        setServerError("Failed to fetch cities");
       }
+    };
+    fetchCities();
+  }, []);
+
+  const handleChange = (
+    field: keyof RequestFormData,
+    value: string | number | boolean
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when field is updated
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setServerError(null);
+    setErrors({});
+
+    try {
+      // Validate form data
+      requestSchema.parse(formData);
+
+      setIsLoading(true);
+      await api.post("/requests", formData);
+      navigate("/my-requests"); // Assuming you have a my requests page
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path) {
+            newErrors[err.path[0]] = err.message;
+          }
+        });
+        setErrors(newErrors);
+      } else if (error instanceof AxiosError) {
+        setServerError(
+          error.response?.data?.message || "Failed to submit request"
+        );
+      } else {
+        setServerError("An unexpected error occurred");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredCities = cities.filter((city) => city.zone === formData.zone);
 
   return (
     <div className="flex bg-background text-foreground min-h-screen">
@@ -75,122 +125,153 @@ function RequestForm() {
           <Card className="p-6">
             <h2 className="text-3xl font-bold mb-8 text-center">
               <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
-                Donation Request
+                New Request
               </span>
             </h2>
 
+            {serverError && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{serverError}</AlertDescription>
+              </Alert>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Service */}
+              {/* Service Type */}
               <div className="space-y-2">
-                <Label>Service</Label>
+                <Label>Service Type</Label>
                 <div className="flex gap-4">
-                  <label className="flex items-center space-x-2">
-                    <Input
-                      type="radio"
-                      name="service"
-                      value="Regular"
-                      checked={formData.service === "Regular"}
-                      onChange={handleChange}
-                    />
-                    <span>Regular</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <Input
-                      type="radio"
-                      name="service"
-                      value="Reserves"
-                      checked={formData.service === "Reserves"}
-                      onChange={handleChange}
-                    />
-                    <span>Reserves</span>
-                  </label>
+                  {["Regular", "Reserves"].map((type) => (
+                    <label key={type} className="flex items-center space-x-2">
+                      <Input
+                        type="radio"
+                        checked={formData.service === type}
+                        onChange={() => handleChange("service", type)}
+                        className="w-4 h-4"
+                      />
+                      <span>{type}</span>
+                    </label>
+                  ))}
                 </div>
+                {errors.service && (
+                  <p className="text-sm text-red-500">{errors.service}</p>
+                )}
               </div>
 
-              {/* Request Details */}
+              {/* Zone Selection */}
               <div className="space-y-2">
-                <Label>Item Type</Label>
-                <Input
-                  name="itemType"
-                  value={formData.itemType}
-                  onChange={handleChange}
-                  placeholder="Enter item type"
-                />
+                <Label>Zone</Label>
+                <select
+                  value={formData.zone}
+                  onChange={(e) => {
+                    handleChange("zone", e.target.value);
+                    handleChange("city", ""); // Reset city when zone changes
+                  }}
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-[#F596D3]"
+                >
+                  {zones.map((zone) => (
+                    <option key={zone} value={zone}>
+                      {zone.charAt(0).toUpperCase() + zone.slice(1)}
+                    </option>
+                  ))}
+                </select>
+                {errors.zone && (
+                  <p className="text-sm text-red-500">{errors.zone}</p>
+                )}
               </div>
 
+              {/* City Selection */}
+              <div className="space-y-2">
+                <Label>City</Label>
+                <select
+                  value={formData.city}
+                  onChange={(e) => handleChange("city", e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-[#F596D3]"
+                >
+                  <option value="">Select a city</option>
+                  {filteredCities.map((city) => (
+                    <option key={city._id} value={city._id}>
+                      {city.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.city && (
+                  <p className="text-sm text-red-500">{errors.city}</p>
+                )}
+              </div>
+
+              {/* Item */}
+              <div className="space-y-2">
+                <Label>Item</Label>
+                <Input
+                  value={formData.item}
+                  onChange={(e) => handleChange("item", e.target.value)}
+                  placeholder="Enter item name"
+                />
+                {errors.item && (
+                  <p className="text-sm text-red-500">{errors.item}</p>
+                )}
+              </div>
+
+              {/* Item Description */}
               <div className="space-y-2">
                 <Label>Item Description</Label>
                 <Textarea
-                  name="itemDescription"
                   value={formData.itemDescription}
-                  onChange={handleChange}
-                  placeholder="Details like size, color, desired condition"
+                  onChange={(e) =>
+                    handleChange("itemDescription", e.target.value)
+                  }
+                  placeholder="Provide detailed description (size, color, condition, etc.)"
+                  className="min-h-[100px]"
                 />
+                {errors.itemDescription && (
+                  <p className="text-sm text-red-500">
+                    {errors.itemDescription}
+                  </p>
+                )}
               </div>
 
+              {/* Quantity */}
               <div className="space-y-2">
-                <Label>Required Quantity</Label>
+                <Label>Quantity</Label>
                 <Input
                   type="number"
-                  name="quantity"
+                  min="1"
                   value={formData.quantity}
-                  onChange={handleChange}
-                  placeholder="Enter quantity"
+                  onChange={(e) =>
+                    handleChange("quantity", parseInt(e.target.value) || 1)
+                  }
                 />
-              </div>
-
-              {/* Additional Details */}
-              <div className="space-y-2">
-                <Label>Urgency</Label>
-                <select
-                  name="urgency"
-                  value={formData.urgency}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-[#F596D3]"
-                >
-                  <option value="Immediate">Immediate</option>
-                  <option value="Specific Date">Specific Date</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Preferred Geographic Area</Label>
-                <Input
-                  name="geographicArea"
-                  value={formData.geographicArea}
-                  onChange={handleChange}
-                  placeholder="Enter geographic area"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Additional Notes</Label>
-                <Textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  placeholder="Additional comments"
-                />
+                {errors.quantity && (
+                  <p className="text-sm text-red-500">{errors.quantity}</p>
+                )}
               </div>
 
               {/* Agreement */}
               <div className="flex items-center space-x-2">
                 <Input
                   type="checkbox"
-                  name="agreeToShareDetails"
                   checked={formData.agreeToShareDetails}
-                  onChange={handleChange}
+                  onChange={(e) =>
+                    handleChange("agreeToShareDetails", e.target.checked)
+                  }
                   className="w-4 h-4"
                 />
-                <Label>I agree to the terms and conditions</Label>
+                <Label>I agree to share my details with potential donors</Label>
               </div>
+              {errors.agreeToShareDetails && (
+                <p className="text-sm text-red-500">
+                  {errors.agreeToShareDetails}
+                </p>
+              )}
 
               {/* Submit Button */}
               <Button
                 type="submit"
+                disabled={isLoading}
                 className="w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90 transition-opacity"
               >
-                Submit Request
+                {isLoading ? "Submitting..." : "Submit Request"}
               </Button>
             </form>
           </Card>
@@ -199,5 +280,3 @@ function RequestForm() {
     </div>
   );
 }
-
-export default RequestForm;

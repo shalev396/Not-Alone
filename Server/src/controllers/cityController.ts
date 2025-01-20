@@ -32,6 +32,18 @@ export const createCity = async (req: Request, res: Response) => {
   try {
     const { name, zone, bio } = req.body;
 
+    // Check if user is already in another city
+    const existingUserCity = await CityModel.findOne({
+      municipalityUsers: req.user.userId,
+    }).lean();
+
+    if (existingUserCity) {
+      return res.status(400).json({
+        message: "You are already a member of another city",
+        cityName: existingUserCity.name,
+      });
+    }
+
     // Check if city already exists
     const existingCity = await CityModel.findOne({ name }).lean();
     if (existingCity) {
@@ -46,7 +58,7 @@ export const createCity = async (req: Request, res: Response) => {
       bio,
       approvalStatus: "pending",
       soldiers: [],
-      municipalityUsers: [],
+      municipalityUsers: [req.user.userId],
       media: [],
     });
 
@@ -58,7 +70,6 @@ export const createCity = async (req: Request, res: Response) => {
       ipAddress: req.ip,
       userAgent: req.get("user-agent") || "",
     });
-    // console.log(city);
 
     return res.status(201).json(city);
   } catch (error) {
@@ -70,6 +81,7 @@ export const createCity = async (req: Request, res: Response) => {
         })),
       });
     }
+    console.error("Create city error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -108,7 +120,17 @@ const citySchema = new Schema(
     timestamps: true,
   }
 );
-
+export const getMyCity = async (req: Request, res: Response) => {
+  try {
+    const city = await CityModel.find({
+      municipalityUsers: req.user.userId,
+    });
+    return res.status(200).json(city);
+  } catch (error) {
+    console.error("Get my city error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 // Update joinCityAsMunicipality to handle pending approval
 export const joinCityAsMunicipality = async (
   req: Request,
@@ -118,6 +140,7 @@ export const joinCityAsMunicipality = async (
     const { cityId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(cityId)) {
+      console.log("hi");
       return res.status(400).json({ error: "Invalid city ID format" });
     }
 
@@ -309,14 +332,14 @@ export const handleJoinRequest = async (req: Request, res: Response) => {
 
     // Create audit log
     await AuditLogModel.create({
-      action: `CITY_JOIN_${action.toUpperCase()}`,
+      action: action === "APPROVE" ? "CITY_APPROVE" : "CITY_DENY",
       userId: req.user.userId,
       targetId: cityId,
       changes: { userId, action },
     });
 
     return res.json({
-      message: `Join request ${action}ed successfully`,
+      message: `Join request ${action.toLowerCase()}d successfully`,
       city: updatedCity,
     });
   } catch (error) {
@@ -328,6 +351,8 @@ export const handleJoinRequest = async (req: Request, res: Response) => {
 // Add new method to get pending join requests
 export const getPendingJoinRequests = async (req: Request, res: Response) => {
   try {
+    console.log("hi");
+
     const { cityId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(cityId)) {
@@ -542,5 +567,18 @@ export const deleteCity = async (
   } catch (error) {
     console.error("Delete city error:", error);
     return res.status(500).json({ error: "Error deleting city" });
+  }
+};
+
+export const getPendingCities = async (_req: Request, res: Response) => {
+  try {
+    const cities = await CityModel.find({ approvalStatus: "pending" })
+      .select("_id name zone bio media approvalStatus createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+    return res.status(200).json(cities);
+  } catch (error) {
+    console.error("Get pending cities error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
