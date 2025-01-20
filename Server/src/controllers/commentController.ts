@@ -137,11 +137,20 @@ export const getCommentById = async (req: Request, res: Response) => {
   }
 };
 
-// Create comment
 export const createComment = async (req: Request, res: Response) => {
   try {
     const userInfo = ensureUser(req, res);
     if (!userInfo) return;
+
+    console.log("Request body:", req.body); // Log para debug
+
+    // Validação adicional
+    if (!req.body.postId || !mongoose.Types.ObjectId.isValid(req.body.postId)) {
+      return res.status(400).json({ message: "Invalid or missing postId" });
+    }
+    if (!req.body.content || req.body.content.trim().length === 0) {
+      return res.status(400).json({ message: "Comment content is required" });
+    }
 
     const authorId = new mongoose.Types.ObjectId(userInfo.userId);
     const postId = new mongoose.Types.ObjectId(req.body.postId);
@@ -188,9 +197,32 @@ export const createComment = async (req: Request, res: Response) => {
         })),
       });
     }
+    console.error("Error creating comment:", error);
     return res.status(500).json({ message: "Error creating comment" });
   }
 };
+
+export const getCommentsByPost = async (req: Request, res: Response) => {
+  try {
+    const { postId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ message: "Invalid postId" });
+    }
+
+    const comments = await CommentModel.find({ postId })
+      .populate("authorId", "nickname profileImage")
+      .sort({ createdAt: -1 }); 
+
+    return res.status(200).json({ comments });
+  } catch (error) {
+    console.error("Error fetching comments by post:", error);
+    return res.status(500).json({ message: "Error fetching comments" });
+  }
+};
+
+
+
 
 // Toggle like on comment
 export const toggleLike = async (req: Request, res: Response) => {

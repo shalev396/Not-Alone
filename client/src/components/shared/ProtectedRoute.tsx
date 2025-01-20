@@ -36,13 +36,14 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   // Function to get allowed routes based on user type
   const getAllowedRoutes = (userType: string) => {
-    // const commonRoutes = ["/", "/profile", "/logout"];
-
     switch (userType?.toLowerCase()) {
       case "admin":
         return routeListAdmin;
       case "soldier":
-        return routeListSoldier;
+        return [...routeListSoldier, {
+          href: "/create-post",
+          label: "Create Post",
+        }];
       case "municipality":
         return routeListMunicipality;
       case "donor":

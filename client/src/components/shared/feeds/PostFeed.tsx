@@ -25,16 +25,21 @@ export function PostFeed() {
     staleTime: 1000 * 60 * 5,
   });
 
+
   if (isPostsLoading) {
     return <PostSkeleton />;
   }
 
-  if (!postsData || !Array.isArray(postsData)) {
-    return <div className="text-center py-4">No posts found</div>;
+  if (!postsData || postsData.length === 0) {
+    return <div className="text-center py-4">No post found</div>;
   }
+  
 
   return (
     <div className="space-y-4">
+      <h3 className="text-4xl font-bold mb-10 mt-20 ml-20">
+        Your <span className="text-green-500">Social</span>
+      </h3>
       {postsData.map((post: posts) => (
         <PostCard key={post._id} post={post as unknown as Post} />
       ))}

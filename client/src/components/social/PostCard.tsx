@@ -3,23 +3,23 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Share, Heart } from "lucide-react";
 import { api } from "@/api/api";
-import { CommentDialog } from "@/components/social/CommentDialog";
+import { CommentDialog } from "./CommentDialog";
 
 export interface Post {
   _id: string;
   content: string;
-  image?: string;
+  media?: string;
   author: {
     firstName: string;
     lastName: string;
     profileImage?: string;
     nickname?: string;
   };
-  likes: string[];
+  likes: string[]; 
   comments: Array<{
-    author: string;
-    nickname: string;
-    profileImage?: string;
+    author: string; 
+    nickname: string; 
+    profileImage?: string; 
     text: string;
     createdAt: Date | string;
   }>;
@@ -42,22 +42,23 @@ export function PostCard({ post }: { post: Post }) {
       if (!userId) {
         throw new Error("User not logged in");
       }
-
-      setIsLiked(!isLiked);
+  
+      setIsLiked((prev) => !prev);
       setLikes((prev) => (isLiked ? prev - 1 : prev + 1));
-
-      const response = await api.put(`/posts/${post._id}/like`, { userId });
-
-      const { updatedLikes } = response.data;
+  
+      const response = await api.post(`/posts/${post._id}/like`, { userId });
+  
+      const updatedLikes = response.data.likes; 
       setLikes(updatedLikes.length);
       setIsLiked(updatedLikes.includes(userId));
     } catch (error) {
       console.error("Failed to like/unlike post:", error);
-
-      setIsLiked(isLiked);
+  
+      setIsLiked((prev) => !prev);
       setLikes((prev) => (isLiked ? prev + 1 : prev - 1));
     }
   };
+  
 
   return (
     <>
@@ -70,8 +71,7 @@ export function PostCard({ post }: { post: Post }) {
           />
           <div>
             <h3 className="font-bold text-base text-primary">
-              {post.author.nickname ||
-                `${post.author.firstName} ${post.author.lastName}`}
+              {post.author.nickname || `${post.author.firstName} ${post.author.lastName}`}
             </h3>
             <p className="text-sm text-muted-foreground">
               {new Date(post.createdAt).toLocaleDateString()}
@@ -79,9 +79,11 @@ export function PostCard({ post }: { post: Post }) {
           </div>
         </div>
 
-        {post.image && (
+        
+
+        {post.media && (
           <img
-            src={post.image}
+            src={post.media}
             alt="Post media"
             className="rounded-md mb-4 w-full max-h-[400px] object-cover border border-muted"
           />
@@ -89,19 +91,17 @@ export function PostCard({ post }: { post: Post }) {
         <p
           className="text-foreground mb-4"
           style={{
-            wordBreak: "break-word",
-            overflowWrap: "break-word",
-            whiteSpace: "pre-wrap",
-          }}
+            wordBreak: "break-word", 
+            overflowWrap: "break-word", 
+            whiteSpace: "pre-wrap", 
+            }}
         >
           {post.content}
         </p>
         <div className="flex justify-between items-center text-muted-foreground">
           <Button
             variant="ghost"
-            className={`flex items-center space-x-2 ${
-              isLiked ? "text-green-500" : "hover:text-primary"
-            }`}
+            className={`flex items-center space-x-2 ${isLiked ? "text-green-500" : "hover:text-primary"}`}
             onClick={handleLike}
           >
             <Heart className="w-4 h-4" />

@@ -11,14 +11,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/shared/Navbar";
 import upload from "@/assets/upload.png";
 
-export default function CreatePost({
-  onPostCreated,
-}: {
-  onPostCreated: () => void;
-}) {
+export default function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
   const [content, setContent] = useState("");
   const [image, setImage] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null); 
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,13 +40,13 @@ export default function CreatePost({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      setPreviewUrl(URL.createObjectURL(file)); 
     }
   };
 
   const handleRemoveImage = () => {
     setImage(null);
-    setPreviewUrl(null);
+    setPreviewUrl(null); 
   };
 
   const handleSubmit = async () => {
@@ -73,7 +69,7 @@ export default function CreatePost({
 
       const postData = {
         content,
-        image: imageUrl,
+        media: imageUrl ? [imageUrl] : [], 
         author: user._id,
         visibility: user.type,
       };
@@ -82,7 +78,7 @@ export default function CreatePost({
 
       setContent("");
       setImage(null);
-      setPreviewUrl(null);
+      setPreviewUrl(null); 
     } catch (error: any) {
       setError("Failed to create post. Please try again.");
     } finally {
@@ -98,10 +94,7 @@ export default function CreatePost({
   };
 
   return (
-    <div
-      className="flex min-h-screen bg-background text-foreground"
-      onClick={handleContainerClick}
-    >
+    <div className="flex min-h-screen bg-background text-foreground" onClick={handleContainerClick}>
       {/* Navbar */}
       <Navbar modes="home" isVertical={true} isAccordion={true} />
 
@@ -120,23 +113,23 @@ export default function CreatePost({
               className="resize-none h-80 bg-muted text-muted-foreground border border-border focus:ring-primary focus:border-primary rounded-lg relative z-10"
             />
 
-            {previewUrl && (
-              <div className="absolute inset-0 bottom-[80px] left-[15px] flex items-end justify-start z-10">
-                <div className="relative w-40 h-40">
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover rounded-lg shadow-md border border-border"
-                  />
-                  <button
-                    onClick={handleRemoveImage}
-                    className="absolute top-[-10px] right-[-10px] bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-            )}
+{previewUrl && (
+          <div className="absolute inset-0 bottom-[80px] left-[15px] flex items-end justify-start z-10">
+            <div className="relative w-40 h-40">
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="w-full h-full object-cover rounded-lg shadow-md border border-border"
+              />
+              <button
+                onClick={handleRemoveImage}
+                className="absolute top-[-10px] right-[-10px] bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
 
             {/* File upload */}
             <div className="flex items-center gap-4 mt-4">
@@ -148,7 +141,7 @@ export default function CreatePost({
               />
               <label
                 htmlFor="file-upload"
-                className="cursor-pointer bg-pink-500 hover:bg-pink-400 text-white py-3 px-4 rounded-lg shadow-md  flex items-center justify-center"
+                className="cursor-pointer bg-pink-500 hover:bg-pink-400 text-white py-3 px-4 rounded-lg shadow-md inline-block flex items-center justify-center"
               >
                 <img src={upload} alt="upload" className="w-6 h-6" />
               </label>

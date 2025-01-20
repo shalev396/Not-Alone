@@ -23,7 +23,7 @@ export const auth = async (
     const token = req.header("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
-      // console.log("No token");
+      console.log("No token");
       return res.status(401).json({ error: "Authentication required" });
     }
 
@@ -34,7 +34,7 @@ export const auth = async (
     const user = await UserModel.findById(decoded.userId).select("type").lean();
 
     if (!user) {
-      // console.log("User not found");
+      console.log("User not found");
       return res.status(401).json({ error: "User not found" });
     }
 
@@ -45,7 +45,7 @@ export const auth = async (
 
     next();
   } catch (error) {
-    // console.log("Auth middleware error:", error);
+    console.log("Auth middleware error:", error);
     console.error("Auth middleware error:", error);
     return res.status(401).json({ error: "Invalid authentication token" });
   }

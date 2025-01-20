@@ -8,6 +8,7 @@ import {
   toggleLike,
   updateComment,
   deleteComment,
+  getCommentsByPost
 } from "../controllers/commentController";
 
 const router = express.Router();
@@ -15,6 +16,7 @@ const router = express.Router();
 // Admin only routes
 router.get("/", auth, checkUserType(["Admin"]), getAllComments);
 router.get("/:commentId", auth, checkUserType(["Admin"]), getCommentById);
+router.get("/post/:postId", auth, getCommentsByPost);
 
 // Routes for authenticated users
 router.post("/", auth, checkUserType(["Admin", "Soldier", "Municipality", "Organization"]), createComment);

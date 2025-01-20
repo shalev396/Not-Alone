@@ -60,14 +60,17 @@ function AppRoutes() {
           console.log(response.data);
           // alert(JSON.stringify(response.data));
           dispatch({ type: "user/setUser", payload: response.data.user });
+          dispatch({ type: "auth/login", payload: { token } });
         } catch (error) {
           console.error("Failed to fetch user data:", error);
-          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
+          dispatch({ type: "auth/logout" });
         }
       };
       fetchUser();
     }
   }, [dispatch]);
+  
 
   return (
     <Routes>
