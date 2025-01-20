@@ -119,10 +119,6 @@ export const routeListDonor: RouteProps[] = [
     label: "Create EatUp",
   },
   {
-    href: "/donate",
-    label: "Offer Donation @",
-  },
-  {
     href: "/my-eatups",
     label: "My EatUps",
   },

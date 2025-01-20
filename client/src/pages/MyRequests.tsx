@@ -92,7 +92,7 @@ export default function MyRequests() {
               </span>
             </h2>
             <Button
-              onClick={() => navigate("/request")}
+              onClick={() => navigate("/requestForm")}
               className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90"
             >
               New Request
@@ -114,7 +114,7 @@ export default function MyRequests() {
             <Card className="p-6 text-center">
               <p className="text-muted-foreground mb-4">No requests found</p>
               <Button
-                onClick={() => navigate("/request")}
+                onClick={() => navigate("/requestForm")}
                 className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90"
               >
                 Create Your First Request

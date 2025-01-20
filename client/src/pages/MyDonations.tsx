@@ -91,7 +91,7 @@ export default function MyDonations() {
                 </span>
               </h2>
               <Button
-                onClick={() => navigate("/new-donation")}
+                onClick={() => navigate("/create-donation")}
                 className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90 transition-opacity"
               >
                 Create New Donation
