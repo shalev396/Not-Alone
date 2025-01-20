@@ -108,13 +108,14 @@ export function PostCard({ post }: { post: Post }) {
 
         
 
-        {post.media && (
-          <img
-            src={post.media}
-            alt="Post media"
-            className="rounded-md mb-4 w-full max-h-[400px] object-cover border border-muted"
-          />
-        )}
+        {typeof post.media === "string" && post.media.trim() !== "" && (
+  <img
+    src={post.media}
+    alt="Post media"
+    className="rounded-md mb-4 w-full max-h-[400px] object-cover border border-muted"
+  />
+)}
+
         <p
           className="text-foreground mb-4"
           style={{
