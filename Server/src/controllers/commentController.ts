@@ -152,7 +152,7 @@ export const createComment = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Comment content is required" });
     }
 
-    const authorId = new mongoose.Types.ObjectId(userInfo.userId);
+    const authorId = userInfo.userId;
     const postId = new mongoose.Types.ObjectId(req.body.postId);
 
     const [newComment] = await CommentModel.create([
@@ -201,6 +201,8 @@ export const createComment = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Error creating comment" });
   }
 };
+
+
 
 export const getCommentsByPost = async (req: Request, res: Response) => {
   try {
