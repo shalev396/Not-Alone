@@ -32,10 +32,16 @@ export function PostCard({ post }: { post: Post }) {
   const [isLiked, setIsLiked] = useState(false);
   const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
   const nicknames = [
-    "Ace", "Blaze", "Shadow", "Luna", "Nova", 
-    "Spike", "Hunter", "Echo", "Phoenix", "Starlight",
-    "Jinx", "Rogue", "Frost", "Hawk", "Storm",
-    "Bolt", "Raven", "Mystic", "Flare", "Viper",
+    "Arlo", "Finn", "Theo", "Milo", "Levi",
+    "Ellis", "Ivy", "June", "Noa", "Jade",
+    "Eden", "Luca", "Nico", "Zara", "Sage",
+    "Remy", "Emmy", "Beau", "Tess", "Rue",
+    "Cal", "Lex", "Ezra", "Ash", "Kai",
+    "Quinn", "Lena", "Isla", "Romy", "Juno",
+    "Nova", "Cleo", "Wren", "Aria", "Drew",
+    "Skye", "Blair", "Lila", "Elle", "Rey",
+    "Mae", "Eli", "Liv", "Ada", "Hale",
+    "Cade", "Pax", "Vale", "Reed", "Noel",
   ];
   
   // Função para randomizar um apelido
@@ -88,14 +94,16 @@ export function PostCard({ post }: { post: Post }) {
   className="w-12 h-12 rounded-full border border-muted mr-4"
 />
 
-          <div>
-            <h3 className="font-bold text-base text-primary">
-              ? {post.author.nickname} : {}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {new Date(post.createdAt).toLocaleDateString()}
-            </p>
-          </div>
+<div>
+  <h3 className="font-bold text-base text-primary">
+    {post.author.nickname?.trim()
+      ? post.author.nickname
+      : getRandomNickname()}
+  </h3>
+  <p className="text-sm text-muted-foreground">
+    {new Date(post.createdAt).toLocaleDateString()}
+  </p>
+</div>
         </div>
 
         
