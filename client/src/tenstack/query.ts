@@ -14,7 +14,7 @@ export interface posts {
     nickname?: string; 
   };
   content: string;
-  image: string;
+  image: string[];
   likes: string[];
   _id: string;
   createdAt: Date;
