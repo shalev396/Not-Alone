@@ -283,6 +283,7 @@ export const handleJoinRequest = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid ID format" });
     }
 
+    // Find the city first
     const city = await CityModel.findById(cityId);
     if (!city) {
       return res.status(404).json({ message: "City not found" });
@@ -299,40 +300,34 @@ export const handleJoinRequest = async (req: Request, res: Response) => {
     }
 
     // Find the pending join request
-    const pendingJoin = city.pendingJoins.find(
+    const pendingJoinIndex = city.pendingJoins.findIndex(
       (join) => join.userId.toString() === userId
     );
 
-    if (!pendingJoin) {
+    if (pendingJoinIndex === -1) {
       return res.status(404).json({ message: "Join request not found" });
     }
 
-    if (action === "approve") {
+    const pendingJoin = city.pendingJoins[pendingJoinIndex];
+
+    // Remove the pending join request
+    city.pendingJoins.splice(pendingJoinIndex, 1);
+
+    if (action.toUpperCase() === "APPROVE") {
       // Add user to appropriate array based on their type
       if (pendingJoin.type === "Soldier") {
-        await CityModel.findByIdAndUpdate(cityId, {
-          $push: { soldiers: userId },
-          $pull: { pendingJoins: { userId: userId } },
-        });
+        city.soldiers.push(new mongoose.Types.ObjectId(userId));
       } else {
-        await CityModel.findByIdAndUpdate(cityId, {
-          $push: { municipalityUsers: userId },
-          $pull: { pendingJoins: { userId: userId } },
-        });
+        city.municipalityUsers.push(new mongoose.Types.ObjectId(userId));
       }
-    } else {
-      // Just remove the pending request if denying
-      await CityModel.findByIdAndUpdate(cityId, {
-        $pull: { pendingJoins: { userId: userId } },
-      });
     }
 
-    // Get updated city
-    const updatedCity = await CityModel.findById(cityId).lean();
+    // Save the updated city
+    await city.save();
 
     // Create audit log
     await AuditLogModel.create({
-      action: action === "APPROVE" ? "CITY_APPROVE" : "CITY_DENY",
+      action: action.toUpperCase() === "APPROVE" ? "CITY_APPROVE" : "CITY_DENY",
       userId: req.user.userId,
       targetId: cityId,
       changes: { userId, action },
@@ -340,7 +335,7 @@ export const handleJoinRequest = async (req: Request, res: Response) => {
 
     return res.json({
       message: `Join request ${action.toLowerCase()}d successfully`,
-      city: updatedCity,
+      city: city.toObject(),
     });
   } catch (error) {
     console.error("Handle join request error:", error);
@@ -368,9 +363,9 @@ export const getPendingJoinRequests = async (req: Request, res: Response) => {
     }
 
     // Check if user is municipality member or admin
-    const isMunicipality = city.municipalityUsers.includes(
-      new mongoose.Types.ObjectId(req.user.userId)
-    );
+    const isMunicipality = city.municipalityUsers
+      .map((id) => id.toString())
+      .includes(req.user.userId);
     if (!isMunicipality && req.user.type !== "Admin") {
       if (!(process.env.NODE_ENV === "test")) {
         return res

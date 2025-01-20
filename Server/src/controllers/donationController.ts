@@ -362,19 +362,19 @@ export const getCityDonationsAndSoldiers = async (
       return res.status(400).json({ message: "City not found" });
     }
 
-    // Get all pending donations in the city
+    // Get all donations in the city
     const donations = await DonationModel.find({
       city: userCity._id,
-      status: "pending",
     })
       .populate("donor", "firstName lastName email phone")
       .populate("cityDetails", "name zone")
+      .populate("assignedTo", "firstName lastName email phone")
       .lean();
 
-    // Get all available soldiers in the city
+    // Get all available soldiers in the city using the soldiers array
     const soldiers = await UserModel.find({
+      _id: { $in: userCity.soldiers },
       type: "Soldier",
-      city: userCity._id,
     })
       .select("firstName lastName email phone")
       .lean();
@@ -425,11 +425,22 @@ export const assignDonationToSoldier = async (req: Request, res: Response) => {
     const soldier = await UserModel.findOne({
       _id: soldierId,
       type: "Soldier",
-      city: donation.city,
     });
 
     if (!soldier) {
-      return res.status(404).json({ message: "Eligible soldier not found" });
+      return res.status(404).json({ message: "Soldier not found" });
+    }
+
+    // Check if soldier belongs to the city
+    const city = await CityModel.findOne({
+      _id: donation.city,
+      soldiers: soldierId,
+    });
+
+    if (!city) {
+      return res
+        .status(404)
+        .json({ message: "Soldier is not assigned to this city" });
     }
 
     // Verify municipality user is from the same city

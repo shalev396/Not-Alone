@@ -84,26 +84,26 @@ class SocketService {
         }
       });
 
-      // Handle joining channels
-      socket.on("join_channel", (channelId: string) => {
-        socket.join(`channel:${channelId}`);
+      // Handle joining city channel
+      socket.on("join_city", (cityId: string) => {
+        socket.join(`city:${cityId}`);
         const userSocket = Array.from(this.connectedUsers.values()).find(
           (u) => u.socketId === socket.id
         );
         if (userSocket) {
-          userSocket.channels.push(channelId);
+          userSocket.channels.push(`city:${cityId}`);
         }
       });
 
-      // Handle leaving channels
-      socket.on("leave_channel", (channelId: string) => {
-        socket.leave(`channel:${channelId}`);
+      // Handle leaving city channel
+      socket.on("leave_city", (cityId: string) => {
+        socket.leave(`city:${cityId}`);
         const userSocket = Array.from(this.connectedUsers.values()).find(
           (u) => u.socketId === socket.id
         );
         if (userSocket) {
           userSocket.channels = userSocket.channels.filter(
-            (id) => id !== channelId
+            (id) => id !== `city:${cityId}`
           );
         }
       });
@@ -187,6 +187,32 @@ class SocketService {
   // Get all connected users
   public getConnectedUsers(): UserSocket[] {
     return Array.from(this.connectedUsers.values());
+  }
+
+  // Emit city matching update to municipality users
+  public emitCityMatchingUpdate(cityId: string, update: any): void {
+    this.io.to(`city:${cityId}`).emit("city_matching_update", update);
+  }
+
+  // Emit donation assignment update
+  public emitDonationAssignment(cityId: string, donationId: string, soldierId: string): void {
+    this.io.to(`city:${cityId}`).emit("donation_assignment", {
+      donationId,
+      soldierId,
+    });
+  }
+
+  // Emit new donation to city channel
+  public emitNewDonation(cityId: string, donation: any): void {
+    this.io.to(`city:${cityId}`).emit("new_donation", donation);
+  }
+
+  // Emit donation status update
+  public emitDonationStatusUpdate(cityId: string, donationId: string, status: string): void {
+    this.io.to(`city:${cityId}`).emit("donation_status_update", {
+      donationId,
+      status,
+    });
   }
 }
 
