@@ -37,8 +37,8 @@ export const routeListSoldier: RouteProps[] = [
     label: "EatUps",
   },
   {
-    href: "/vouchers",
-    label: "Vouchers@",
+    href: "/business",
+    label: "Businesses",
   },
   {
     href: "/rights",
