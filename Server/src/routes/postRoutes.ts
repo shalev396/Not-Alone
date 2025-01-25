@@ -50,7 +50,7 @@ router.post(
 );
 
 router.put(
-  "/me",
+  "/:postId",
   auth,
   checkUserType(["Admin", "Soldier", "Municipality", "Organization"]),
   updatePost

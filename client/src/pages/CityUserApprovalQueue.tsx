@@ -33,27 +33,29 @@ interface JoinRequest {
 export default function CityUserApprovalQueue() {
   const navigate = useNavigate();
   const [denialReason, setDenialReason] = useState("");
-  //   const [showDenialDialog, setShowDenialDialog] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Check if user is a city member
-  const { data: userCity, isLoading: checkingAuth } = useQuery({
+  const { data: userCities = [], isLoading: checkingAuth } = useQuery({
     queryKey: ["user-city"],
     queryFn: async () => {
       try {
         const response = await api.get("/cities/me");
         console.log("User city response:", response.data);
-        return response.data[0]; // Get first city since a user can only be in one city
+        return response.data; // Get all cities
       } catch (error: any) {
         if (error.response?.status === 401) {
           navigate("/login");
         }
-        return null;
+        return [];
       }
     },
   });
+
+  // Get the first city since a user can only be in one city
+  const userCity = userCities[0];
 
   const {
     data: joinRequests = [],
@@ -69,31 +71,6 @@ export default function CityUserApprovalQueue() {
     },
     enabled: !!userCity?._id,
   });
-
-  // Show unauthorized message if not a city member
-  if (!checkingAuth && !userCity) {
-    return (
-      <div className="flex h-screen">
-        <Navbar isVertical isAccordion modes="home" />
-        <div className="flex-1 p-6 pl-20 md:pl-6">
-          <div className="max-w-4xl mx-auto">
-            <Alert variant="destructive" className="mb-6">
-              <AlertTitle>Unauthorized Access</AlertTitle>
-              <AlertDescription>
-                You must be a member of a city to access this page.
-              </AlertDescription>
-            </Alert>
-            <Button
-              onClick={() => navigate("/join-city")}
-              className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90"
-            >
-              Join a City
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const handleApprove = async (userId: string) => {
     try {
@@ -146,6 +123,31 @@ export default function CityUserApprovalQueue() {
                 : "Loading requests..."}
             </p>
           </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Show unauthorized message if not a city member
+  if (!checkingAuth && !userCity) {
+    return (
+      <div className="flex h-screen">
+        <Navbar isVertical isAccordion modes="home" />
+        <div className="flex-1 p-6 pl-20 md:pl-6">
+          <div className="max-w-4xl mx-auto">
+            <Alert variant="destructive" className="mb-6">
+              <AlertTitle>Unauthorized Access</AlertTitle>
+              <AlertDescription>
+                You must be a member of a city to access this page.
+              </AlertDescription>
+            </Alert>
+            <Button
+              onClick={() => navigate("/join-city")}
+              className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90"
+            >
+              Join a City
+            </Button>
+          </div>
         </div>
       </div>
     );

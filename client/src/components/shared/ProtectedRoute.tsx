@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
+import { useQuery } from "@tanstack/react-query";
 import { RootState } from "@/Redux/store";
 import { api } from "@/api/api";
 import {
@@ -11,6 +12,7 @@ import {
   routeListBusiness,
   routeListAdmin,
 } from "./navigation/routes";
+import { RouteProps, AdminRouteSection } from "./navigation/types";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -23,6 +25,22 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const currentPath = window.location.pathname;
   const [isLoading, setIsLoading] = useState(true);
 
+  // Always declare the query, but control its execution with enabled flag
+  const { data: userCity = [], isLoading: isCityLoading } = useQuery({
+    queryKey: ["user-city"],
+    queryFn: async () => {
+      try {
+        const response = await api.get("/cities/me");
+        return response.data || [];
+      } catch (error) {
+        console.error("Failed to fetch user city:", error);
+        return [];
+      }
+    },
+    enabled:
+      !!user.email && (user.type === "Municipality" || user.type === "Admin"),
+  });
+
   // Function to check if a path is in a route list
   const isPathInRouteList = (routeList: any[]): boolean => {
     return routeList.some((route) => {
@@ -34,27 +52,87 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     });
   };
 
+  // Function to filter routes based on city membership
+  const filterRoutesByAccess = (
+    routes: (RouteProps | AdminRouteSection)[]
+  ): (RouteProps | AdminRouteSection)[] => {
+    // If user is not Municipality or Admin, filter out routes that require city access
+    if (user.type !== "Municipality" && user.type !== "Admin") {
+      return routes
+        .filter((route) => {
+          if ("routes" in route && route.routes) {
+            const filteredRoutes = route.routes.filter(
+              (r) => !r.requiresCityOrAdmin
+            );
+            return filteredRoutes.length > 0
+              ? { ...route, routes: filteredRoutes }
+              : null;
+          }
+          return !route.requiresCityOrAdmin;
+        })
+        .filter(
+          (route): route is RouteProps | AdminRouteSection => route !== null
+        );
+    }
+
+    // For Municipality and Admin users, check city membership
+    return routes
+      .map((route) => {
+        if ("routes" in route && route.routes) {
+          const filteredRoutes = route.routes.filter(
+            (r) =>
+              !r.requiresCityOrAdmin ||
+              user.type === "Admin" ||
+              (Array.isArray(userCity) && userCity.length > 0)
+          );
+          return filteredRoutes.length > 0
+            ? { ...route, routes: filteredRoutes }
+            : null;
+        }
+        if (
+          "requiresCityOrAdmin" in route &&
+          route.requiresCityOrAdmin &&
+          user.type !== "Admin" &&
+          (!Array.isArray(userCity) || userCity.length === 0)
+        ) {
+          return null;
+        }
+        return route;
+      })
+      .filter(
+        (route): route is RouteProps | AdminRouteSection => route !== null
+      );
+  };
+
   // Function to get allowed routes based on user type
-  const getAllowedRoutes = (userType: string) => {
+  const getAllowedRoutes = (
+    userType: string
+  ): (RouteProps | AdminRouteSection)[] => {
+    let routes: (RouteProps | AdminRouteSection)[];
     switch (userType?.toLowerCase()) {
       case "admin":
-        return routeListAdmin;
+        routes = routeListAdmin;
+        break;
       case "soldier":
-        return [...routeListSoldier, {
-          href: "/create-post",
-          label: "Create Post",
-        }];
+        routes = routeListSoldier;
+
+        break;
       case "municipality":
-        return routeListMunicipality;
+        routes = routeListMunicipality;
+        break;
       case "donor":
-        return routeListDonor;
+        routes = routeListDonor;
+        break;
       case "organization":
-        return routeListOrganization;
+        routes = routeListOrganization;
+        break;
       case "business":
-        return routeListBusiness;
+        routes = routeListBusiness;
+        break;
       default:
-        return [];
+        routes = [];
     }
+    return filterRoutesByAccess(routes);
   };
 
   // Function to fetch user data
@@ -96,30 +174,66 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   useEffect(() => {
     if (!isLoading && !user.email) {
-      console.log("user.email", user);
       navigate("/login");
       return;
     }
 
-    if (!isLoading && user.email) {
-      const allowedRoutes = getAllowedRoutes(user.type);
-      const isAllowed =
-        isPathInRouteList(allowedRoutes) ||
-        currentPath === "/" ||
-        currentPath === "/profile" ||
-        currentPath === "/logout" ||
+    // Only check city data for Municipality users
+    const shouldCheckCityData =
+      user.type === "Municipality" || user.type === "Admin";
+    const isLoadingComplete =
+      !isLoading && (!shouldCheckCityData || !isCityLoading);
+
+    if (isLoadingComplete && user.email) {
+      const allowedRoutes = getAllowedRoutes(user.type || "");
+      const publicPaths = ["/", "/profile", "/logout"];
+      const isPublicPath =
+        publicPaths.includes(currentPath) ||
         currentPath.startsWith("/channel/");
 
-      // If the current path is not allowed for the user's role, redirect to home
+      if (isPublicPath) return;
+
+      let isAllowed = isPathInRouteList(allowedRoutes);
+
+      if (isAllowed) {
+        const flattenedRoutes = allowedRoutes.reduce(
+          (acc: RouteProps[], route) => {
+            if ("routes" in route) {
+              return [...acc, ...(route.routes || [])];
+            }
+            return [...acc, route as RouteProps];
+          },
+          []
+        );
+
+        const currentRoute = flattenedRoutes.find(
+          (route) => route.href === currentPath
+        );
+
+        if (currentRoute?.requiresCityOrAdmin) {
+          if (user.type !== "Municipality" && user.type !== "Admin") {
+            isAllowed = false;
+          } else if (user.type === "Municipality") {
+            isAllowed = Array.isArray(userCity) && userCity.length > 0;
+          }
+        }
+      }
+
       if (!isAllowed) {
         console.log(`Access denied: ${user.type} cannot access ${currentPath}`);
         navigate("/");
       }
     }
-  }, [currentPath, user.type, user.email, isLoading]);
+  }, [
+    currentPath,
+    user?.email,
+    user?.type,
+    isLoading,
+    isCityLoading,
+    userCity,
+  ]);
 
-  // Show loading state while checking authentication
-  if (isLoading) {
+  if (isLoading || (user.type === "Municipality" && isCityLoading)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -127,7 +241,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // If user is not logged in, don't render anything
   if (!user.email) {
     return null;
   }

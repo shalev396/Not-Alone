@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router";
 import { RootState } from "@/Redux/store";
-
-import { NavbarProps } from "./navigation/types";
+import { NavbarProps, RouteProps, AdminRouteSection } from "./navigation/types";
 import { setChannels } from "@/Redux/channelSlice";
 import {
   routeListLanding,
@@ -17,7 +16,6 @@ import {
 import { LandingNav } from "./navigation/variants/LandingNav";
 import { HomeNav } from "./navigation/variants/HomeNav";
 import { AdminNav } from "./navigation/variants/AdminNav";
-import { RouteProps } from "./navigation/types";
 import { api } from "@/api/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -38,6 +36,22 @@ export const Navbar = ({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Fetch user's city using React Query only for Municipality and Admin users
+  const { data: userCity = [] } = useQuery({
+    queryKey: ["user-city"],
+    queryFn: async () => {
+      try {
+        const response = await api.get("/cities/me");
+        return response.data || [];
+      } catch (error) {
+        console.error("Failed to fetch user city:", error);
+        return [];
+      }
+    },
+    enabled:
+      !!user.email && (user.type === "Municipality" || user.type === "Admin"),
+  });
+
   const { data: channelsData, refetch } = useQuery({
     queryKey: ["channels"],
     queryFn: fetchChannels,
@@ -48,6 +62,57 @@ export const Navbar = ({
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
+
+  // Function to filter routes based on city membership
+  const filterRoutesByAccess = (
+    routes: (RouteProps | AdminRouteSection)[]
+  ): (RouteProps | AdminRouteSection)[] => {
+    // If user is not Municipality or Admin, filter out routes that require city access
+    if (user.type !== "Municipality" && user.type !== "Admin") {
+      return routes
+        .map((route) => {
+          if ("routes" in route && route.routes) {
+            const filteredRoutes = route.routes.filter(
+              (r) => !r.requiresCityOrAdmin
+            );
+            return filteredRoutes.length > 0
+              ? { ...route, routes: filteredRoutes }
+              : null;
+          }
+          return !route.requiresCityOrAdmin ? route : null;
+        })
+        .filter(
+          (route): route is RouteProps | AdminRouteSection => route !== null
+        );
+    }
+
+    // For Municipality and Admin users, check city membership
+    return routes
+      .map((route) => {
+        if ("routes" in route && route.routes) {
+          const filteredRoutes = route.routes.filter(
+            (r) =>
+              !r.requiresCityOrAdmin ||
+              user.type === "Admin" ||
+              (Array.isArray(userCity) && userCity.length > 0)
+          );
+          return filteredRoutes.length > 0
+            ? { ...route, routes: filteredRoutes }
+            : null;
+        }
+        if (
+          route.requiresCityOrAdmin &&
+          user.type !== "Admin" &&
+          (!Array.isArray(userCity) || userCity.length === 0)
+        ) {
+          return null;
+        }
+        return route;
+      })
+      .filter(
+        (route): route is RouteProps | AdminRouteSection => route !== null
+      );
+  };
 
   const handleAccordionToggle = async (newState: boolean) => {
     if (newState && modes !== "landing") {
@@ -90,22 +155,36 @@ export const Navbar = ({
 
   const getRouteList = () => {
     const userType = user.type?.toLowerCase();
+    let routes: (RouteProps | AdminRouteSection)[];
     switch (userType) {
       case "admin":
-        return routeListAdmin;
+        routes = routeListAdmin;
+        break;
       case "soldier":
-        return routeListSoldier;
+        routes = [
+          ...routeListSoldier,
+          {
+            href: "/create-post",
+            label: "Create Post",
+          },
+        ];
+        break;
       case "municipality":
-        return routeListMunicipality;
+        routes = routeListMunicipality;
+        break;
       case "donor":
-        return routeListDonor;
+        routes = routeListDonor;
+        break;
       case "organization":
-        return routeListOrganization;
+        routes = routeListOrganization;
+        break;
       case "business":
-        return routeListBusiness;
+        routes = routeListBusiness;
+        break;
       default:
-        return routeListLanding;
+        routes = routeListLanding;
     }
+    return filterRoutesByAccess(routes);
   };
 
   if (modes === "landing") {

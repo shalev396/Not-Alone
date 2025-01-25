@@ -366,6 +366,7 @@ const setupTestUsers = async () => {
 
     const eatupData = {
       city: cityId,
+      location: "Test Location 123",
       title: "Test Eatup",
       media: ["http://example.com/image.jpg"],
       date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now

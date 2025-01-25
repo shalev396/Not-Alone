@@ -638,7 +638,7 @@ export const requestRoutes: route[] = [
     path: "/api/requests",
     method: "GET",
     auth: true,
-    allowedTypes: ["Admin", "Municipality", "Organization"],
+    allowedTypes: ["Admin", "Municipality", "Organization", "Donor"],
   },
 
   // Get all requests by the authenticated user

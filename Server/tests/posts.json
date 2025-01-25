@@ -1,1 +1,1 @@
-[]
+[{"_id":"6793ebff9a3b53944b951e8c","authorId":"6793ebf49a3b53944b951e20","content":"Test post content from soldier","media":["http://example.com/image.jpg"],"likes":[],"createdAt":"2025-01-24T19:37:35.510Z","updatedAt":"2025-01-24T19:37:35.098Z","__v":0,"author":{"_id":"6793ebf49a3b53944b951e20","firstName":"Test","lastName":"Soldier","profileImage":""},"comments":[]}]

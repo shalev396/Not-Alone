@@ -25,6 +25,7 @@ interface Donation {
   city: {
     _id: string;
     name: string;
+    zone: string;
   };
   address: string;
   media: string[];
@@ -45,6 +46,7 @@ interface Soldier {
   city: {
     _id: string;
     name: string;
+    zone: string;
   };
 }
 
@@ -66,13 +68,22 @@ export default function DonationAssignment() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   // First get the user's city
-  const { data: userCity } = useQuery({
+  const { data: userCities, isLoading: isCityLoading } = useQuery({
     queryKey: ["user-city"],
     queryFn: async () => {
-      const response = await api.get("/cities/me");
-      return response.data[0]; // Get first city since a user can only be in one city
+      try {
+        const response = await api.get("/cities/me");
+        return response.data;
+      } catch (error) {
+        console.error("Failed to fetch user city:", error);
+        return [];
+      }
     },
+    enabled: true,
+    retry: false,
   });
+
+  const userCity = userCities?.[0];
 
   // Get city matching data
   const { data: cityMatchingData } = useQuery<CityMatchingData>({
@@ -81,7 +92,10 @@ export default function DonationAssignment() {
       const response = await api.get("/donations/city-matching");
       return response.data;
     },
+    enabled: !!userCity, // Only fetch when we have the user's city
   });
+
+  console.log("Current userCity:", userCity); // Debug log
 
   const donations = cityMatchingData?.donations || [];
   const soldiers = cityMatchingData?.soldiers || [];
@@ -145,12 +159,24 @@ export default function DonationAssignment() {
                 Assign Donations
               </span>
             </h1>
-            {userCity && (
-              <Badge variant="outline" className="text-base px-4 py-2">
-                <MapPin className="w-4 h-4 mr-2" />
-                {userCity.name}
+            {isCityLoading ? (
+              <Badge
+                variant="outline"
+                className="text-base px-4 py-2 bg-background"
+              >
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
               </Badge>
-            )}
+            ) : userCity ? (
+              <Badge
+                variant="outline"
+                className="text-base px-4 py-2 bg-background flex items-center"
+              >
+                <MapPin className="w-4 h-4 mr-2 shrink-0" />
+                <span>
+                  {userCity.name} - {userCity.zone}
+                </span>
+              </Badge>
+            ) : null}
           </div>
 
           {error && (

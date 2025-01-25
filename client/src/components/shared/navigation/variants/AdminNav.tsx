@@ -44,7 +44,11 @@ export const AdminNav = ({
                       <a
                         key={route.label}
                         onClick={() => route.href && navigate(route.href)}
-                        className="text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-md p-2 transition-colors cursor-pointer"
+                        className={`text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-md p-2 transition-colors cursor-pointer ${
+                          route.href === "/logout"
+                            ? "mt-auto text-red-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20"
+                            : ""
+                        }`}
                       >
                         {route.label}
                       </a>
@@ -58,7 +62,11 @@ export const AdminNav = ({
               <button
                 key={item.label}
                 onClick={() => item.href && navigate(item.href)}
-                className="flex flex-1 items-center justify-between py-4 text-lg font-semibold transition-all hover:underline [&[data-state=open]>svg]:rotate-180"
+                className={`flex flex-1 items-center justify-between py-4 text-lg font-semibold transition-all hover:underline [&[data-state=open]>svg]:rotate-180 ${
+                  item.href === "/logout"
+                    ? "mt-auto text-red-500 hover:text-red-600"
+                    : ""
+                }`}
               >
                 {item.label}
               </button>

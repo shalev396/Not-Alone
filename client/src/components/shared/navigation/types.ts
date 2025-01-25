@@ -1,6 +1,7 @@
 export interface RouteProps {
   href: string;
   label: string;
+  requiresCityOrAdmin?: boolean;
 }
 
 export interface AdminRouteSection {
@@ -8,6 +9,7 @@ export interface AdminRouteSection {
   routes?: RouteProps[];
   href?: string;
   label?: string;
+  requiresCityOrAdmin?: boolean;
 }
 
 export interface NavbarProps {
