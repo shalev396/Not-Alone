@@ -49,10 +49,37 @@ type Post = {
 const Profile: React.FC = () => {
   const user = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch();
-  const DEFAULT_PROFILE_IMAGE = "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
+  const NICKNAME_OPTIONS = [
+    "May", "Lily", "Blue", "Bird", "Dudu", "Sofy", "Pedro", "Ana", "Lia", "Leo",
+    "Nina", "Rafa", "Lolo", "Zoe", "Ben", "Téo", "Noah", "Ivy", "Mia", "Theo",
+    "Gabi", "Dani", "João", "Cris", "Tina", "Bia", "Luca", "Max", "Yuri", "Luz",
+    "Kai", "Fifi", "Titi", "Jade", "Bela", "Vivi", "Lu", "Nico", "Pip", "Sol"
+  ];
+  
+  const DEFAULT_PROFILE_IMAGE =
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
+  const profileImages = [
+    "boy_1.svg",
+    "boy_2.svg",
+    "boy_3.svg",
+    "boy_4.svg",
+    "boy_5.svg",
+    "boy_6.svg",
+    "boy_7.svg",
+    "girl_1.svg",
+    "girl_2.svg",
+    "girl_4.svg",
+    "girl_5.svg",
+    "girl_6.svg",
+  ];
+
+const DEFAULT_NICKNAME =
+    user.nickname || NICKNAME_OPTIONS[Math.floor(Math.random() * NICKNAME_OPTIONS.length)];
   const [showAlternateTab, setShowAlternateTab] = useState(false);
-  const [nickname, setNickname] = useState(user.nickname || "");
-  const [profileImage, setProfileImage] = useState(user.profileImage || "");
+  const [nickname, setNickname] = useState(user.nickname || DEFAULT_NICKNAME);
+  const [profileImage, setProfileImage] = useState(
+    user.profileImage || DEFAULT_PROFILE_IMAGE
+  );
   const [email] = useState(user.email || "");
   const [phone, setPhone] = useState(user.phone || "");
   const [bio, setBio] = useState(user.bio || "");
@@ -63,7 +90,6 @@ const Profile: React.FC = () => {
   const [error, setError] = useState("");
   const filter = new Filter();
 
-  // Fetch profile data from /me
   const { data: profile, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
@@ -72,14 +98,12 @@ const Profile: React.FC = () => {
     },
   });
 
-// still using posts from users
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
     queryKey: ["userPosts", user._id],
     queryFn: () => fetchUserPosts(user._id),
     enabled: !!user._id,
   });
 
-  // Fetch donation requests from /requests/my
   const { data: donationRequests, isLoading: isLoadingDonations } = useQuery({
     queryKey: ["donationRequests", user._id],
     queryFn: async () => {
@@ -91,8 +115,7 @@ const Profile: React.FC = () => {
 
   const handleNicknameChange = (value: string) => {
     if (value === "") {
-      setError("");
-      setNickname(value);
+      setError("Nickname cannot be empty.");
       return;
     }
 
@@ -106,6 +129,13 @@ const Profile: React.FC = () => {
       setError("");
       setNickname(value);
     }
+  };
+
+  const handleRandomNickname = () => {
+    const randomNickname =
+      NICKNAME_OPTIONS[Math.floor(Math.random() * NICKNAME_OPTIONS.length)];
+    setNickname(randomNickname);
+    setError(""); 
   };
 
   const handleSubmit = async () => {
@@ -149,14 +179,24 @@ const Profile: React.FC = () => {
               <div>
                 <div className="flex items-start space-x-4">
                   <div className="flex-1">
-                    <label className="block text-sm font-medium mb-1">Nickname</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Nickname
+                    </label>
                     <Input
                       value={nickname}
                       onChange={(e) => handleNicknameChange(e.target.value)}
                       placeholder="Enter a unique nickname"
                     />
                     {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-                    <label className="block text-sm font-medium mt-4 mb-1">Email</label>
+                    <p
+                      onClick={handleRandomNickname}
+                      className="text-xs text-blue-500 mt-1 hover:underline cursor-pointer"
+                    >
+                      Give me a nickname
+                    </p>
+                    <label className="block text-sm font-medium mt-4 mb-1">
+                      Email
+                    </label>
                     <Input value={email} disabled />
                   </div>
                   <div className="flex-shrink-0">
@@ -168,33 +208,41 @@ const Profile: React.FC = () => {
                     />
                     {isDialogOpen && (
                       <ProfileImageDialog
-                        profileImages={["boy_1.svg", "girl_1.svg"]}
+                        profileImages={profileImages}
                         onSelectImage={(img) => setProfileImage(img)}
                         onClose={() => setIsDialogOpen(false)}
                       />
                     )}
                   </div>
                 </div>
-                <label className="block text-sm font-medium mt-4 mb-1">Phone</label>
+                <label className="block text-sm font-medium mt-4 mb-1">
+                  Phone
+                </label>
                 <Input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="Enter phone number"
                 />
-                <label className="block text-sm font-medium mt-4 mb-1">Biography</label>
+                <label className="block text-sm font-medium mt-4 mb-1">
+                  Biography
+                </label>
                 <Textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Write a short bio"
                   rows={4}
                 />
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 mt-4">
                   <Checkbox
                     checked={receiveNotifications}
-                    onCheckedChange={(checked: boolean) => setReceiveNotifications(checked)}
+                    onCheckedChange={(checked: boolean) =>
+                      setReceiveNotifications(checked)
+                    }
                   />
-                  <label className="text-sm font-medium">Receive Notifications</label>
+                  <label className="text-sm font-medium">
+                    Receive Notifications
+                  </label>
                 </div>
                 <button
                   onClick={handleSubmit}
@@ -209,12 +257,17 @@ const Profile: React.FC = () => {
             {showAlternateTab ? (
               user.type === "Soldier" ? (
                 <div>
-                  <h2 className="text-2xl font-bold mb-6">Donation Requests</h2>
+                  <h2 className="text-2xl font-bold mb-6">
+                    Donation Requests
+                  </h2>
                   {isLoadingDonations ? (
                     <PostSkeleton />
                   ) : donationRequests && donationRequests.length > 0 ? (
                     donationRequests.map((request) => (
-                      <div key={request._id} className="bg-card p-4 rounded-lg mb-4">
+                      <div
+                        key={request._id}
+                        className="bg-card p-4 rounded-lg mb-4"
+                      >
                         <h3 className="font-bold">{request.content}</h3>
                         <p>Amount Needed: ${request.amountNeeded}</p>
                         <p>Amount Raised: ${request.amountRaised}</p>
