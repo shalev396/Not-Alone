@@ -49,9 +49,8 @@ type Post = {
 const Profile: React.FC = () => {
   const user = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch();
+  const DEFAULT_PROFILE_IMAGE = "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
   const [showAlternateTab, setShowAlternateTab] = useState(false);
-  const isSoldier = user.type === "Soldier"; // Certifique-se de que "Soldier" está correto
-
   const [nickname, setNickname] = useState(user.nickname || "");
   const [profileImage, setProfileImage] = useState(user.profileImage || "");
   const [email] = useState(user.email || "");
@@ -63,36 +62,31 @@ const Profile: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [error, setError] = useState("");
   const filter = new Filter();
-  const profileImages = [
-    "boy_1.svg",
-    "boy_2.svg",
-    "boy_3.svg",
-    "boy_4.svg",
-    "boy_5.svg",
-    "boy_6.svg",
-    "boy_7.svg",
-    "girl_1.svg",
-    "girl_2.svg",
-    "girl_4.svg",
-    "girl_5.svg",
-    "girl_6.svg",
-  ];
-  const DEFAULT_PROFILE_IMAGE = "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
-  // Fetch user posts
+
+  // Fetch profile data from /me
+  const { data: profile, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const response = await api.get("/me");
+      return response.data;
+    },
+  });
+
+// still using posts from users
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
     queryKey: ["userPosts", user._id],
     queryFn: () => fetchUserPosts(user._id),
     enabled: !!user._id,
   });
 
-  // Fetch donation requests for soldiers
+  // Fetch donation requests from /requests/my
   const { data: donationRequests, isLoading: isLoadingDonations } = useQuery({
     queryKey: ["donationRequests", user._id],
     queryFn: async () => {
-      const response = await api.get(`/requests/my`); // Corrigido para usar o endpoint correto
+      const response = await api.get(`/requests/my`);
       return response.data.requests as DonationRequest[];
     },
-    enabled: isSoldier,
+    enabled: user.type === "Soldier",
   });
 
   const handleNicknameChange = (value: string) => {
@@ -128,14 +122,12 @@ const Profile: React.FC = () => {
     try {
       const updatedUser = {
         nickname,
-        email,
         phone,
         bio,
         profileImage,
         receiveNotifications,
       };
-      const response = await api.put(`/users/me`, updatedUser);
-
+      const response = await api.put("/me", updatedUser);
       dispatch(updateUser(response.data));
       alert("Profile updated successfully!");
     } catch (error) {
@@ -149,133 +141,107 @@ const Profile: React.FC = () => {
       <Navbar modes="home" isVertical={true} isAccordion={true} />
       <div className="flex-1 flex justify-center">
         <div className="w-full max-w-3xl px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold mb-6 text-center">
-            <span className="bg-gradient-to-r text-green-500 bg-clip-text">
-              Profile
-            </span>{" "}
-            Page
-          </h1>
-
+          <h1 className="text-3xl font-bold mb-6 text-center">Profile Page</h1>
           <div className="bg-card p-6 rounded-lg shadow-md">
-            <div className="flex items-start space-x-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium mb-1">Nickname</label>
-                <Input
-                  value={nickname}
-                  onChange={(e) => handleNicknameChange(e.target.value)}
-                  placeholder="Enter a unique nickname"
-                />
-                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-                <label className="block text-sm font-medium mt-6 mb-1">Email</label>
-                <Input value={email} disabled />
-              </div>
-              <div className="flex-shrink-0">
-                <img
-                  src={profileImage || DEFAULT_PROFILE_IMAGE}
-                  alt="Profile"
-                  onClick={() => setIsDialogOpen(true)}
-                  className="rounded-full cursor-pointer w-40 h-40 border border-gray-300 hover:border-green-500"
-                />
-                {isDialogOpen && (
-                  <ProfileImageDialog
-                    profileImages={profileImages}
-                    onSelectImage={(img) => setProfileImage(img)}
-                    onClose={() => setIsDialogOpen(false)}
-                  />
-                )}
-              </div>
-            </div>
-
-            <label className="block text-sm font-medium mt-4 mb-1">Phone</label>
-            <Input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Enter phone number"
-            />
-            <label className="block text-sm font-medium mt-4 mb-1">Biography</label>
-            <Textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Write a short bio"
-              rows={4}
-            />
-            <div className="mt-4">
-              <Checkbox
-                checked={receiveNotifications}
-                onCheckedChange={(checked: boolean) => setReceiveNotifications(checked)}
-              />
-            </div>
-            <button
-              onClick={handleSubmit}
-              className="mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded"
-            >
-              Save Changes
-            </button>
-          </div>
-
-          <div className="flex space-x-4 mt-14 mb-18">
-            <button
-              onClick={() => setShowAlternateTab(false)}
-              className={`font-bold text-green-500 hover:cursor-pointer ${
-                !showAlternateTab ? "underline" : ""
-              }`}
-            >
-              Posts
-            </button>
-            <button
-              onClick={() => setShowAlternateTab(true)}
-              className={`font-bold text-green-500 hover:cursor-pointer ${
-                showAlternateTab ? "underline" : ""
-              }`}
-            >
-              {isSoldier ? "Donation Requests" : "Donations"}
-            </button>
-          </div>
-
-          {showAlternateTab ? (
-            isSoldier ? (
-              <div>
-                <h2 className="text-2xl font-bold mb-6">Your Donation Requests</h2>
-                {isLoadingDonations ? (
-                  <PostSkeleton />
-                ) : donationRequests && donationRequests.length > 0 ? (
-                  donationRequests.map((request) => (
-                    <div
-                      key={request._id}
-                      className="bg-card p-4 rounded-lg mb-4 shadow"
-                    >
-                      <h3 className="font-bold text-lg">{request.content}</h3>
-                      <p>
-                        Amount Needed: <strong>${request.amountNeeded}</strong>
-                      </p>
-                      <p>
-                        Amount Raised: <strong>${request.amountRaised}</strong>
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p>No donation requests found.</p>
-                )}
-              </div>
+            {isLoadingProfile ? (
+              <PostSkeleton />
             ) : (
               <div>
-                <h2 className="text-2xl font-bold mb-6">Your Donations</h2>
-                <p>Donations feature will be available soon.</p>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">Nickname</label>
+                    <Input
+                      value={nickname}
+                      onChange={(e) => handleNicknameChange(e.target.value)}
+                      placeholder="Enter a unique nickname"
+                    />
+                    {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+                    <label className="block text-sm font-medium mt-4 mb-1">Email</label>
+                    <Input value={email} disabled />
+                  </div>
+                  <div className="flex-shrink-0">
+                    <img
+                      src={profileImage || DEFAULT_PROFILE_IMAGE}
+                      alt="Profile"
+                      onClick={() => setIsDialogOpen(true)}
+                      className="rounded-full cursor-pointer w-40 h-40 border border-gray-300 hover:border-green-500"
+                    />
+                    {isDialogOpen && (
+                      <ProfileImageDialog
+                        profileImages={["boy_1.svg", "girl_1.svg"]}
+                        onSelectImage={(img) => setProfileImage(img)}
+                        onClose={() => setIsDialogOpen(false)}
+                      />
+                    )}
+                  </div>
+                </div>
+                <label className="block text-sm font-medium mt-4 mb-1">Phone</label>
+                <Input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Enter phone number"
+                />
+                <label className="block text-sm font-medium mt-4 mb-1">Biography</label>
+                <Textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Write a short bio"
+                  rows={4}
+                />
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    checked={receiveNotifications}
+                    onCheckedChange={(checked: boolean) => setReceiveNotifications(checked)}
+                  />
+                  <label className="text-sm font-medium">Receive Notifications</label>
+                </div>
+                <button
+                  onClick={handleSubmit}
+                  className="mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded"
+                >
+                  Save Changes
+                </button>
               </div>
-            )
-          ) : (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Your Posts</h2>
-              {isLoadingPosts ? (
-                <PostSkeleton />
-              ) : userPosts && userPosts.posts.length > 0 ? (
-                userPosts.posts.map((post: Post) => <PostCard key={post._id} post={post as unknown as Post} />)
+            )}
+          </div>
+          <div className="mt-14">
+            {showAlternateTab ? (
+              user.type === "Soldier" ? (
+                <div>
+                  <h2 className="text-2xl font-bold mb-6">Donation Requests</h2>
+                  {isLoadingDonations ? (
+                    <PostSkeleton />
+                  ) : donationRequests && donationRequests.length > 0 ? (
+                    donationRequests.map((request) => (
+                      <div key={request._id} className="bg-card p-4 rounded-lg mb-4">
+                        <h3 className="font-bold">{request.content}</h3>
+                        <p>Amount Needed: ${request.amountNeeded}</p>
+                        <p>Amount Raised: ${request.amountRaised}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p>No donation requests found.</p>
+                  )}
+                </div>
               ) : (
-                <p>You haven’t posted anything yet.</p>
-              )}
-            </div>
-          )}
+                <p>You are not authorized to view donation requests.</p>
+              )
+            ) : (
+              <div>
+                <h2 className="text-2xl font-bold mb-6">Your Posts</h2>
+                {isLoadingPosts ? (
+                  <PostSkeleton />
+                ) : userPosts && userPosts.posts.length > 0 ? (
+                  userPosts.posts.map((post: Post) => (
+                    <PostCard key={post._id} post={post} />
+                  ))
+                ) : (
+                  <p>You haven’t posted anything yet.</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

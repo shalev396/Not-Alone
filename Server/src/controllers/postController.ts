@@ -68,13 +68,11 @@ export const getAllPosts = async (req: Request, res: Response) => {
     const sort = (req.query.sort as string) || "-createdAt";
     const authorId = req.query.authorId as string;
 
-    // Construindo o filtro (match)
     const match: mongoose.FilterQuery<typeof PostModel> = {};
     if (authorId) {
       match.authorId = new mongoose.Types.ObjectId(authorId);
     }
 
-    // Construindo o objeto de ordenação
     const sortObj = sort.split(",").reduce((acc: any, item) => {
       const [key, order] = item.startsWith("-")
         ? [item.slice(1), -1]
@@ -83,35 +81,34 @@ export const getAllPosts = async (req: Request, res: Response) => {
       return acc;
     }, {});
 
-    // Realizando a consulta com o aggregation pipeline
     const [result] = await PostModel.aggregate([
       {
         $facet: {
-          metadata: [{ $match: match }, { $count: "total" }], // Metadados para contagem total
+          metadata: [{ $match: match }, { $count: "total" }], 
           posts: [
             { $match: match },
-            { $sort: sortObj }, // Ordenação
-            { $skip: (page - 1) * limit }, // Paginação
-            { $limit: limit }, // Limite de itens
+            { $sort: sortObj }, 
+            { $skip: (page - 1) * limit }, 
+            { $limit: limit }, 
             {
               $lookup: {
-                from: "users", // Nome da coleção de usuários
-                localField: "authorId", // Campo no Post
-                foreignField: "_id", // Campo no User
+                from: "users", 
+                localField: "authorId", 
+                foreignField: "_id", 
                 pipeline: [
-                  { $project: { password: 0, email: 0 } }, // Exclui campos sensíveis
+                  { $project: { password: 0, email: 0 } }, 
                 ],
-                as: "author", // Nome do campo resultante
+                as: "author",
               },
             },
-            { $unwind: "$author" }, // Garante que cada post tenha apenas um `author`
+            { $unwind: "$author" }, 
           ],
         },
       },
       {
         $project: {
           posts: 1,
-          total: { $arrayElemAt: ["$metadata.total", 0] }, // Pega o total da contagem
+          total: { $arrayElemAt: ["$metadata.total", 0] }, 
         },
       },
     ]);
