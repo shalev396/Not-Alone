@@ -46,7 +46,6 @@ export const getMyProfile = async (req: Request, res: Response) => {
       .lean();
 
     if (!profile) {
-      // Create default profile if it doesn't exist
       const newProfile = await ProfileModel.create({
         userId: userInfo.userId,
         visibility: "public",
@@ -65,6 +64,7 @@ export const getMyProfile = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Error fetching profile" });
   }
 };
+
 
 // Get profile by user ID
 export const getProfileByUserId = async (req: Request, res: Response) => {
@@ -103,25 +103,45 @@ export const getProfileByUserId = async (req: Request, res: Response) => {
   }
 };
 
+
+
+
 // Update my profile
 export const updateMyProfile = async (req: Request, res: Response) => {
   try {
     const userInfo = ensureUser(req, res);
     if (!userInfo) return;
 
-    const profile = await ProfileModel.findOne({ userId: userInfo.userId });
+    // Verificar se o perfil já existe
+    let profile = await ProfileModel.findOne({ userId: userInfo.userId });
+
+    // Se não existir, criar um novo perfil
     if (!profile) {
-      return res.status(404).json({ message: "Profile not found" });
+      profile = new ProfileModel({
+        userId: userInfo.userId,
+        nickname: req.body.nickname || "", // Usar nickname fornecido ou vazio
+        bio: req.body.bio || "", // Usar bio fornecida ou vazio
+        profileImage: req.body.profileImage || "", // Usar imagem fornecida ou padrão
+        visibility: "public", // Definir visibilidade padrão
+        receiveNotifications: req.body.receiveNotifications || false,
+      });
     }
 
-    // Don't allow updates to userId
-    delete req.body.userId;
+    // Atualizar as informações do perfil com os dados fornecidos no corpo da requisição
+    if (req.body.nickname) profile.nickname = req.body.nickname;
+    if (req.body.bio) profile.bio = req.body.bio;
+    if (req.body.profileImage) profile.profileImage = req.body.profileImage;
+    if (req.body.receiveNotifications !== undefined) {
+      profile.receiveNotifications = req.body.receiveNotifications;
+    }
 
-    const updatedProfile = await ProfileModel.findByIdAndUpdate(
-      profile._id,
-      { $set: req.body },
-      { new: true, runValidators: true }
-    ).populate("user", "-password");
+    // Salvar o perfil (novo ou atualizado)
+    await profile.save();
+
+    // Preencher os dados do usuário e retornar o perfil
+    const updatedProfile = await ProfileModel.findById(profile._id)
+      .populate("user", "-password")
+      .lean();
 
     return res.json(updatedProfile);
   } catch (error) {
@@ -136,6 +156,11 @@ export const updateMyProfile = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Error updating profile" });
   }
 };
+
+
+
+
+
 
 // Update user's profile (admin only)
 export const updateUserProfile = async (req: Request, res: Response) => {

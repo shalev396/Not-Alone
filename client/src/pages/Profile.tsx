@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
 import { PostCard } from "@/components/social/PostCard";
 import { PostSkeleton } from "@/components/shared/feeds/PostFeed";
+import { useEffect } from "react";
 
 type DonationRequest = {
   _id: string;
@@ -72,20 +73,17 @@ const Profile: React.FC = () => {
     "girl_5.svg",
     "girl_6.svg",
   ];
-
-const DEFAULT_NICKNAME =
-    user.nickname || NICKNAME_OPTIONS[Math.floor(Math.random() * NICKNAME_OPTIONS.length)];
+  const getRandomNickname = () => {
+    return NICKNAME_OPTIONS[Math.floor(Math.random() * NICKNAME_OPTIONS.length)];
+  };
+  // Estados
   const [showAlternateTab, setShowAlternateTab] = useState(false);
-  const [nickname, setNickname] = useState(user.nickname || DEFAULT_NICKNAME);
-  const [profileImage, setProfileImage] = useState(
-    user.profileImage || DEFAULT_PROFILE_IMAGE
-  );
+  const [nickname, setNickname] = useState(getRandomNickname()); 
+  const [profileImage, setProfileImage] = useState(DEFAULT_PROFILE_IMAGE);
   const [email] = useState(user.email || "");
-  const [phone, setPhone] = useState(user.phone || "");
-  const [bio, setBio] = useState(user.bio || "");
-  const [receiveNotifications, setReceiveNotifications] = useState<boolean>(
-    user.receiveNotifications ?? false
-  );
+  const [phone, setPhone] = useState("");
+  const [bio, setBio] = useState("");
+  const [receiveNotifications, setReceiveNotifications] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [error, setError] = useState("");
   const filter = new Filter();
@@ -97,6 +95,18 @@ const DEFAULT_NICKNAME =
       return response.data;
     },
   });
+
+  useEffect(() => {
+    if (profile) {
+      setNickname(profile.nickname || getRandomNickname());
+      setBio(profile.bio || "");
+      setProfileImage(profile.profileImage || DEFAULT_PROFILE_IMAGE);
+      setPhone(profile.phone || "");
+      setReceiveNotifications(profile.receiveNotifications || false);
+      dispatch(updateUser(profile));
+    }
+  }, [profile, dispatch]);
+  
 
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
     queryKey: ["userPosts", user._id],
@@ -143,12 +153,12 @@ const DEFAULT_NICKNAME =
       setError("Nickname cannot be empty.");
       return;
     }
-
+  
     if (error) {
       alert("Please fix the errors before saving!");
       return;
     }
-
+  
     try {
       const updatedUser = {
         nickname,
@@ -157,7 +167,9 @@ const DEFAULT_NICKNAME =
         profileImage,
         receiveNotifications,
       };
-      const response = await api.put("/me", updatedUser);
+      const response = await api.put("/profiles/me", updatedUser);
+  
+      // Atualiza o Redux com os dados retornados
       dispatch(updateUser(response.data));
       alert("Profile updated successfully!");
     } catch (error) {
@@ -165,6 +177,7 @@ const DEFAULT_NICKNAME =
       alert("Failed to update profile. Please try again.");
     }
   };
+  
 
   return (
     <div className="flex bg-background text-foreground min-h-screen">
