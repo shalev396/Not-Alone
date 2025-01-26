@@ -24,7 +24,6 @@ export const routeListSoldier: RouteProps[] = [
     href: "/",
     label: "Home",
   },
-
   {
     href: "/requestForm",
     label: "Request Form",
@@ -34,8 +33,16 @@ export const routeListSoldier: RouteProps[] = [
     label: "My Requests",
   },
   {
+    href: "/my-donations",
+    label: "My Donations",
+  },
+  {
     href: "/social",
     label: "Social",
+  },
+  {
+    href: "/create-post",
+    label: "Create Post",
   },
   {
     href: "/home/eatup",
@@ -44,10 +51,6 @@ export const routeListSoldier: RouteProps[] = [
   {
     href: "/vouchers",
     label: "Vouchers@",
-  },
-  {
-    href: "/donation-status",
-    label: "Donation Status@",
   },
   {
     href: "/rights",
@@ -75,6 +78,7 @@ export const routeListMunicipality: RouteProps[] = [
   {
     href: "/requests",
     label: "Answer Requests @",
+    requiresCityOrAdmin: true,
   },
   {
     href: "/social",
@@ -83,14 +87,12 @@ export const routeListMunicipality: RouteProps[] = [
   {
     href: "/donation-assignment",
     label: "Donation Assignment",
+    requiresCityOrAdmin: true,
   },
   {
     href: "/donation-control-panel",
     label: "Donation Control Panel",
-  },
-  {
-    href: "/donation-status",
-    label: "Donation Status @",
+    requiresCityOrAdmin: true,
   },
 
   {
@@ -104,6 +106,7 @@ export const routeListMunicipality: RouteProps[] = [
   {
     href: "/city-requests",
     label: "City Requests",
+    requiresCityOrAdmin: true,
   },
   {
     href: "/create-city",
@@ -112,6 +115,7 @@ export const routeListMunicipality: RouteProps[] = [
   {
     href: "/city-approval",
     label: "City Approval",
+    requiresCityOrAdmin: true,
   },
   {
     href: "/join-city",

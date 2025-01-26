@@ -23,7 +23,7 @@ interface Donation {
   address: string;
   media: string[];
   status: "pending" | "assigned" | "delivery" | "arrived";
-  assignedTo?: {
+  assignedSoldier?: {
     _id: string;
     firstName: string;
     lastName: string;
@@ -176,15 +176,15 @@ export default function DonationStatus() {
                           {donation.donor.phone}
                         </p>
                       </div>
-                      {donation.assignedTo && (
+                      {donation.assignedSoldier && (
                         <div>
                           <p className="font-medium">Assigned Soldier</p>
                           <p className="text-muted-foreground">
-                            {donation.assignedTo.firstName}{" "}
-                            {donation.assignedTo.lastName}
+                            {donation.assignedSoldier.firstName}{" "}
+                            {donation.assignedSoldier.lastName}
                           </p>
                           <p className="text-muted-foreground">
-                            {donation.assignedTo.phone}
+                            {donation.assignedSoldier.phone}
                           </p>
                         </div>
                       )}

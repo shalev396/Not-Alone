@@ -448,7 +448,7 @@ export const donationRoutes: route[] = [
     path: "/api/donations/my",
     method: "GET",
     auth: true,
-    allowedTypes: ["Admin", "Donor"],
+    allowedTypes: ["Admin", "Donor", "Soldier"],
   },
 
   // Create donation
@@ -638,7 +638,7 @@ export const requestRoutes: route[] = [
     path: "/api/requests",
     method: "GET",
     auth: true,
-    allowedTypes: ["Admin", "Municipality", "Organization"],
+    allowedTypes: ["Admin", "Municipality", "Organization", "Donor"],
   },
 
   // Get all requests by the authenticated user

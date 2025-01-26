@@ -28,7 +28,11 @@ export const HomeNav = ({
         <a
           key={route.label}
           onClick={() => navigate(route.href)}
-          className="text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-md p-2 transition-colors cursor-pointer"
+          className={`text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-md p-2 transition-colors cursor-pointer ${
+            route.href === "/logout"
+              ? "mt-auto text-red-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20"
+              : ""
+          }`}
         >
           {route.label}
         </a>

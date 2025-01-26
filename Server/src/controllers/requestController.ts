@@ -105,7 +105,7 @@ export const getRequests = async (req: Request, res: Response) => {
     if (city) query.city = city;
     if (paid) query.paid = paid;
 
-    // For non-admin users, show only their own requests or requests from their city
+    // For non-admin users, apply specific filters
     if (userInfo.type !== "Admin") {
       if (userInfo.type === "Soldier") {
         query.authorId = userInfo.userId;
@@ -116,6 +116,9 @@ export const getRequests = async (req: Request, res: Response) => {
         if (userCity) {
           query.city = userCity._id;
         }
+      } else if (userInfo.type === "Donor") {
+        // Donors can only see approved requests
+        query.status = "approved";
       }
     }
 

@@ -16,7 +16,12 @@ import {
 const router = express.Router();
 
 // Public routes (still need authentication)
-router.get("/my", auth, checkUserType(["Admin", "Donor"]), getMyDonations);
+router.get(
+  "/my",
+  auth,
+  checkUserType(["Admin", "Donor", "Soldier"]),
+  getMyDonations
+);
 
 // Create donation (only donors and admin)
 router.post("/", auth, checkUserType(["Admin", "Donor"]), createDonation);

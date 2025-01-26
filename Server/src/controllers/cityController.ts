@@ -123,8 +123,13 @@ const citySchema = new Schema(
 export const getMyCity = async (req: Request, res: Response) => {
   try {
     const city = await CityModel.find({
-      municipalityUsers: req.user.userId,
-    });
+      $or: [
+        { municipalityUsers: req.user.userId },
+        { soldiers: req.user.userId },
+      ],
+    })
+      .select("_id name zone bio media approvalStatus")
+      .lean();
     return res.status(200).json(city);
   } catch (error) {
     console.error("Get my city error:", error);

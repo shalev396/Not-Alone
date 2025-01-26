@@ -1,3 +1,13 @@
 *.env
 *node_modules
 *.env.test
+Server/tests/businesses.json
+Server/tests/cities.json
+Server/tests/comments.json
+Server/tests/discounts.json
+Server/tests/donations.json
+Server/tests/eatup.json
+Server/tests/posts.json
+Server/tests/profiles.json
+Server/tests/requests.json
+Server/tests/users.json

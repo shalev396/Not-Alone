@@ -102,13 +102,22 @@ export default function DonationControlPanel() {
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
 
   // Get user's city
-  const { data: userCity } = useQuery({
+  const { data: userCities, isLoading: isCityLoading } = useQuery({
     queryKey: ["user-city"],
     queryFn: async () => {
-      const response = await api.get("/cities/me");
-      return response.data[0];
+      try {
+        const response = await api.get("/cities/me");
+        return response.data;
+      } catch (error) {
+        console.error("Failed to fetch user city:", error);
+        return [];
+      }
     },
+    enabled: true,
+    retry: false,
   });
+
+  const userCity = userCities?.[0];
 
   // Get all donations in the city
   const { data: cityDonations } = useQuery<DonationResponse>({
@@ -117,7 +126,10 @@ export default function DonationControlPanel() {
       const response = await api.get("/donations/city-matching");
       return response.data;
     },
+    enabled: !!userCity, // Only fetch when we have the user's city
   });
+
+  console.log("Current userCity:", userCity); // Debug log
 
   const donations = cityDonations?.donations || [];
 
@@ -170,12 +182,24 @@ export default function DonationControlPanel() {
                 Donation Control Panel
               </span>
             </h1>
-            {userCity && (
-              <Badge variant="outline" className="text-base px-4 py-2">
-                <MapPin className="w-4 h-4 mr-2" />
-                {userCity.name}
+            {isCityLoading ? (
+              <Badge
+                variant="outline"
+                className="text-base px-4 py-2 bg-background"
+              >
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
               </Badge>
-            )}
+            ) : userCity ? (
+              <Badge
+                variant="outline"
+                className="text-base px-4 py-2 bg-background flex items-center"
+              >
+                <MapPin className="w-4 h-4 mr-2 shrink-0" />
+                <span>
+                  {userCity.name} - {userCity.zone}
+                </span>
+              </Badge>
+            ) : null}
           </div>
 
           {error && (
@@ -322,8 +346,9 @@ export default function DonationControlPanel() {
                         <div className="mt-2">
                           <p className="text-sm font-medium">Assigned to:</p>
                           <p className="text-sm text-muted-foreground">
-                            {donation.assignedTo.firstName}{" "}
-                            {donation.assignedTo.lastName}
+                            {donation.assignedTo
+                              ? `${donation.assignedTo.firstName} ${donation.assignedTo.lastName}`
+                              : "Not assigned yet"}
                           </p>
                         </div>
                       </div>

@@ -17,13 +17,9 @@ export default function MyEatUps() {
 
   const fetchEatUps = async () => {
     try {
-      const response = await api.get("/eatups");
+      const response = await api.get("/eatups/my");
       const eatupsData = response.data.eatups || [];
-
-      const userEatups = eatupsData.filter(
-        (item: EatUp) => item.owner === userId || item.authorId === userId
-      );
-      setEatUps(userEatups);
+      setEatUps(eatupsData);
     } catch (error) {
       console.error("Error fetching EatUps:", error);
       setEatUps([]);
