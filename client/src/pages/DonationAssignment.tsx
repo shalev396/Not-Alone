@@ -133,7 +133,10 @@ export default function DonationAssignment() {
     const matchesCategory =
       categoryFilter === "all" || donation.category === categoryFilter;
 
-    return matchesSearch && matchesCategory;
+    // Only show pending donations
+    const isPending = donation.status === "pending";
+
+    return matchesSearch && matchesCategory && isPending;
   });
 
   const filteredSoldiers = soldiers.filter((soldier: Soldier) => {

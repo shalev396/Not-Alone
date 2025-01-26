@@ -92,44 +92,54 @@ export const getDonationById = async (req: Request, res: Response) => {
     }
 
     const donation = await DonationModel.findById(donationId)
-      .populate("donor", "-password")
-      .populate("cityDetails")
-      .populate("assignedSoldier", "-password")
+      .populate("donor", "firstName lastName email phone")
+      .populate("cityDetails", "name zone")
+      .populate("assignedSoldier", "firstName lastName email phone")
       .lean();
 
     if (!donation) {
       return res.status(404).json({ message: "Donation not found" });
     }
 
-    // Check access based on user type
+    // Admin can access all donations
     if (userInfo.type === "Admin") {
       return res.json(donation);
     }
 
-    if (
-      donation.donorId.toString() === userInfo.userId ||
-      (process.env.NODE_ENV === "test" && userInfo.type === "Donor")
-    ) {
-      return res.json(donation);
+    // Donor can only access their own donations
+    if (userInfo.type === "Donor") {
+      if (donation.donorId.toString() === userInfo.userId) {
+        return res.json(donation);
+      }
+      return res
+        .status(403)
+        .json({ message: "Not authorized to access this donation" });
     }
 
+    // Municipality can only access donations in their city
     if (userInfo.type === "Municipality") {
       const userCity = await CityModel.findOne({
         municipalityUsers: userInfo.userId,
       }).lean();
-      if (
-        (userCity && userCity._id.toString() === donation.city.toString()) ||
-        process.env.NODE_ENV === "test"
-      ) {
-        return res.json(donation);
+
+      if (!userCity || userCity._id.toString() !== donation.city.toString()) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to access this donation" });
       }
+      return res.json(donation);
     }
 
-    if (
-      (userInfo.type === "Soldier" &&
-        donation.assignedTo?.toString() === userInfo.userId) ||
-      (process.env.NODE_ENV === "test" && userInfo.type === "Soldier")
-    ) {
+    // Soldier can only access donations assigned to them
+    if (userInfo.type === "Soldier") {
+      if (
+        !donation.assignedTo ||
+        donation.assignedTo.toString() !== userInfo.userId
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to access this donation" });
+      }
       return res.json(donation);
     }
 
@@ -138,7 +148,7 @@ export const getDonationById = async (req: Request, res: Response) => {
       .json({ message: "Not authorized to access this donation" });
   } catch (error) {
     console.error("Get donation error:", error);
-    return res.status(400).json({ message: "Error fetching donation" });
+    return res.status(500).json({ message: "Error fetching donation" });
   }
 };
 
@@ -313,7 +323,22 @@ export const getMyDonations = async (req: Request, res: Response) => {
   if (!userInfo) return;
 
   try {
-    const donations = await DonationModel.find({ donorId: userInfo.userId })
+    let query = {};
+
+    // For donors, get donations they've created
+    if (userInfo.type === "Donor") {
+      query = { donorId: userInfo.userId };
+    }
+    // For soldiers, get donations assigned to them
+    else if (userInfo.type === "Soldier") {
+      query = { assignedTo: userInfo.userId };
+    }
+    // For admins, get all donations
+    else if (userInfo.type === "Admin") {
+      // No query filter needed
+    }
+
+    const donations = await DonationModel.find(query)
       .populate("donor", "firstName lastName email phone")
       .populate("cityDetails", "name zone")
       .populate("assignedSoldier", "firstName lastName email phone")
@@ -499,44 +524,56 @@ export const updateDonationStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Donation not found" });
     }
 
-    // Validate status transition
-    const validTransitions: { [key: string]: string[] } = {
-      pending: ["assigned"],
-      assigned: ["delivery"],
-      delivery: ["arrived"],
-      arrived: [],
-    };
+    // Municipality and Admin can change status freely
+    if (userInfo.type === "Municipality" || userInfo.type === "Admin") {
+      // Just validate that the status is one of the valid statuses
+      if (!["pending", "assigned", "delivery", "arrived"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+    } else {
+      // For other users, enforce status transition rules
+      const validTransitions: { [key: string]: string[] } = {
+        pending: ["assigned"],
+        assigned: ["delivery"],
+        delivery: ["arrived"],
+        arrived: [],
+      };
 
-    if (!validTransitions[donation.status].includes(status)) {
-      return res.status(400).json({
-        message: `Cannot transition from ${donation.status} to ${status}`,
-      });
+      if (!validTransitions[donation.status].includes(status)) {
+        return res.status(400).json({
+          message: `Cannot transition from ${donation.status} to ${status}`,
+        });
+      }
+
+      // Check permissions for status update
+      const isDonor = donation.donorId.toString() === userInfo.userId;
+      const isAssignedSoldier =
+        donation.assignedTo?.toString() === userInfo.userId;
+      let canUpdate = false;
+
+      if (status === "delivery") {
+        canUpdate = isDonor;
+      } else if (status === "arrived") {
+        canUpdate = isAssignedSoldier;
+      }
+
+      if (!canUpdate) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to update this status" });
+      }
     }
 
-    // Check permissions for status update
-    const isDonor = donation.donorId.toString() === userInfo.userId;
-    const isAssignedSoldier =
-      donation.assignedTo?.toString() === userInfo.userId;
-    let canUpdate = userInfo.type === "Admin";
-
-    if (status === "delivery") {
-      canUpdate = canUpdate || isDonor || userInfo.type === "Municipality";
-    } else if (status === "arrived") {
-      canUpdate = canUpdate || isAssignedSoldier;
-    } else if (status === "assigned") {
-      canUpdate = canUpdate || userInfo.type === "Municipality";
-    }
-
-    if (!canUpdate) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to update this status" });
+    // If changing from assigned to pending, clear the assignedTo field
+    const updateData: any = { status };
+    if (status === "pending" && donation.status === "assigned") {
+      updateData.assignedTo = null;
     }
 
     // Update donation status
     const updatedDonation = await DonationModel.findByIdAndUpdate(
       donationId,
-      { $set: { status } },
+      { $set: updateData },
       { new: true, runValidators: true }
     )
       .populate("donor", "firstName lastName email phone")

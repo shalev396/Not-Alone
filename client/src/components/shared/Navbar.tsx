@@ -161,13 +161,9 @@ export const Navbar = ({
         routes = routeListAdmin;
         break;
       case "soldier":
-        routes = [
-          ...routeListSoldier,
-          {
-            href: "/create-post",
-            label: "Create Post",
-          },
-        ];
+        routes = 
+          routeListSoldier
+        ;
         break;
       case "municipality":
         routes = routeListMunicipality;

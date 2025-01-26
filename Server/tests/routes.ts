@@ -448,7 +448,7 @@ export const donationRoutes: route[] = [
     path: "/api/donations/my",
     method: "GET",
     auth: true,
-    allowedTypes: ["Admin", "Donor"],
+    allowedTypes: ["Admin", "Donor", "Soldier"],
   },
 
   // Create donation

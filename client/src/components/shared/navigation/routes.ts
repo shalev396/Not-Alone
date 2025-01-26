@@ -24,7 +24,6 @@ export const routeListSoldier: RouteProps[] = [
     href: "/",
     label: "Home",
   },
-
   {
     href: "/requestForm",
     label: "Request Form",
@@ -32,6 +31,10 @@ export const routeListSoldier: RouteProps[] = [
   {
     href: "/my-requests",
     label: "My Requests",
+  },
+  {
+    href: "/my-donations",
+    label: "My Donations",
   },
   {
     href: "/social",
@@ -48,10 +51,6 @@ export const routeListSoldier: RouteProps[] = [
   {
     href: "/vouchers",
     label: "Vouchers@",
-  },
-  {
-    href: "/donation-status",
-    label: "Donation Status@",
   },
   {
     href: "/rights",
@@ -95,11 +94,7 @@ export const routeListMunicipality: RouteProps[] = [
     label: "Donation Control Panel",
     requiresCityOrAdmin: true,
   },
-  {
-    href: "/donation-status",
-    label: "Donation Status @",
-    requiresCityOrAdmin: true,
-  },
+
   {
     href: "/new-post",
     label: "Create Event",
