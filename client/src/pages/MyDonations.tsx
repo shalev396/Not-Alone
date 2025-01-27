@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Package, Search, Calendar, MapPin } from "lucide-react";
+import { Package, Search, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import {
   Select,
@@ -58,7 +58,7 @@ export default function MyDonations() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter] = useState<string>("all");
 
   // Get user's assigned donations
   const { data: myDonations = [], isLoading } = useQuery({
@@ -69,9 +69,10 @@ export default function MyDonations() {
     },
   });
 
-  const uniqueCategories = Array.from(
+  const uniqueCategories: string[] = Array.from(
     new Set(myDonations.map((d: Donation) => d.category))
   );
+  
 
   const filteredDonations = myDonations.filter((donation: Donation) => {
     const matchesSearch = search
@@ -134,17 +135,17 @@ export default function MyDonations() {
               </SelectContent>
             </Select>
             <Select
-              value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value)}
+              value={categoryFilter}
+              onValueChange={(value) => setCategoryFilter(value)}
             >
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                {Object.entries(statusConfig).map(([key, value]) => (
-                  <SelectItem key={key} value={key}>
-                    {value.text}
+                <SelectItem value="all">All Categories</SelectItem>
+                {uniqueCategories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
                   </SelectItem>
                 ))}
               </SelectContent>
