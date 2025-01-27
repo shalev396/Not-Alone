@@ -1,4 +1,5 @@
 import { useState } from "react";
+import {  useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export default function CreatePost({ onPostCreated }: { onPostCreated: () => voi
   const user = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch(); // For updating the Redux state
   const queryClient = useQueryClient();
+  const navigate = useNavigate(); 
 
   // Function to assign a random profile picture
   const assignRandomProfileImage = () => {
@@ -74,6 +76,7 @@ export default function CreatePost({ onPostCreated }: { onPostCreated: () => voi
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       onPostCreated();
+      navigate("/social");
     },
     onError: () => {
       setError("Failed to create post. Please try again.");
@@ -205,12 +208,15 @@ export default function CreatePost({ onPostCreated }: { onPostCreated: () => voi
               <Button
                 onClick={handleSubmit}
                 disabled={loading || uploading}
-                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold py-6 px-6 rounded-lg transition-colors duration-200"
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold py-6 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center"
               >
-                {loading ? "Creating..." : "Create Post"}
+                {loading ? (
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-secundary"></div>
+                ) : (
+                  "Create Post"
+                )}
               </Button>
             </div>
-
             {/* Error message */}
             {error && (
               <Alert
