@@ -47,11 +47,15 @@ const userSlice = createSlice({
     },
 
     updateUser: (state, action) => {
+      console.log("[Redux - updateUser Payload]:", action.payload); 
+
       Object.keys(action.payload).forEach((key) => {
-        if (key in state) {
+        if (key in state && action.payload[key] !== undefined) {
           (state as any)[key as keyof typeof state] = action.payload[key];
         }
       });
+      console.log("[Redux - Updated State]:", state); 
+
     },
     resetUser: () => initialState,
   },

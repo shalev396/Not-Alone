@@ -46,11 +46,12 @@ export const getMyProfile = async (req: Request, res: Response) => {
       .lean();
 
     if (!profile) {
-      // Create default profile if it doesn't exist
       const newProfile = await ProfileModel.create({
         userId: userInfo.userId,
         visibility: "public",
       });
+
+      console.log("[Created New Profile]:", newProfile);
 
       return res.json(
         await ProfileModel.findById(newProfile._id)
@@ -59,12 +60,15 @@ export const getMyProfile = async (req: Request, res: Response) => {
       );
     }
 
+    console.log("[Returning Profile]:", profile);
     return res.json(profile);
   } catch (error) {
     console.error("Get profile error:", error);
     return res.status(500).json({ message: "Error fetching profile" });
   }
 };
+
+
 
 // Get profile by user ID
 export const getProfileByUserId = async (req: Request, res: Response) => {
@@ -91,6 +95,7 @@ export const getProfileByUserId = async (req: Request, res: Response) => {
     const profile = await ProfileModel.findOne({ userId })
       .populate("user", "-password")
       .lean();
+      console.log("[getMyProfile] Found Profile:", profile);
 
     if (!profile) {
       return res.status(404).json({ message: "Profile not found" });
@@ -103,32 +108,50 @@ export const getProfileByUserId = async (req: Request, res: Response) => {
   }
 };
 
+
+
+
 // Update my profile
 export const updateMyProfile = async (req: Request, res: Response) => {
   try {
     const userInfo = ensureUser(req, res);
     if (!userInfo) return;
 
-    const profile = await ProfileModel.findOne({ userId: userInfo.userId });
+    let profile = await ProfileModel.findOne({ userId: userInfo.userId });
+
     if (!profile) {
-      return res.status(404).json({ message: "Profile not found" });
+      const newProfile = ProfileModel.create({
+        userId: userInfo.userId,
+        nickname: req.body.nickname || "", 
+        bio: req.body.bio || "", 
+        profileImage: req.body.profileImage || "", 
+        visibility: "public", 
+        receiveNotifications: req.body.receiveNotifications || false,
+      });
+      return res.json(newProfile);
+    } else{
+
+      
+      if (req.body.nickname) profile.nickname = req.body.nickname;
+      if (req.body.bio) profile.bio = req.body.bio;
+      if (req.body.profileImage) profile.profileImage = req.body.profileImage;
+      if (req.body.receiveNotifications !== undefined) {
+        profile.receiveNotifications = req.body.receiveNotifications;
+      }
+      
+      await profile.save();
+      
+      const updatedProfile = await ProfileModel.findById(profile._id)
+      .populate("user", "-password")
+      .lean();
+      
+      return res.json(updatedProfile);
     }
-
-    // Don't allow updates to userId
-    delete req.body.userId;
-
-    const updatedProfile = await ProfileModel.findByIdAndUpdate(
-      profile._id,
-      { $set: req.body },
-      { new: true, runValidators: true }
-    ).populate("user", "-password");
-
-    return res.json(updatedProfile);
-  } catch (error) {
-    if (error instanceof mongoose.Error.ValidationError) {
-      return res.status(400).json({
-        errors: Object.values(error.errors).map((err) => ({
-          field: err.path,
+    } catch (error) {
+      if (error instanceof mongoose.Error.ValidationError) {
+        return res.status(400).json({
+          errors: Object.values(error.errors).map((err) => ({
+            field: err.path,
           message: err.message,
         })),
       });
@@ -136,6 +159,11 @@ export const updateMyProfile = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Error updating profile" });
   }
 };
+
+
+
+
+
 
 // Update user's profile (admin only)
 export const updateUserProfile = async (req: Request, res: Response) => {

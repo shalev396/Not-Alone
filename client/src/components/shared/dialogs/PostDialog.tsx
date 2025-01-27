@@ -21,7 +21,7 @@ export function PostDialog({ post }: PostDialogProps) {
             <div className="w-[150px] h-[150px]">
               {post?.image ? (
                 <img
-                  src={post.image}
+                  src={post?.image[0]} 
                   alt="post"
                   className="w-full h-full object-cover rounded-md"
                 />
@@ -51,7 +51,7 @@ export function PostDialog({ post }: PostDialogProps) {
         <div className="mt-4">
           {/* Add detailed post content here */}
           <img
-            src={post?.image}
+            src={post?.image[0]} 
             alt="post"
             className="w-full max-h-[400px] object-cover rounded-lg mb-4"
           />

@@ -6,6 +6,7 @@ export interface IProfile extends Document {
   bio: string;
   profileImage: string;
   visibility: "public" | "private";
+  receiveNotifications: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,6 +39,11 @@ const profileSchema = new Schema<IProfile>(
       enum: ["public", "private"],
       default: "public",
     },
+    receiveNotifications: {
+      type: Boolean,
+      default: false, 
+    },
+
   },
   {
     timestamps: true,
