@@ -132,7 +132,6 @@ export const updateMyProfile = async (req: Request, res: Response) => {
     } else{
 
       
-      // Atualizar as informações do perfil com os dados fornecidos no corpo da requisição
       if (req.body.nickname) profile.nickname = req.body.nickname;
       if (req.body.bio) profile.bio = req.body.bio;
       if (req.body.profileImage) profile.profileImage = req.body.profileImage;

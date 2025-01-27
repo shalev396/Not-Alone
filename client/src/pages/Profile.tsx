@@ -101,14 +101,15 @@ const Profile: React.FC = () => {
   const { data: profile, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      const response = await api.get("/profiles/me");
-      console.log("[Profile API Response]:", response.data);
+      const [profileResponse, userResponse] = await Promise.all([
+        api.get("/profiles/me"),
+        api.get("/users/me"),
+      ]);
   
-      if (!response.data.nickname || !response.data.profileImage) {
-        console.warn("Incomplete profile data received:", response.data);
-      }
-  
-      return response.data;
+      const profileData = profileResponse.data;
+      const userData = userResponse.data.user;
+
+      return {...profileData, phone: userData.phone || ""}
     },
   });
   
@@ -119,7 +120,7 @@ const Profile: React.FC = () => {
       setNickname(profile.nickname || getRandomNickname());
       setBio(profile.bio || "");
       setProfileImage(profile.profileImage || DEFAULT_PROFILE_IMAGE);
-      setPhone(profile.phone || "");
+      setPhone(user.phone || "");
       setReceiveNotifications(profile.receiveNotifications || false);
   
       dispatch(updateUser(profile));
@@ -186,27 +187,34 @@ const Profile: React.FC = () => {
     try {
       const updatedUser = {
         nickname,
-        phone,
         bio,
         profileImage,
         receiveNotifications,
       };
-
-      console.log("[handleSubmit - Sending Data]:", updatedUser);
-
-      const response = await api.put("/profiles/me", updatedUser);
-
-      console.log("[handleSubmit - API Response]:", response.data);
-
   
-      // Atualiza o Redux com os dados retornados
-      dispatch(updateUser(response.data));
+      console.log("[handleSubmit - Sending Profile Data]:", updatedUser);
+      const profileResponse = await api.put("/profiles/me", updatedUser);
+  
+      const updatedPhone = { phone };
+      console.log("[handleSubmit - Sending Phone Data]:", updatedPhone);
+      const phoneResponse = await api.put("/users/me", updatedPhone);
+  
+      console.log("[handleSubmit - API Responses]:", {
+        profile: profileResponse.data,
+        phone: phoneResponse.data,
+      });
+  
+      dispatch(
+        updateUser({ ...profileResponse.data, phone: phoneResponse.data.phone })
+      );
+  
       alert("Profile updated successfully!");
     } catch (error) {
       console.error("Error updating profile:", error);
       alert("Failed to update profile. Please try again.");
     }
   };
+  
   
 
   return (
