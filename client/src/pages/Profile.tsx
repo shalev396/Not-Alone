@@ -76,7 +76,7 @@ const Profile: React.FC = () => {
   const getRandomNickname = () => {
     return NICKNAME_OPTIONS[Math.floor(Math.random() * NICKNAME_OPTIONS.length)];
   };
-  const [showAlternateTab, setShowAlternateTab] = useState(false);
+  const [showAlternateTab] = useState(false);
 
   const [nickname, setNickname] = useState(getRandomNickname()); 
   const [profileImage, setProfileImage] = useState(DEFAULT_PROFILE_IMAGE);
