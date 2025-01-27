@@ -76,14 +76,24 @@ const Profile: React.FC = () => {
   const getRandomNickname = () => {
     return NICKNAME_OPTIONS[Math.floor(Math.random() * NICKNAME_OPTIONS.length)];
   };
-  // Estados
   const [showAlternateTab, setShowAlternateTab] = useState(false);
+
   const [nickname, setNickname] = useState(getRandomNickname()); 
   const [profileImage, setProfileImage] = useState(DEFAULT_PROFILE_IMAGE);
   const [email] = useState(user.email || "");
-  const [phone, setPhone] = useState("");
-  const [bio, setBio] = useState("");
+  const [phone, setPhone] = useState(user.phone || "");
+  const [bio, setBio] = useState(user.bio || "");
+  
   const [receiveNotifications, setReceiveNotifications] = useState(false);
+  
+  console.log("[Profile Component Render]:", {
+    nickname,
+    bio,
+    profileImage,
+    phone,
+    receiveNotifications,
+  });
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [error, setError] = useState("");
   const filter = new Filter();
@@ -91,21 +101,35 @@ const Profile: React.FC = () => {
   const { data: profile, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      const response = await api.get("/me");
+      const response = await api.get("/profiles/me");
+      console.log("[Profile API Response]:", response.data);
+  
+      if (!response.data.nickname || !response.data.profileImage) {
+        console.warn("Incomplete profile data received:", response.data);
+      }
+  
       return response.data;
     },
   });
+  
 
   useEffect(() => {
     if (profile) {
+      console.log("[useEffect - Profile Received]:", profile);
       setNickname(profile.nickname || getRandomNickname());
       setBio(profile.bio || "");
       setProfileImage(profile.profileImage || DEFAULT_PROFILE_IMAGE);
       setPhone(profile.phone || "");
       setReceiveNotifications(profile.receiveNotifications || false);
+  
       dispatch(updateUser(profile));
     }
   }, [profile, dispatch]);
+  
+  useEffect(() => {
+    console.log("[State Changed]:", { nickname, bio, profileImage, phone, receiveNotifications });
+  }, [nickname, bio, profileImage, phone, receiveNotifications]);
+  
   
 
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
@@ -167,7 +191,13 @@ const Profile: React.FC = () => {
         profileImage,
         receiveNotifications,
       };
+
+      console.log("[handleSubmit - Sending Data]:", updatedUser);
+
       const response = await api.put("/profiles/me", updatedUser);
+
+      console.log("[handleSubmit - API Response]:", response.data);
+
   
       // Atualiza o Redux com os dados retornados
       dispatch(updateUser(response.data));

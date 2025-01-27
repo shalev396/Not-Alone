@@ -51,6 +51,8 @@ export const getMyProfile = async (req: Request, res: Response) => {
         visibility: "public",
       });
 
+      console.log("[Created New Profile]:", newProfile);
+
       return res.json(
         await ProfileModel.findById(newProfile._id)
           .populate("user", "-password")
@@ -58,12 +60,14 @@ export const getMyProfile = async (req: Request, res: Response) => {
       );
     }
 
+    console.log("[Returning Profile]:", profile);
     return res.json(profile);
   } catch (error) {
     console.error("Get profile error:", error);
     return res.status(500).json({ message: "Error fetching profile" });
   }
 };
+
 
 
 // Get profile by user ID
@@ -91,6 +95,7 @@ export const getProfileByUserId = async (req: Request, res: Response) => {
     const profile = await ProfileModel.findOne({ userId })
       .populate("user", "-password")
       .lean();
+      console.log("[getMyProfile] Found Profile:", profile);
 
     if (!profile) {
       return res.status(404).json({ message: "Profile not found" });
@@ -112,43 +117,42 @@ export const updateMyProfile = async (req: Request, res: Response) => {
     const userInfo = ensureUser(req, res);
     if (!userInfo) return;
 
-    // Verificar se o perfil já existe
     let profile = await ProfileModel.findOne({ userId: userInfo.userId });
 
-    // Se não existir, criar um novo perfil
     if (!profile) {
-      profile = new ProfileModel({
+      const newProfile = ProfileModel.create({
         userId: userInfo.userId,
-        nickname: req.body.nickname || "", // Usar nickname fornecido ou vazio
-        bio: req.body.bio || "", // Usar bio fornecida ou vazio
-        profileImage: req.body.profileImage || "", // Usar imagem fornecida ou padrão
-        visibility: "public", // Definir visibilidade padrão
+        nickname: req.body.nickname || "", 
+        bio: req.body.bio || "", 
+        profileImage: req.body.profileImage || "", 
+        visibility: "public", 
         receiveNotifications: req.body.receiveNotifications || false,
       });
-    }
+      return res.json(newProfile);
+    } else{
 
-    // Atualizar as informações do perfil com os dados fornecidos no corpo da requisição
-    if (req.body.nickname) profile.nickname = req.body.nickname;
-    if (req.body.bio) profile.bio = req.body.bio;
-    if (req.body.profileImage) profile.profileImage = req.body.profileImage;
-    if (req.body.receiveNotifications !== undefined) {
-      profile.receiveNotifications = req.body.receiveNotifications;
-    }
-
-    // Salvar o perfil (novo ou atualizado)
-    await profile.save();
-
-    // Preencher os dados do usuário e retornar o perfil
-    const updatedProfile = await ProfileModel.findById(profile._id)
+      
+      // Atualizar as informações do perfil com os dados fornecidos no corpo da requisição
+      if (req.body.nickname) profile.nickname = req.body.nickname;
+      if (req.body.bio) profile.bio = req.body.bio;
+      if (req.body.profileImage) profile.profileImage = req.body.profileImage;
+      if (req.body.receiveNotifications !== undefined) {
+        profile.receiveNotifications = req.body.receiveNotifications;
+      }
+      
+      await profile.save();
+      
+      const updatedProfile = await ProfileModel.findById(profile._id)
       .populate("user", "-password")
       .lean();
-
-    return res.json(updatedProfile);
-  } catch (error) {
-    if (error instanceof mongoose.Error.ValidationError) {
-      return res.status(400).json({
-        errors: Object.values(error.errors).map((err) => ({
-          field: err.path,
+      
+      return res.json(updatedProfile);
+    }
+    } catch (error) {
+      if (error instanceof mongoose.Error.ValidationError) {
+        return res.status(400).json({
+          errors: Object.values(error.errors).map((err) => ({
+            field: err.path,
           message: err.message,
         })),
       });
