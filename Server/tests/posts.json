@@ -1,1 +1,19 @@
-[{"_id":"6795dec3d4484fd502f56e72","authorId":"6795deb7d4484fd502f56e06","content":"Test post content from soldier","media":["http://example.com/image.jpg"],"likes":[],"createdAt":"2025-01-26T07:05:40.228Z","updatedAt":"2025-01-26T07:05:39.775Z","__v":0,"author":{"_id":"6795deb7d4484fd502f56e06","firstName":"Test","lastName":"Soldier","profileImage":""},"comments":[]}]
+[
+  {
+    "_id": "6798b2e72e848569e60041b6",
+    "authorId": "6798b2da2e848569e600414a",
+    "content": "Test post content from soldier",
+    "media": ["http://example.com/image.jpg"],
+    "likes": [],
+    "createdAt": "2025-01-28T10:35:19.863Z",
+    "updatedAt": "2025-01-28T10:35:19.490Z",
+    "__v": 0,
+    "author": {
+      "_id": "6798b2da2e848569e600414a",
+      "firstName": "Test",
+      "lastName": "Soldier",
+      "profileImage": ""
+    },
+    "comments": []
+  }
+]
