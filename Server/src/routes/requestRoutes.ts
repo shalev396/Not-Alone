@@ -33,6 +33,12 @@ router.get(
   checkUserType(["Admin", "Municipality", "Organization"]),
   getRequestById
 );
+router.get(
+  "/donations",
+  auth,
+  checkUserType(["Admin", "Donor", "Organization"]),
+  getRequestsByUser
+);
 
 // Create request (only soldiers can create requests)
 router.post("/", auth, checkUserType(["Admin", "Soldier"]), createRequest);

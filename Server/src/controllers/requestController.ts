@@ -513,6 +513,45 @@ export const payRequest = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Error paying for request" });
   }
 };
+// Get donation requests paid by the authenticated user
+export const getDonationRequestsByUser = async (req: Request, res: Response) => {
+  const userInfo = ensureUser(req, res);
+  if (!userInfo) return;
+
+  try {
+    const { page = "1", limit = "10", sort = "-createdAt" } = req.query as RequestQuery;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const sortObj = parseSortParam(sort);
+
+    // Query to fetch donation requests where the user has paid
+    const query = { paidBy: userInfo.userId };
+
+    const donationRequests = await RequestModel.find(query)
+      .sort(sortObj)
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .populate("cityDetails", "name zone")
+      .populate("author", "firstName lastName email phone")
+      .lean();
+
+    const total = await RequestModel.countDocuments(query);
+
+    return res.json({
+      requests: donationRequests,
+      pagination: {
+        total,
+        page: pageNum,
+        pages: Math.ceil(total / limitNum),
+        hasMore: pageNum * limitNum < total,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching donation requests:", error);
+    return res.status(500).json({ message: "Error fetching donation requests" });
+  }
+};
 
 // Get all requests by authenticated user
 export const getRequestsByUser = async (req: Request, res: Response) => {
