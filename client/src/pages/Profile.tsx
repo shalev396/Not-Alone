@@ -7,21 +7,37 @@ import Checkbox from "@/components/custom-ui/Checkbox";
 import { Navbar } from "@/components/shared/Navbar";
 import { Filter } from "bad-words";
 import { api, fetchUserPosts } from "@/api/api";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
 import { PostCard } from "@/components/social/PostCard";
 import { PostSkeleton } from "@/components/shared/feeds/PostFeed";
 
-type DonationRequest = {
+interface Request {
   _id: string;
-  soldierId: string;
-  content: string;
-  amountNeeded: number;
-  amountRaised: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
+  service: "Regular" | "Reserves";
+  item: string;
+  itemDescription: string;
+  quantity: number;
+  zone: "north" | "center" | "south";
+  city: string;
+  cityDetails: {
+    name: string;
+    zone: string;
+  };
+  status: "approved" | "deny" | "in process";
+  paid: boolean;
+  paidBy?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  paidAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 type Post = {
   _id: string;
@@ -54,13 +70,34 @@ const Profile: React.FC = () => {
     const [profileImage, setProfileImage] = useState("");
     const [bio, setBio] = useState("");
     const [receiveNotifications, setReceiveNotifications] = useState(false);
+    const getStatusColor = (status: Request["status"]) => {
+      switch (status) {
+        case "approved":
+          return "bg-green-500";
+        case "deny":
+          return "bg-red-500";
+        default:
+          return "bg-yellow-500";
+      }
+    };
   
+    const formatDate = (dateString: string) => {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    };
+
     useEffect(() => {
       const fetchProfile = async () => {
         try {
           setLoadingProfile(true);
   
           const response = await api.get("/profiles/me");
+
+          console.log("profile data brought from API:", response.data); 
+
           const { nickname, profileImage, bio, receiveNotifications } =
             response.data;
   
@@ -79,7 +116,7 @@ const Profile: React.FC = () => {
   
       fetchProfile();
     }, [dispatch]);
-    
+
   const user = useSelector((state: RootState) => state.user);
   const NICKNAME_OPTIONS = [
     "May", "Lily", "Blue", "Bird", "Dudu", "Sofy", "Pedro", "Ana", "Lia", "Leo",
@@ -108,7 +145,8 @@ const Profile: React.FC = () => {
   };
 
   const [showAlternateTab, setShowAlternateTab] = useState(false);
-  
+  console.log("User from Redux:", user);
+
   console.log("[Profile Component Render]:", {
     nickname,
     bio,
@@ -116,39 +154,40 @@ const Profile: React.FC = () => {
     receiveNotifications,
   });
 
+  console.log("ID do usuário:", user._id);
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const filter = new Filter();
 
-  const [isSaving, setIsSaving] = useState(false);
-  
+  // const [isSaving, setIsSaving] = useState(false);
   
   const isSoldier = user.type === "Soldier"; 
   
   const [email] = useState(user.email || "");
   const [phone, setPhone] = useState(user.phone || "");
 
-
-
-
-  // Fetch user posts
+  
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
-    queryKey: ["userPosts", user._id],
+    queryKey: ["userPosts", user._id], 
     queryFn: () => fetchUserPosts(user._id),
-    enabled: !!user._id,
+    enabled: !!user._id, 
   });
 
-  // Fetch donation requests for soldiers
-  const { data: donationRequests, isLoading: isLoadingDonations } = useQuery({
-    queryKey: ["donationRequests", user._id],
+  console.log("Posts recived from React Query:", userPosts);
+
+  const { data: soldierRequests, isLoading: isLoadingSoldierRequests } = useQuery({
+    queryKey: ["soldierRequests", user._id],
     queryFn: async () => {
-      const response = await api.get(`/requests/donations`);
-      return response.data.requests as DonationRequest[];
+      const response = await api.get(`/requests/user/${user._id}`); 
+      console.log("Donation Requests recived from API:", response.data.requests);
+      return response.data.requests;
     },
-    enabled: isSoldier,
+    enabled: !!user._id, 
   });
 
+  console.log("Donation Requests recived from React Query:", soldierRequests); 
 
   const handleNicknameChange = (value: string) => {
     if (value === "") {
@@ -211,7 +250,6 @@ const Profile: React.FC = () => {
     }
   };
 
-
   return (
     <div className="flex bg-background text-foreground min-h-screen">
       <Navbar modes="home" isVertical={true} isAccordion={true} />
@@ -223,7 +261,7 @@ const Profile: React.FC = () => {
             </span>{" "}
             Page
           </h1>
-
+  
           <div className="bg-card p-6 rounded-lg shadow-md">
             <div className="flex items-start space-x-4">
               <div className="flex-1">
@@ -253,7 +291,7 @@ const Profile: React.FC = () => {
                 )}
               </div>
             </div>
-
+  
             <label className="block text-sm font-medium mt-4 mb-1">Phone</label>
             <Input
               type="tel"
@@ -271,10 +309,12 @@ const Profile: React.FC = () => {
             <div className="mt-4">
               <Checkbox
                 checked={receiveNotifications}
-                onCheckedChange={(checked: boolean) => setReceiveNotifications(checked)}
+                onCheckedChange={(checked: boolean) =>
+                  setReceiveNotifications(checked)
+                }
               />
             </div>
-            
+  
             <button
               onClick={handleSubmit}
               className="mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded"
@@ -282,10 +322,12 @@ const Profile: React.FC = () => {
               Save Changes
             </button>
             {loading ? (
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-secundary"></div>
-                ) : ("")}
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-secundary"></div>
+            ) : (
+              ""
+            )}
           </div>
-
+  
           <div className="flex space-x-4 mt-14 mb-18">
             <button
               onClick={() => setShowAlternateTab(false)}
@@ -304,27 +346,58 @@ const Profile: React.FC = () => {
               {isSoldier ? "Donation Requests" : "Donations"}
             </button>
           </div>
-
+  
           {showAlternateTab ? (
             isSoldier ? (
               <div>
                 <h2 className="text-2xl font-bold mb-6">Your Donation Requests</h2>
-                {isLoadingDonations ? (
+                {isLoadingSoldierRequests ? (
                   <PostSkeleton />
-                ) : donationRequests && donationRequests.length > 0 ? (
-                  donationRequests.map((request) => (
-                    <div
-                      key={request._id}
-                      className="bg-card p-4 rounded-lg mb-4 shadow"
-                    >
-                      <h3 className="font-bold text-lg">{request.content}</h3>
-                      <p>
-                        Amount Needed: <strong>${request.amountNeeded}</strong>
-                      </p>
-                      <p>
-                        Amount Raised: <strong>${request.amountRaised}</strong>
-                      </p>
-                    </div>
+                ) : soldierRequests && soldierRequests.length > 0 ? (
+                  soldierRequests.map((request: any) => (
+                    <Card key={request._id} className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-xl font-semibold mb-2">
+                            {request.item}
+                          </h3>
+                          <p className="text-muted-foreground text-sm">
+                            Created on {formatDate(request.createdAt)}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Badge variant="outline">{request.service}</Badge>
+                          <Badge className={getStatusColor(request.status)}>
+                            {request.status.charAt(0).toUpperCase() +
+                              request.status.slice(1)}
+                          </Badge>
+                          {request.paid && (
+                            <Badge className="bg-blue-500">Paid</Badge>
+                          )}
+                        </div>
+                      </div>
+  
+                      <div className="space-y-2 mb-4">
+                        <p className="text-sm">
+                          <span className="font-semibold">Description:</span>{" "}
+                          {request.itemDescription}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Quantity:</span>{" "}
+                          {request.quantity}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Location:</span>{" "}
+                          {request.cityDetails.name} ({request.zone})
+                        </p>
+                        {request.paid && request.paidBy && (
+                          <p className="text-sm">
+                            <span className="font-semibold">Paid by:</span>{" "}
+                            {request.paidBy.firstName} {request.paidBy.lastName}
+                          </p>
+                        )}
+                      </div>
+                    </Card>
                   ))
                 ) : (
                   <p>No donation requests found.</p>
@@ -341,8 +414,10 @@ const Profile: React.FC = () => {
               <h2 className="text-2xl font-bold mb-6">Your Posts</h2>
               {isLoadingPosts ? (
                 <PostSkeleton />
-              ) : userPosts && userPosts.posts.length > 0 ? (
-                userPosts.posts.map((post: Post) => <PostCard key={post._id} post={post as unknown as Post} />)
+              ) : userPosts?.posts?.length > 0 ? (
+                userPosts.posts.map((post: Post) => (
+                  <PostCard key={post._id} post={post} />
+                ))
               ) : (
                 <p>You haven’t posted anything yet.</p>
               )}

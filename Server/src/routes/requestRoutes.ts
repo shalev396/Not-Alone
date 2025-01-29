@@ -11,6 +11,7 @@ import {
   deleteRequest,
   payRequest,
   getRequestsByUser,
+  getDonationRequestsBySoldier,
 } from "../controllers/requestController";
 
 const router = express.Router();
@@ -81,5 +82,14 @@ router.delete(
   checkUserType(["Admin", "Soldier"]),
   deleteRequest
 );
+
+// Get all donation requests for a specific user (soldier)
+router.get(
+  "/user/:userId",
+  auth, 
+  checkUserType(["Admin", "Donor", "Organization", "Municipality", "Soldier"]),
+  getRequestsByUser
+);
+
 
 export default router;

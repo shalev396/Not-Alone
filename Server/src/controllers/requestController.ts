@@ -513,6 +513,60 @@ export const payRequest = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Error paying for request" });
   }
 };
+
+export const getDonationRequestsBySoldier = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { page = "1", limit = "10", sort = "-createdAt" } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
+    // Garantindo que "sort" seja uma string
+    const sortStr = Array.isArray(sort) ? sort[0] : sort || "-createdAt";
+
+    if (typeof sortStr !== "string") {
+      return res.status(400).json({ message: "Invalid sort parameter" });
+    }
+
+    const sortObj = sortStr.split(",").reduce((acc: any, field: string) => {
+      if (field.startsWith("-")) {
+        acc[field.slice(1)] = -1;
+      } else {
+        acc[field] = 1;
+      }
+      return acc;
+    }, {});
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+
+    const requests = await RequestModel.find({ authorId: userId })
+      .sort(sortObj)
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .populate("cityDetails", "name zone")
+      .lean();
+
+    const total = await RequestModel.countDocuments({ authorId: userId });
+
+    return res.json({
+      requests,
+      pagination: {
+        total,
+        page: pageNum,
+        pages: Math.ceil(total / limitNum),
+        hasMore: pageNum * limitNum < total,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching donation requests for soldier:", error);
+    return res.status(500).json({ message: "Error fetching donation requests" });
+  }
+};
+
+
 // Get donation requests paid by the authenticated user
 export const getDonationRequestsByUser = async (req: Request, res: Response) => {
   const userInfo = ensureUser(req, res);
