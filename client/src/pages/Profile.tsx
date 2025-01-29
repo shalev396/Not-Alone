@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/Redux/store";
 import { updateUser } from "@/Redux/userSlice";
@@ -47,26 +47,46 @@ type Post = {
 };
 
 const Profile: React.FC = () => {
+    const dispatch = useDispatch();
+    const [loadingProfile, setLoadingProfile] = useState(true);
+  
+    const [nickname, setNickname] = useState("");
+    const [profileImage, setProfileImage] = useState("");
+    const [bio, setBio] = useState("");
+    const [receiveNotifications, setReceiveNotifications] = useState(false);
+  
+    useEffect(() => {
+      const fetchProfile = async () => {
+        try {
+          setLoadingProfile(true);
+  
+          const response = await api.get("/profiles/me");
+          const { nickname, profileImage, bio, receiveNotifications } =
+            response.data;
+  
+          setNickname(nickname || "");
+          setProfileImage(profileImage || DEFAULT_PROFILE_IMAGE);
+          setBio(bio || "");
+          setReceiveNotifications(receiveNotifications || false);
+  
+          dispatch(updateUser(response.data)); 
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+        } finally {
+          setLoadingProfile(false);
+        }
+      };
+  
+      fetchProfile();
+    }, [dispatch]);
+    
   const user = useSelector((state: RootState) => state.user);
-  const dispatch = useDispatch();
-  const [isSaving, setIsSaving] = useState(false);
-
-  const [showAlternateTab, setShowAlternateTab] = useState(false);
-  const isSoldier = user.type === "Soldier"; // Certifique-se de que "Soldier" está correto
-
-  const [nickname, setNickname] = useState(user.nickname || "");
-  const [profileImage, setProfileImage] = useState(user.profileImage || "");
-  const [email] = useState(user.email || "");
-  const [phone, setPhone] = useState(user.phone || "");
-  const [bio, setBio] = useState(user.bio || "");
-  const [receiveNotifications, setReceiveNotifications] = useState<boolean>(
-    user.receiveNotifications ?? false
-  );
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const filter = new Filter();
+  const NICKNAME_OPTIONS = [
+    "May", "Lily", "Blue", "Bird", "Dudu", "Sofy", "Pedro", "Ana", "Lia", "Leo",
+    "Nina", "Rafa", "Lolo", "Zoe", "Ben", "Téo", "Noah", "Ivy", "Mia", "Theo",
+    "Gabi", "Dani", "João", "Cris", "Tina", "Bia", "Luca", "Max", "Yuri", "Luz",
+    "Kai", "Fifi", "Titi", "Jade", "Bela", "Vivi", "Lu", "Nico", "Pip", "Sol"
+  ];
   const profileImages = [
     "boy_1.svg",
     "boy_2.svg",
@@ -81,7 +101,37 @@ const Profile: React.FC = () => {
     "girl_5.svg",
     "girl_6.svg",
   ];
-  const DEFAULT_PROFILE_IMAGE = "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
+  const DEFAULT_PROFILE_IMAGE =
+  "boy_1.svg";
+  const getRandomNickname = () => {
+    return NICKNAME_OPTIONS[Math.floor(Math.random() * NICKNAME_OPTIONS.length)];
+  };
+
+  const [showAlternateTab, setShowAlternateTab] = useState(false);
+  
+  console.log("[Profile Component Render]:", {
+    nickname,
+    bio,
+    profileImage,
+    receiveNotifications,
+  });
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const filter = new Filter();
+
+  const [isSaving, setIsSaving] = useState(false);
+  
+  
+  const isSoldier = user.type === "Soldier"; 
+  
+  const [email] = useState(user.email || "");
+  const [phone, setPhone] = useState(user.phone || "");
+
+
+
+
   // Fetch user posts
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
     queryKey: ["userPosts", user._id],
@@ -133,23 +183,34 @@ const Profile: React.FC = () => {
     setLoading(true);
 
     try {
-      const updatedUser = {
+      const profileUpdate = {
         nickname,
-        email,
-        phone,
         bio,
+        email,
         profileImage,
         receiveNotifications,
       };
-      const response = await api.put(`/users/me`, updatedUser);
 
-      dispatch(updateUser(response.data));
+      const profileResponse = await api.put("/profiles/me", profileUpdate);
+
+      const phoneUpdate = { phone };
+      const phoneResponse = phone ? await api.put("/users/me", phoneUpdate) : null;
+      dispatch(
+        updateUser({
+          ...profileResponse.data,
+          ...(phoneResponse ? { phone: phoneResponse.data.phone } : {}),
+        })
+      );
+  
       alert("Profile updated successfully!");
     } catch (error) {
       console.error("Error updating profile:", error);
       alert("Failed to update profile. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
+
 
   return (
     <div className="flex bg-background text-foreground min-h-screen">

@@ -108,10 +108,6 @@ export const getProfileByUserId = async (req: Request, res: Response) => {
   }
 };
 
-
-
-
-// Update my profile
 export const updateMyProfile = async (req: Request, res: Response) => {
   try {
     const userInfo = ensureUser(req, res);
