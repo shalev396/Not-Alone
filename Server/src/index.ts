@@ -23,6 +23,7 @@ import profileRoutes from "./routes/profileRoutes";
 import eatupRoutes from "./routes/eatupRoutes";
 import postRoutes from "./routes/postRoutes";
 import commentRoutes from "./routes/commentRoutes";
+import emailRoutes from "./routes/emailRoutes";
 //sockets
 import SocketService from "./services/socketService";
 //utils
@@ -114,6 +115,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/channels", channelRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/email", emailRoutes);
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });

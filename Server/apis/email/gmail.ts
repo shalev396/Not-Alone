@@ -7,8 +7,9 @@ const port = process.env.PORT || 3000;
 
 //Configure the Nodemailer transporter
 const transporter = nodemailer.createTransport({
+  service: "SMTP",
   host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
+  port: Number(process.env.SMTP_PORT),
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
