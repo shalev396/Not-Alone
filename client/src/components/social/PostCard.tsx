@@ -8,7 +8,7 @@ import { CommentDialog } from "./CommentDialog";
 export interface Post {
   _id: string;
   content: string;
-  media?: string;
+  media?: string[];
   author: {
     firstName: string;
     lastName: string;

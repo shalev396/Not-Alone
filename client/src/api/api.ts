@@ -60,9 +60,6 @@ api.interceptors.response.use(
   }
 );
 
-//nathan adding function to search user posts
-export const fetchUserPosts = async (userId: string) => {
-  const response = await api.get(`/posts/user/${userId}`);
-  return response.data;
-};
+
+
 

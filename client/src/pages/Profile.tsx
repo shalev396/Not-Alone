@@ -6,7 +6,7 @@ import ProfileImageDialog from "@/components/profile/ProfileImageDialog";
 import Checkbox from "@/components/custom-ui/Checkbox";
 import { Navbar } from "@/components/shared/Navbar";
 import { Filter } from "bad-words";
-import { api, fetchUserPosts } from "@/api/api";
+import { api } from "@/api/api";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,20 +39,17 @@ interface Request {
   updatedAt: string;
 }
 
-type Post = {
+export interface Post {
   _id: string;
-  authorId: string;
   content: string;
-  media: string;
-  likes: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  media?: string[];
   author: {
     firstName: string;
     lastName: string;
     profileImage?: string;
     nickname?: string;
   };
+  likes: string[];
   comments: Array<{
     author: string;
     nickname: string;
@@ -60,7 +57,8 @@ type Post = {
     text: string;
     createdAt: Date | string;
   }>;
-};
+  createdAt: Date | string;
+}
 
 const Profile: React.FC = () => {
     const dispatch = useDispatch();
@@ -96,17 +94,16 @@ const Profile: React.FC = () => {
   
           const response = await api.get("/profiles/me");
 
-          console.log("profile data brought from API:", response.data); 
-
           const { nickname, profileImage, bio, receiveNotifications } =
             response.data;
+            console.log("Profile Data:^^", response.data);
+            
   
           setNickname(nickname || "");
           setProfileImage(profileImage || DEFAULT_PROFILE_IMAGE);
           setBio(bio || "");
           setReceiveNotifications(receiveNotifications || false);
   
-          dispatch(updateUser(response.data)); 
         } catch (error) {
           console.error("Error fetching profile:", error);
         } finally {
@@ -145,16 +142,6 @@ const Profile: React.FC = () => {
   };
 
   const [showAlternateTab, setShowAlternateTab] = useState(false);
-  console.log("User from Redux:", user);
-
-  console.log("[Profile Component Render]:", {
-    nickname,
-    bio,
-    profileImage,
-    receiveNotifications,
-  });
-
-  console.log("ID do usuário:", user._id);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [error, setError] = useState("");
@@ -170,24 +157,29 @@ const Profile: React.FC = () => {
 
   
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
-    queryKey: ["userPosts", user._id], 
-    queryFn: () => fetchUserPosts(user._id),
-    enabled: !!user._id, 
+    queryKey: ["userPosts", user._id],
+    queryFn: async () => {
+      console.log("Fetching posts for user:", user._id);
+      console.log("UserID:", user._id);
+       
+      const response = await api.get(`/posts/user/${user._id}`);
+      console.log("Fetched posts:", response.data);
+      return response.data;
+    },
+    enabled: !!user._id, // only get if the user._id exists
   });
-
-  console.log("Posts recived from React Query:", userPosts);
+  
 
   const { data: soldierRequests, isLoading: isLoadingSoldierRequests } = useQuery({
     queryKey: ["soldierRequests", user._id],
     queryFn: async () => {
       const response = await api.get(`/requests/user/${user._id}`); 
-      console.log("Donation Requests recived from API:", response.data.requests);
       return response.data.requests;
     },
     enabled: !!user._id, 
   });
+  console.log("User ID in Profile:", user._id);
 
-  console.log("Donation Requests recived from React Query:", soldierRequests); 
 
   const handleNicknameChange = (value: string) => {
     if (value === "") {
@@ -231,7 +223,8 @@ const Profile: React.FC = () => {
       };
 
       const profileResponse = await api.put("/profiles/me", profileUpdate);
-
+      delete profileResponse.data._id;
+      delete profileResponse.data.userId;
       const phoneUpdate = { phone };
       const phoneResponse = phone ? await api.put("/users/me", phoneUpdate) : null;
       dispatch(
@@ -351,6 +344,7 @@ const Profile: React.FC = () => {
             isSoldier ? (
               <div>
                 <h2 className="text-2xl font-bold mb-6">Your Donation Requests</h2>
+
                 {isLoadingSoldierRequests ? (
                   <PostSkeleton />
                 ) : soldierRequests && soldierRequests.length > 0 ? (
@@ -411,17 +405,18 @@ const Profile: React.FC = () => {
             )
           ) : (
             <div>
-              <h2 className="text-2xl font-bold mb-6">Your Posts</h2>
-              {isLoadingPosts ? (
-                <PostSkeleton />
-              ) : userPosts?.posts?.length > 0 ? (
-                userPosts.posts.map((post: Post) => (
-                  <PostCard key={post._id} post={post} />
-                ))
-              ) : (
-                <p>You haven’t posted anything yet.</p>
-              )}
-            </div>
+            <h2 className="text-2xl font-bold mb-6">Your Posts</h2>
+            {isLoadingPosts ? (
+            <PostSkeleton />
+          ) : Array.isArray(userPosts?.posts) && userPosts.posts.length > 0 ? (
+            userPosts.posts.map((post: Post) => (
+              console.log("Post:", post),
+              <PostCard key={post._id} post={post} />
+            ))
+          ) : (
+            <p>No posts found.</p>
+          )}
+          </div>      
           )}
         </div>
       </div>
