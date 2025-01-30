@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { PostModel } from "../models/postModel";
 
+
 interface UserInfo {
   userId: string;
   type: string;
@@ -188,20 +189,37 @@ export const getPostById = async (req: Request, res: Response) => {
 };
 
 // Get posts by user ID
+// Função auxiliar para processar o campo de ordenação
+const parseSort = (sortQuery: string | undefined): Record<string, 1 | -1> => {
+  try {
+    if (!sortQuery) return { createdAt: -1 }; // Valor padrão
+    const parsedSort = JSON.parse(sortQuery);
+    if (typeof parsedSort === "object" && parsedSort !== null) {
+      return parsedSort;
+    }
+    throw new Error("Sort must be a valid object");
+  } catch (error) {
+    console.warn("Invalid sort value. Using default sort:", error);
+    return { createdAt: -1 }; // Valor padrão
+  }
+};
+
+// Controlador corrigido
 export const getPostsByUserId = async (req: Request, res: Response) => {
   try {
-    const userInfo = ensureUser(req, res);
-    if (!userInfo) return;
-
     const { userId } = req.params;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const sort = (req.query.sort as string) || "-createdAt";
 
+    // Verifica se o userId é um ObjectId válido
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid user ID format" });
     }
 
+    // Paginação e ordenação
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const sort = (req.query.sort as string) || "-createdAt";
+
+    // Processa o campo de ordenação
     const sortObj = sort.split(",").reduce((acc: any, item) => {
       const [key, order] = item.startsWith("-")
         ? [item.slice(1), -1]
@@ -210,44 +228,69 @@ export const getPostsByUserId = async (req: Request, res: Response) => {
       return acc;
     }, {});
 
-    // Use a single aggregation pipeline
+    // Define o pipeline de agregação
     const [result] = await PostModel.aggregate([
       {
         $facet: {
           metadata: [
-            { $match: { authorId: new mongoose.Types.ObjectId(userId) } },
-            { $count: "total" },
+            { $match: { authorId: new mongoose.Types.ObjectId(userId) } }, // Filtra posts pelo ID do autor
+            { $count: "total" }, // Conta o total de posts
           ],
           posts: [
             { $match: { authorId: new mongoose.Types.ObjectId(userId) } },
-            { $sort: sortObj },
-            { $skip: (page - 1) * limit },
-            { $limit: limit },
+            { $sort: sortObj }, // Ordena os posts
+            { $skip: (page - 1) * limit }, // Salta os registros para paginação
+            { $limit: limit }, // Limita o número de resultados
             {
               $lookup: {
-                from: "users",
-                localField: "authorId",
-                foreignField: "_id",
-                pipeline: [{ $project: { password: 0 } }],
-                as: "author",
+                from: "users", // Tabela de usuários
+                localField: "authorId", // Campo local
+                foreignField: "_id", // Campo estrangeiro
+                pipeline: [
+                  { $project: { password: 0, email: 0 } }, // Remove campos sensíveis
+                ],
+                as: "author", // Popula com os dados do autor
               },
             },
-            { $unwind: "$author" },
+            { $unwind: "$author" }, // Descompacta o array de autor
+            {
+              $lookup: {
+                from: "comments", // Tabela de comentários
+                localField: "_id", // ID do post
+                foreignField: "postId", // Campo de referência no comentário
+                pipeline: [
+                  {
+                    $lookup: {
+                      from: "users", // Popula os autores dos comentários
+                      localField: "authorId",
+                      foreignField: "_id",
+                      pipeline: [
+                        { $project: { password: 0, email: 0 } }, // Remove campos sensíveis
+                      ],
+                      as: "author",
+                    },
+                  },
+                  { $unwind: "$author" }, // Descompacta os dados do autor
+                ],
+                as: "comments", // Popula os comentários
+              },
+            },
           ],
         },
       },
       {
         $project: {
-          posts: 1,
-          total: { $arrayElemAt: ["$metadata.total", 0] },
+          posts: 1, // Retorna os posts
+          total: { $arrayElemAt: ["$metadata.total", 0] }, // Total de posts
         },
       },
     ]);
 
-    const total = result.total || 0;
+    const total = result?.total || 0;
 
+    // Retorna os posts e informações de paginação
     return res.json({
-      posts: result.posts,
+      posts: result?.posts || [],
       pagination: {
         page,
         limit,
@@ -256,9 +299,12 @@ export const getPostsByUserId = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ message: "Error fetching user posts" });
+    console.error("Error in getPostsByUserId:", error);
+    res.status(500).json({ message: "Failed to fetch posts" });
   }
 };
+
+
 
 // Toggle like on post
 export const toggleLike = async (req: Request, res: Response) => {

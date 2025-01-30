@@ -307,6 +307,14 @@ function AppRoutes() {
         }
       />
       <Route
+  path="/donation-requests"
+  element={
+    <ProtectedRoute>
+      <Profile />
+    </ProtectedRoute>
+  }
+/>
+      <Route
         path="/soldier-join-city"
         element={
           <ProtectedRoute>

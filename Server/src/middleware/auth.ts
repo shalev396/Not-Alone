@@ -30,6 +30,8 @@ export const auth = async (
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
       userId: string;
     };
+    console.log("Decoded Token:", decoded); // Adicione este log
+
 
     const user = await UserModel.findById(decoded.userId).select("type").lean();
 
