@@ -104,19 +104,20 @@ export function PostCard({ post }: { post: Post }) {
 
         {Array.isArray(post.media) && post.media.length > 0 && (
           <div className="grid mb-8">
-            {post.media.map((mediaUrl, index) => (
-              <img
-                key={index}
-                src={
-                  mediaUrl.startsWith("http")
-                    ? mediaUrl
-                    : `${window.location.origin}${mediaUrl.startsWith("/") ? "" : "/"}${mediaUrl}` // URL relativa
-                }
-                alt={`Post media ${index + 1}`}
-                className="rounded-md w-full max-h-[400px] object-cover border border-muted"
-              />
-            ))}
-          </div>
+  {post.media.map((mediaUrl, index) => (
+    <img
+      key={index}
+      src={
+        mediaUrl.startsWith("http")
+          ? mediaUrl
+          : `${window.location.origin}${mediaUrl.startsWith("/") ? "" : "/"}${mediaUrl}` // URL relativa
+      }
+      alt={`Post media ${index + 1}`}
+      className="rounded-md w-full h-auto object-cover border border-muted"
+    />
+  ))}
+</div>
+
         )}
 
         <p
