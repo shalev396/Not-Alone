@@ -14,6 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
 import { PostCard } from "@/components/social/PostCard";
 import { PostSkeleton } from "@/components/shared/feeds/PostFeed";
+import { useNavigate } from "react-router-dom";
+
 
 interface Request {
   _id: string;
@@ -68,6 +70,8 @@ const Profile: React.FC = () => {
     const [profileImage, setProfileImage] = useState("");
     const [bio, setBio] = useState("");
     const [receiveNotifications, setReceiveNotifications] = useState(false);
+    const navigate = useNavigate();
+
     const getStatusColor = (status: Request["status"]) => {
       switch (status) {
         case "approved":
@@ -200,6 +204,20 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handleDeleteRequest = async (requestId: string) => {
+    try {
+      await api.delete(`/requests/${requestId}`);
+      // Atualize os soldierRequests após excluir
+      const updatedRequests = soldierRequests.filter(
+        (request: Request) => request._id !== requestId
+      );
+      console.log("Updated soldier requests:", updatedRequests);
+    } catch (error: any) {
+      console.error("Error deleting request:", error.response?.data || error);
+      alert("Failed to delete request.");
+    }
+  };
+  
   const handleSubmit = async () => {
     if (!nickname) {
       setError("Nickname cannot be empty.");
@@ -254,9 +272,9 @@ const Profile: React.FC = () => {
             </span>{" "}
             Page
           </h1>
-  
           <div className="bg-card p-6 rounded-lg shadow-md">
             <div className="flex items-start space-x-4">
+              <div className="flex-1">
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1">Nickname</label>
                 <Input
@@ -265,9 +283,22 @@ const Profile: React.FC = () => {
                   placeholder="Enter a unique nickname"
                 />
                 {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+                {/* Button to suggest nickname */}
+                <div className="mt-2 flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setNickname(getRandomNickname())}
+                  className="text-blue-500 ml-4 text-xs font-medium hover:scale-105 transition-transform duration-100"
+                >
+                    Suggest Nickname
+                  </button>
+                </div>
+              </div>
+                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
                 <label className="block text-sm font-medium mt-6 mb-1">Email</label>
                 <Input value={email} disabled />
               </div>
+              
               <div className="flex-shrink-0">
                 <img
                   src={profileImage || DEFAULT_PROFILE_IMAGE}
@@ -309,19 +340,20 @@ const Profile: React.FC = () => {
             </div>
   
             <button
-              onClick={handleSubmit}
-              className="mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded"
-            >
-              Save Changes
-            </button>
-            {loading ? (
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-secundary"></div>
-            ) : (
-              ""
-            )}
+  onClick={handleSubmit}
+  className={`mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded flex items-center justify-center`}
+  disabled={loading} // Evita múltiplos cliques enquanto está carregando
+>
+  {loading ? (
+    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
+  ) : (
+    "Save Changes"
+  )}
+</button>
+
           </div>
   
-          <div className="flex space-x-4 mt-14 mb-18">
+          <div className="flex space-x-5 mt-14 mb-12">
             <button
               onClick={() => setShowAlternateTab(false)}
               className={`font-bold text-green-500 hover:cursor-pointer ${
@@ -340,72 +372,101 @@ const Profile: React.FC = () => {
             </button>
           </div>
   
-          {showAlternateTab ? (
-            isSoldier ? (
-              <div>
-                <h2 className="text-2xl font-bold mb-6">Your Donation Requests</h2>
 
-                {isLoadingSoldierRequests ? (
-                  <PostSkeleton />
-                ) : soldierRequests && soldierRequests.length > 0 ? (
-                  soldierRequests.map((request: any) => (
-                    <Card key={request._id} className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-xl font-semibold mb-2">
-                            {request.item}
-                          </h3>
-                          <p className="text-muted-foreground text-sm">
-                            Created on {formatDate(request.createdAt)}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Badge variant="outline">{request.service}</Badge>
-                          <Badge className={getStatusColor(request.status)}>
-                            {request.status.charAt(0).toUpperCase() +
-                              request.status.slice(1)}
-                          </Badge>
-                          {request.paid && (
-                            <Badge className="bg-blue-500">Paid</Badge>
-                          )}
-                        </div>
-                      </div>
-  
-                      <div className="space-y-2 mb-4">
-                        <p className="text-sm">
-                          <span className="font-semibold">Description:</span>{" "}
-                          {request.itemDescription}
-                        </p>
-                        <p className="text-sm">
-                          <span className="font-semibold">Quantity:</span>{" "}
-                          {request.quantity}
-                        </p>
-                        <p className="text-sm">
-                          <span className="font-semibold">Location:</span>{" "}
-                          {request.cityDetails.name} ({request.zone})
-                        </p>
-                        {request.paid && request.paidBy && (
-                          <p className="text-sm">
-                            <span className="font-semibold">Paid by:</span>{" "}
-                            {request.paidBy.firstName} {request.paidBy.lastName}
-                          </p>
-                        )}
-                      </div>
-                    </Card>
-                  ))
-                ) : (
-                  <p>No donation requests found.</p>
+
+
+          {showAlternateTab ? (
+  isSoldier ? (
+    <div>
+      {/* Botão "New Request" */}
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-2xl font-bold">
+          {nickname} <span className="text-sky-500">Donation Requests</span>
+        </h2>
+        <button
+          onClick={() => navigate("/requestForm")}
+          className="bg-green-500 text-white px-4 py-2 rounded-md hover:opacity-90"
+        >
+          New Request
+        </button>
+      </div>
+
+      {/* Conteúdo dos Donation Requests */}
+      {isLoadingSoldierRequests ? (
+        <PostSkeleton />
+      ) : soldierRequests && soldierRequests.length > 0 ? (
+        <div className="grid gap-6">
+          {soldierRequests.map((request: Request) => (
+            <Card key={request._id} className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">{request.item}</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Created on {formatDate(request.createdAt)}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Badge variant="outline">{request.service}</Badge>
+                  <Badge className={getStatusColor(request.status)}>
+                    {request.status.charAt(0).toUpperCase() +
+                      request.status.slice(1)}
+                  </Badge>
+                  {request.paid && (
+                    <Badge className="bg-blue-500">Paid</Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                <p className="text-sm">
+                  <span className="font-semibold">Description:</span>{" "}
+                  {request.itemDescription}
+                </p>
+                <p className="text-sm">
+                  <span className="font-semibold">Quantity:</span>{" "}
+                  {request.quantity}
+                </p>
+                <p className="text-sm">
+                  <span className="font-semibold">Location:</span>{" "}
+                  {request.cityDetails.name} ({request.zone})
+                </p>
+                {request.paid && request.paidBy && (
+                  <p className="text-sm">
+                    <span className="font-semibold">Paid by:</span>{" "}
+                    {request.paidBy.firstName} {request.paidBy.lastName}
+                  </p>
                 )}
               </div>
-            ) : (
-              <div>
-                <h2 className="text-2xl font-bold mb-6">Your Donations</h2>
-                <p>Donations feature will be available soon.</p>
-              </div>
-            )
+
+              {request.status === "in process" && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => handleDeleteRequest(request._id)}
+                    className="bg-red-500 text-white px-3 py-1 rounded-md hover:opacity-90"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <p>No donation requests found.</p>
+      )}
+    </div>
+  ) : (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">{nickname} Donations</h2>
+      <p>Donations feature will be available soon.</p>
+    </div>
+  )
+
+
+            
           ) : (
             <div>
-            <h2 className="text-2xl font-bold mb-6">Your Posts</h2>
+            <h2 className="text-2xl font-bold mb-16">{nickname} <span className="text-yellow-500">Posts</span></h2>
             {isLoadingPosts ? (
             <PostSkeleton />
           ) : Array.isArray(userPosts?.posts) && userPosts.posts.length > 0 ? (
