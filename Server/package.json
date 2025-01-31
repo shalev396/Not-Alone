@@ -6,7 +6,8 @@
   "scripts": {
     "start": "ts-node src/index.ts --host",
     "dev": "nodemon --exec ts-node src/index.ts --host",
-    "build": "npm run build:server && npm run build:client",
+    "build": "npm install && tsc",
+    "old-build": "npm run build:server && npm run build:client",
     "build:server": "npm install && tsc",
     "build:client": "cd .. && cd client && npm install && npm run build",
     "lint": "eslint . --ext .ts",
