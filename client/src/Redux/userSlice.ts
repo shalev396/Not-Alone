@@ -47,6 +47,11 @@ const userSlice = createSlice({
     },
 
     updateUser: (state, action) => {
+      console.log(
+        "[Redux - old State]:",
+        state._id
+      );
+      
       console.log("[Redux - updateUser Payload]:", action.payload); 
 
       Object.keys(action.payload).forEach((key) => {
@@ -55,6 +60,10 @@ const userSlice = createSlice({
         }
       });
       console.log("[Redux - Updated State]:", state); 
+      console.log(
+        "[Redux - new State]:",
+        state._id
+      );
 
     },
     resetUser: () => initialState,

@@ -26,7 +26,7 @@ export const routeListSoldier: RouteProps[] = [
   },
   {
     href: "/requestForm",
-    label: "Request Form",
+    label: "Request Form #",
   },
   {
     href: "/my-requests",
@@ -58,7 +58,7 @@ export const routeListSoldier: RouteProps[] = [
   },
   {
     href: "/soldier-join-city",
-    label: "Join City",
+    label: "Join City #",
   },
   {
     href: "/profile",
@@ -119,7 +119,7 @@ export const routeListMunicipality: RouteProps[] = [
   },
   {
     href: "/join-city",
-    label: "Join City",
+    label: "Join City #",
   },
   {
     href: "/profile",
