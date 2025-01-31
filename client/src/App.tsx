@@ -39,6 +39,9 @@ import DonationStatus from "./pages/DonationStatus";
 import DonationAssignment from "./pages/DonationAssignment";
 import DonationControlPanel from "./pages/DonationControlPanel";
 import SoldierJoinCity from "./pages/SoldierJoinCity";
+import TwoFactorAuth from "./pages/TwoFactorAuth";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPasswordVerify from "./pages/ResetPasswordVerify";
 
 // Public routes that don't need protection
 // const publicRoutes = [
@@ -81,6 +84,9 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
+      <Route path="/2fa" element={<TwoFactorAuth />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password-verify" element={<ResetPasswordVerify />} />
       <Route path="/pending" element={<PendingPage />} />
       <Route path="/termofservice" element={<Tos />} />
       <Route path="/terms" element={<Terms />} />

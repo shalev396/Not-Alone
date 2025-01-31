@@ -68,13 +68,28 @@ export function LoginForm({
     try {
       const res = await api.post("/auth/login", formData);
 
-      if (res?.data?.user?.approvalStatus === "pending") {
-        sessionStorage.setItem("user", JSON.stringify(res.data.user));
-        navigate("/pending");
-        return;
-      }
-
       if (res?.data?.user?._id) {
+        // First check if 2FA is required
+        if (!res.data.user.is2FAEnabled) {
+          // Redirect to 2FA setup regardless of approval status
+          navigate("/2fa", {
+            state: {
+              userId: res.data.user._id,
+              email: res.data.user.email,
+              isLogin: true,
+            },
+          });
+          return;
+        }
+
+        // Only proceed with approval status check if 2FA is enabled
+        if (res.data.user.approvalStatus === "pending") {
+          sessionStorage.setItem("user", JSON.stringify(res.data.user));
+          navigate("/pending");
+          return;
+        }
+
+        // If both 2FA is enabled and user is approved, proceed with login
         sessionStorage.setItem("token", res.data.token);
         sessionStorage.setItem("id", res.data.user._id);
         dispatch(setUser(res.data.user));
@@ -148,9 +163,13 @@ export function LoginForm({
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <a href="#" className="ml-auto text-sm hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/forgot-password")}
+                    className="ml-auto text-sm hover:underline"
+                  >
                     Forgot your password?
-                  </a>
+                  </button>
                 </div>
                 <Input
                   id="password"
