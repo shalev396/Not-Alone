@@ -340,16 +340,17 @@ const Profile: React.FC = () => {
             </div>
   
             <button
-              onClick={handleSubmit}
-              className="mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded"
-            >
-              Save Changes
-            </button>
-            {loading ? (
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-secundary"></div>
-            ) : (
-              ""
-            )}
+  onClick={handleSubmit}
+  className={`mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded flex items-center justify-center`}
+  disabled={loading} // Evita múltiplos cliques enquanto está carregando
+>
+  {loading ? (
+    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
+  ) : (
+    "Save Changes"
+  )}
+</button>
+
           </div>
   
           <div className="flex space-x-5 mt-14 mb-12">
@@ -443,7 +444,7 @@ const Profile: React.FC = () => {
                     onClick={() => handleDeleteRequest(request._id)}
                     className="bg-red-500 text-white px-3 py-1 rounded-md hover:opacity-90"
                   >
-                    Delete Request
+                    Delete
                   </button>
                 </div>
               )}
