@@ -156,11 +156,12 @@ export function SignupForm({
       // Save user data to session storage
       sessionStorage.setItem("user", JSON.stringify(response.data.user));
 
-      // Navigate to pending page with request data
-      navigate("/pending", {
+      // Redirect to 2FA page
+      navigate("/2fa", {
         state: {
-          token: response.data.token,
-          request: response.data.request,
+          userId: response.data.user._id,
+          email: response.data.user.email,
+          isLogin: false,
         },
       });
     } catch (error: any) {

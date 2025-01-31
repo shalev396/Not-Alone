@@ -19,6 +19,7 @@ export interface User extends Document {
   approvalStatus: ApprovalStatus;
   approvalDate?: Date;
   denialReason?: string;
+  is2FAEnabled: boolean;
   preferences: {
     language: "en" | "he";
     notifications: boolean;
@@ -37,13 +38,16 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    profileImage: { 
+    profileImage: {
       type: String,
-      default: "" },
+      default: "",
+    },
     nickname: {
-      type: String },
+      type: String,
+    },
     bio: {
-      type: String },
+      type: String,
+    },
     passport: {
       type: String,
       required: true,
@@ -89,6 +93,10 @@ const userSchema = new Schema(
     },
     denialReason: {
       type: String,
+    },
+    is2FAEnabled: {
+      type: Boolean,
+      default: false,
     },
     preferences: {
       language: {
