@@ -1,11 +1,11 @@
 name: CI/CD Pipeline # Name of the GitHub Actions Workflow
 
-# 🚀 Workflow Triggers: When to run this workflow
+# 🚀 Workflow Triggers: Separate Testing & Deployment
 on:
   pull_request:
     branches: [main] # Run tests & build when a PR is made to 'main'
   push:
-    branches: [main] # Run deployment when code is merged into 'main'
+    branches: [main] # Deploy when code is merged into 'main'
 
 jobs:
   # ✅ JOB 1: Run Tests (Backend Only)
@@ -112,7 +112,7 @@ jobs:
   deploy_frontend:
     runs-on: ubuntu-latest
     needs: build # Runs only if build is successful
-    if: github.ref == 'refs/heads/main' # Only deploy when pushing to 'main'
+    if: github.event_name == 'push' # Only deploy when merged into main
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -132,7 +132,7 @@ jobs:
   deploy_backend:
     runs-on: ubuntu-latest
     needs: build # Runs only if build is successful
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' # Only deploy when merged into main
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -155,6 +155,7 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     needs: [deploy_frontend, deploy_backend] # Only run after both deployments
+    if: github.event_name == 'push' # Only notify when deployed
     steps:
       - name: Send Discord Notification
         uses: Ilshidur/action-discord@2.0.0
