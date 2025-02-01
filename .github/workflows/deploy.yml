@@ -205,4 +205,4 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} # ✅ Set webhook as environment variable
         with:
           args: "🚀 Deployment of Not-Alone is complete! New version is live!"
-  
+
