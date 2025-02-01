@@ -112,16 +112,22 @@ jobs:
   deploy_frontend:
     runs-on: ubuntu-latest
     needs: build # Runs only if build is successful
-    if: github.event_name == 'push' 
+    if: github.event_name == 'push'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Rebuild Frontend # Ensure we have the latest build
+        run: |
+          cd client
+          npm install  # Install dependencies
+          npm run build # Build frontend
+
       - name: Ensure Frontend Build Directory Exists
         run: |
           if [ ! -d "client/dist" ]; then
-            echo "❌ ERROR: Build directory client/dist does not exist!"
-            exit 1
+          echo "❌ ERROR: Build directory client/dist does not exist!"
+          exit 1
           fi
 
       - name: Deploy to S3 # Sync the built frontend files to the S3 bucket
@@ -136,33 +142,40 @@ jobs:
           SOURCE_DIR: "client/dist/" # Only upload the CONTENTS of client/dist
 
   # ✅ JOB 4: Deploy Backend to EC2
-  deploy_backend:
-    runs-on: ubuntu-latest
-    needs: build # Runs only if build is successful
-    if: github.event_name == 'push'
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+deploy_backend:
+  runs-on: ubuntu-latest
+  needs: build # Runs only if the build is successful
+  if: github.event_name == 'push'
+  steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-      - name: Debug SSH Connection
-        run: |
-          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key  # Save private key
-          ssh -o StrictHostKeyChecking=no -i private_key $USER@$HOST "echo '✅ SSH Connection Successful!'"
+    - name: Debug EC2 Host
+      run: |
+        echo "EC2 Host: ${EC2_HOST:0:10}********"
 
-      - name: Deploy to EC2
-        env:
-          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }} # SSH Private Key for EC2
-          HOST: ${{ secrets.EC2_HOST }} # EC2 Public IP
-          USER: "ec2-user" # EC2 User (default for Amazon Linux)
-        run: |
-          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key  # Save private key
-          scp -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -i private_key -r Server $USER@$HOST:/home/ec2-user/backend  # Copy backend files
-          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -i private_key $USER@$HOST << 'EOF'
-            cd /home/ec2-user/backend
-            npm install  # Install backend dependencies
-            pm2 restart all  # Restart backend service
-          EOF
+    - name: Deploy to EC2
+      env:
+        PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
+        HOST: ${{ secrets.EC2_HOST }}
+        USER: "ec2-user"
+      run: |
+        echo "$PRIVATE_KEY" > private_key && chmod 600 private_key  # Save private key
 
+        # Ensure EC2_HOST is not empty
+        if [ -z "$HOST" ]; then
+          echo "❌ ERROR: EC2_HOST is empty!"
+          exit 1
+        fi
+
+        ssh -o StrictHostKeyChecking=no -i private_key $USER@$HOST "echo '✅ SSH Connection Successful!'"
+
+        scp -o StrictHostKeyChecking=no -i private_key -r Server $USER@$HOST:/home/ec2-user/backend
+        ssh -o StrictHostKeyChecking=no -i private_key $USER@$HOST << 'EOF'
+          cd /home/ec2-user/backend
+          npm install
+          pm2 restart all
+        EOF
 
   # ✅ JOB 5: Notify on Discord After Deployment
   notify:
