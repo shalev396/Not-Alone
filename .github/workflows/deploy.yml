@@ -27,11 +27,12 @@ jobs:
           curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo tee /usr/share/keyrings/mongodb-server-keyring.gpg >/dev/null
           echo "deb [signed-by=/usr/share/keyrings/mongodb-server-keyring.gpg] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
           sudo apt-get update
-          sudo apt-get install -y mongodb-mongosh
+          sudo apt-get install -y mongodb-org-shell mongodb-mongosh
 
-      - name: Test MongoDB Connection
+      - name: Verify MongoDB Installation
         run: |
-          mongosh "${{ secrets.MONGODB_URI_TEST }}" --eval "db.runCommand({ connectionStatus: 1 })"
+          mongosh --version
+          mongo --version || echo "❌ Warning: Legacy MongoDB shell is not installed."
 
       # 🚫 No frontend tests, but keeping the structure for future use
       # - name: Install Frontend Dependencies
@@ -76,12 +77,7 @@ jobs:
 
       - name: Test MongoDB Connection
         run: |
-          if command -v mongo &> /dev/null; then
-            mongo "${{ secrets.MONGODB_URI_TEST }}" --eval "db.runCommand({ connectionStatus: 1 })"
-          else
-            echo "❌ MongoDB CLI not found"
-            exit 1
-          fi
+          mongosh "${{ secrets.MONGODB_URI_TEST }}" --eval "db.runCommand({ connectionStatus: 1 })"
 
       - name: Run Backend Tests # Run backend tests
         run: |
