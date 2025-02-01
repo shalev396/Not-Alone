@@ -10,7 +10,7 @@ on:
 jobs:
   # ✅ JOB 1: Run Tests (Backend Only)
   test:
-    runs-on: ubuntu-latest # Use Ubuntu as the runner
+    runs-on: ubuntu-22.04 # Use Ubuntu as the runner
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3 # Get the latest code from the repo
@@ -20,13 +20,15 @@ jobs:
         with:
           node-version: "18" # Ensure we're using Node.js 18
           
-      - name: Install MongoDB CLI
+      - name: Install MongoDB CLI (Ubuntu 22.04)
         run: |
           sudo apt-get update
-          wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
-          echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get install -y gnupg curl
+          curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/mongodb-server-keyring.gpg] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
           sudo apt-get update
           sudo apt-get install -y mongodb-org-shell
+
 
 
       # 🚫 No frontend tests, but keeping the structure for future use
