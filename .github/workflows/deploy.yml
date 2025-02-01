@@ -19,11 +19,15 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "18" # Ensure we're using Node.js 18
-
+          
       - name: Install MongoDB CLI
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y mongodb-clients
+          sudo apt-get update
+          wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+          echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-org-shell
+
 
       # 🚫 No frontend tests, but keeping the structure for future use
       # - name: Install Frontend Dependencies
