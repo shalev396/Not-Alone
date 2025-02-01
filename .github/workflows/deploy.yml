@@ -199,7 +199,8 @@ jobs:
     if: github.event_name == 'push' # Only notify when deployed
     steps:
       - name: Send Discord Notification
-        uses: Ilshidur/action-discord@master # ✅ Use 'master' instead of '2.0.0'
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} # ✅ Set webhook as environment variable
         with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }} # Discord Webhook URL
-          message: "🚀 Deployment of Not-Alone is complete! New version is live!"
+          args: "🚀 Deployment of Not-Alone is complete! New version is live!"
