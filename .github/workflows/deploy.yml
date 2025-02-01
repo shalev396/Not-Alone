@@ -19,17 +19,19 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "18" # Ensure we're using Node.js 18
-          
+
       - name: Install MongoDB CLI (Ubuntu 22.04)
         run: |
           sudo apt-get update
           sudo apt-get install -y gnupg curl
-          curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-keyring.gpg
+          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/mongodb-server-keyring.gpg] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
           sudo apt-get update
           sudo apt-get install -y mongodb-org-shell
 
-
+      - name: Verify MongoDB Installation
+        run: |
+          mongo --version
 
       # 🚫 No frontend tests, but keeping the structure for future use
       # - name: Install Frontend Dependencies
@@ -72,9 +74,14 @@ jobs:
           echo "DEVICE_TOKEN_SECRET='${{ secrets.DEVICE_TOKEN_SECRET }}'" >> $GITHUB_ENV
           echo "ENCRYPTION_KEY='${{ secrets.ENCRYPTION_KEY }}'" >> $GITHUB_ENV
 
-      - name: Test MongoDB Connection # ✅ Check if MongoDB is reachable
+      - name: Test MongoDB Connection
         run: |
-          mongo ${{ secrets.MONGODB_URI_TEST }} --eval "db.runCommand({ connectionStatus: 1 })"
+          if command -v mongo &> /dev/null; then
+            mongo "${{ secrets.MONGODB_URI_TEST }}" --eval "db.runCommand({ connectionStatus: 1 })"
+          else
+            echo "❌ MongoDB CLI not found"
+            exit 1
+          fi
 
       - name: Run Backend Tests # Run backend tests
         run: |
