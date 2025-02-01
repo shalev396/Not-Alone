@@ -84,6 +84,10 @@ jobs:
         run: |
           mongosh "${{ secrets.MONGODB_URI_TEST }}" --eval "db.runCommand({ connectionStatus: 1 })"
 
+      - name: Debug MongoDB URI
+        run: |
+          echo "MongoDB URI: ${MONGODB_URI_TEST:0:10}********"  # Mask for security
+
       - name: Run Backend Tests # Run backend tests
         run: |
           cd Server
