@@ -144,8 +144,8 @@ jobs:
   # ✅ JOB 4: Deploy Backend to EC2
   deploy_backend:
     runs-on: ubuntu-latest
-    needs: build # Runs only if build is successful
-    if: github.ref == 'refs/heads/main' # Deploy only when pushing to main
+    needs: build  # Runs only if build is successful
+    if: github.ref == 'refs/heads/main'  # Deploy only when pushing to main
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -161,7 +161,7 @@ jobs:
           USER: "ec2-user"
         run: |
           echo "$PRIVATE_KEY" > private_key && chmod 600 private_key  # Save private key
-
+          
           # Ensure EC2_HOST is set
           if [ -z "$HOST" ]; then
             echo "❌ ERROR: EC2_HOST is empty!"
@@ -179,15 +179,19 @@ jobs:
           USER: "ec2-user"
         run: |
           echo "🚀 Transferring Files to EC2..."
-          scp -o StrictHostKeyChecking=no -i private_key -r . $USER@$HOST:/home/ec2-user/Not-Alone  # Copy entire repo
+
+          # Use rsync to exclude .git and set correct permissions
+          rsync -avz --exclude '.git' -e "ssh -o StrictHostKeyChecking=no -i private_key" . $USER@$HOST:/home/ec2-user/Not-Alone
 
           echo "🔧 Running Deployment Commands on EC2..."
           ssh -o StrictHostKeyChecking=no -i private_key $USER@$HOST << 'EOF'
+            sudo chown -R ec2-user:ec2-user /home/ec2-user/Not-Alone  # Ensure proper permissions
             cd /home/ec2-user/Not-Alone/Server  # Move into backend folder
             npm install  # Install dependencies
             pm2 stop all || true  # Stop any running backend services
             pm2 start npm --name "not-alone-backend" -- run start  # Start backend service
           EOF
+
 
   # ✅ JOB 5: Notify on Discord After Deployment
   notify:
