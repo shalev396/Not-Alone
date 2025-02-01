@@ -36,7 +36,20 @@ jobs:
           cd Server
           npm install
 
-      - name: Set Environment Variables # 🔥 Add this block to load secrets
+      - name: Check & Log Environment Variables
+        run: |
+          echo "Checking required secrets..."
+          [[ -z "${{ secrets.JWT_SECRET }}" ]] && echo "❌ MISSING: JWT_SECRET"
+          [[ -z "${{ secrets.PASSWORD_KEY }}" ]] && echo "❌ MISSING: PASSWORD_KEY"
+          [[ -z "${{ secrets.MONGODB_URI_TEST }}" ]] && echo "❌ MISSING: MONGODB_URI_TEST"
+          [[ -z "${{ secrets.SMTP_HOST }}" ]] && echo "❌ MISSING: SMTP_HOST"
+          [[ -z "${{ secrets.SMTP_PORT }}" ]] && echo "❌ MISSING: SMTP_PORT"
+          [[ -z "${{ secrets.SMTP_USER }}" ]] && echo "❌ MISSING: SMTP_USER"
+          [[ -z "${{ secrets.SMTP_PASS }}" ]] && echo "❌ MISSING: SMTP_PASS"
+          [[ -z "${{ secrets.DEVICE_TOKEN_SECRET }}" ]] && echo "❌ MISSING: DEVICE_TOKEN_SECRET"
+          [[ -z "${{ secrets.ENCRYPTION_KEY }}" ]] && echo "❌ MISSING: ENCRYPTION_KEY"
+
+      - name: Set Environment Variables
         run: |
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
           echo "PASSWORD_KEY=${{ secrets.PASSWORD_KEY }}" >> $GITHUB_ENV
