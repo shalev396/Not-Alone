@@ -5,9 +5,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import image from "../../assets/growth.png";
-import image3 from "../../assets/reflecting.png";
-import image4 from "../../assets/looking-ahead.png";
 
 interface FeatureProps {
   title: string;
@@ -20,19 +17,19 @@ const features: FeatureProps[] = [
     title: "Easy Donation Process",
     description:
       "Simple and secure platform to donate items directly to Lone Soldiers in need. Track your contributions and see their impact.",
-    image: image4,
+    image: "/assets/looking-ahead.png",
   },
   {
     title: "Soldier Needs Feed",
     description:
       "Browse through verified requests from Lone Soldiers and choose how you want to help, whether it's furniture, electronics, or daily essentials.",
-    image: image3,
+    image: "/assets/reflecting.png",
   },
   {
     title: "Community Connection",
     description:
       "Build meaningful connections within the Lone Soldier support community and make a real difference in soldiers' lives.",
-    image: image,
+    image: "/assets/looking-ahead.png",
   },
 ];
 

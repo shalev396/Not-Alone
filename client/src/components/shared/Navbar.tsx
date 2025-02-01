@@ -161,9 +161,7 @@ export const Navbar = ({
         routes = routeListAdmin;
         break;
       case "soldier":
-        routes = 
-          routeListSoldier
-        ;
+        routes = routeListSoldier;
         break;
       case "municipality":
         routes = routeListMunicipality;
@@ -197,11 +195,11 @@ export const Navbar = ({
   const navProps = {
     routeList,
     channelsLinks: channelsLinks || [],
-    navigate,
     accordionOpen,
-    setAccordionOpen: handleAccordionToggle,
     isAccordion,
     isVertical,
+    navigate,
+    setAccordionOpen: handleAccordionToggle,
   };
 
   if (user.type === "Admin") {

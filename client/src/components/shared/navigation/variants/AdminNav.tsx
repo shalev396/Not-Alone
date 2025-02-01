@@ -27,7 +27,7 @@ export const AdminNav = ({
   isAccordion,
   isVertical,
 }: AdminNavProps) => {
-  const renderAdminNav = () => (
+  const AdminNav = () => (
     <nav className="flex flex-col gap-4">
       <ChannelsDrawer channelsLinks={channelsLinks} navigate={navigate} />
       <Accordion type="single" collapsible className="w-full">
@@ -84,7 +84,8 @@ export const AdminNav = ({
       setAccordionOpen={setAccordionOpen}
       isAccordion={isAccordion}
       isVertical={isVertical}
-      renderContent={renderAdminNav}
-    />
+    >
+      <AdminNav />
+    </SideNavLayout>
   );
 };

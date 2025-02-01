@@ -212,33 +212,32 @@ export default function AdminQueue() {
   return (
     <>
       <Navbar modes={"admin"} />
-      <div className="container mx-auto py-10">
+      <div className="container mx-auto py-4">
         <h1 className="text-2xl font-bold mb-6">Pending Users Queue</h1>
         {error && <div className="text-red-500 mb-4">{error.message}</div>}
 
-        <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-center gap-4 mb-4">
           <Input
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full"
           />
-          <div className="flex gap-4">
-            <Select
-              value={sortBy}
-              onValueChange={(value: "createdAt" | "updatedAt") =>
-                setSortBy(value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt">Submitted Date</SelectItem>
-                <SelectItem value="updatedAt">Last Updated</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
+          <Select
+            value={sortBy}
+            onValueChange={(value: "createdAt" | "updatedAt") =>
+              setSortBy(value)
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="createdAt">Submitted Date</SelectItem>
+              <SelectItem value="updatedAt">Last Updated</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {isMobile ? (
