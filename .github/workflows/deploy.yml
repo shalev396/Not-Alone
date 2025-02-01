@@ -142,52 +142,52 @@ jobs:
           SOURCE_DIR: "client/dist/" # Only upload the CONTENTS of client/dist
 
   # ✅ JOB 4: Deploy Backend to EC2
-deploy_backend:
-  runs-on: ubuntu-latest
-  needs: build # Runs only if build is successful
-  if: github.ref == 'refs/heads/main' # Deploy only when pushing to main
-  steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+  deploy_backend:
+    runs-on: ubuntu-latest
+    needs: build # Runs only if build is successful
+    if: github.ref == 'refs/heads/main' # Deploy only when pushing to main
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Debug EC2 Host
-      run: |
-        echo "EC2 Host: ${EC2_HOST:0:10}********"
+      - name: Debug EC2 Host
+        run: |
+          echo "EC2 Host: ${EC2_HOST:0:10}********"
 
-    - name: Check EC2 Connection
-      env:
-        PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
-        HOST: ${{ secrets.EC2_HOST }}
-        USER: "ec2-user"
-      run: |
-        echo "$PRIVATE_KEY" > private_key && chmod 600 private_key  # Save private key
+      - name: Check EC2 Connection
+        env:
+          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: "ec2-user"
+        run: |
+          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key  # Save private key
 
-        # Ensure EC2_HOST is set
-        if [ -z "$HOST" ]; then
-          echo "❌ ERROR: EC2_HOST is empty!"
-          exit 1
-        fi
+          # Ensure EC2_HOST is set
+          if [ -z "$HOST" ]; then
+            echo "❌ ERROR: EC2_HOST is empty!"
+            exit 1
+          fi
 
-        # Test SSH Connection
-        echo "🔍 Testing SSH Connection..."
-        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -i private_key $USER@$HOST "echo '✅ SSH Connection Successful!'"
+          # Test SSH Connection
+          echo "🔍 Testing SSH Connection..."
+          ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -i private_key $USER@$HOST "echo '✅ SSH Connection Successful!'"
 
-    - name: Deploy to EC2
-      env:
-        PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
-        HOST: ${{ secrets.EC2_HOST }}
-        USER: "ec2-user"
-      run: |
-        echo "🚀 Transferring Files to EC2..."
-        scp -o StrictHostKeyChecking=no -i private_key -r . $USER@$HOST:/home/ec2-user/Not-Alone  # Copy entire repo
+      - name: Deploy to EC2
+        env:
+          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: "ec2-user"
+        run: |
+          echo "🚀 Transferring Files to EC2..."
+          scp -o StrictHostKeyChecking=no -i private_key -r . $USER@$HOST:/home/ec2-user/Not-Alone  # Copy entire repo
 
-        echo "🔧 Running Deployment Commands on EC2..."
-        ssh -o StrictHostKeyChecking=no -i private_key $USER@$HOST << 'EOF'
-          cd /home/ec2-user/Not-Alone/Server  # Move into backend folder
-          npm install  # Install dependencies
-          pm2 stop all || true  # Stop any running backend services
-          pm2 start npm --name "not-alone-backend" -- run start  # Start backend service
-        EOF
+          echo "🔧 Running Deployment Commands on EC2..."
+          ssh -o StrictHostKeyChecking=no -i private_key $USER@$HOST << 'EOF'
+            cd /home/ec2-user/Not-Alone/Server  # Move into backend folder
+            npm install  # Install dependencies
+            pm2 stop all || true  # Stop any running backend services
+            pm2 start npm --name "not-alone-backend" -- run start  # Start backend service
+          EOF
 
   # ✅ JOB 5: Notify on Discord After Deployment
   notify:
