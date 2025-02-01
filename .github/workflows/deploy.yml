@@ -49,8 +49,7 @@ jobs:
           [[ -z "${{ secrets.DEVICE_TOKEN_SECRET }}" ]] && echo "❌ MISSING: DEVICE_TOKEN_SECRET"
           [[ -z "${{ secrets.ENCRYPTION_KEY }}" ]] && echo "❌ MISSING: ENCRYPTION_KEY"
 
-
-        - name: Set Environment Variables
+      - name: Set Environment Variables
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           PASSWORD_KEY: ${{ secrets.PASSWORD_KEY }}
@@ -63,7 +62,6 @@ jobs:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
         run: |
           echo "✅ Environment variables set"
-
 
       - name: Test MongoDB Connection # ✅ Check if MongoDB is reachable
         run: |
