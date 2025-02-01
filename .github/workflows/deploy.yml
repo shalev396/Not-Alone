@@ -144,8 +144,8 @@ jobs:
   # ✅ JOB 4: Deploy Backend to EC2
   deploy_backend:
     runs-on: ubuntu-latest
-    needs: build # Runs only if the build is successful
-    if: github.event_name == 'push'
+    needs: build # Runs only if build is successful
+    if: github.ref == 'refs/heads/main' # Deploy only when pushing to main
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -154,7 +154,7 @@ jobs:
         run: |
           echo "EC2 Host: ${EC2_HOST:0:10}********"
 
-      - name: Deploy to EC2
+      - name: Check EC2 Connection
         env:
           PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
@@ -162,19 +162,31 @@ jobs:
         run: |
           echo "$PRIVATE_KEY" > private_key && chmod 600 private_key  # Save private key
 
-          # Ensure EC2_HOST is not empty
+          # Ensure EC2_HOST is set
           if [ -z "$HOST" ]; then
             echo "❌ ERROR: EC2_HOST is empty!"
             exit 1
           fi
 
-          ssh -o StrictHostKeyChecking=no -i private_key $USER@$HOST "echo '✅ SSH Connection Successful!'"
+          # Test SSH Connection
+          echo "🔍 Testing SSH Connection..."
+          ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -i private_key $USER@$HOST "echo '✅ SSH Connection Successful!'"
 
-          scp -o StrictHostKeyChecking=no -i private_key -r Server $USER@$HOST:/home/ec2-user/backend
+      - name: Deploy to EC2
+        env:
+          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: "ec2-user"
+        run: |
+          echo "🚀 Transferring Files to EC2..."
+          scp -o StrictHostKeyChecking=no -i private_key -r . $USER@$HOST:/home/ec2-user/Not-Alone  # Copy entire repo
+
+          echo "🔧 Running Deployment Commands on EC2..."
           ssh -o StrictHostKeyChecking=no -i private_key $USER@$HOST << 'EOF'
-            cd /home/ec2-user/backend
-            npm install
-            pm2 restart all
+            cd /home/ec2-user/Not-Alone/Server  # Move into backend folder
+            npm install  # Install dependencies
+            pm2 stop all || true  # Stop any running backend services
+            pm2 start npm --name "not-alone-backend" -- run start  # Start backend service
           EOF
 
   # ✅ JOB 5: Notify on Discord After Deployment
