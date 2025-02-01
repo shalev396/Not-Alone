@@ -39,27 +39,31 @@ jobs:
       - name: Check & Log Environment Variables
         run: |
           echo "Checking required secrets..."
-          if [ -z "${{ secrets.JWT_SECRET }}" ]; then echo "❌ MISSING: JWT_SECRET"; fi
-          if [ -z "${{ secrets.PASSWORD_KEY }}" ]; then echo "❌ MISSING: PASSWORD_KEY"; fi
-          if [ -z "${{ secrets.MONGODB_URI_TEST }}" ]; then echo "❌ MISSING: MONGODB_URI_TEST"; fi
-          if [ -z "${{ secrets.SMTP_HOST }}" ]; then echo "❌ MISSING: SMTP_HOST"; fi
-          if [ -z "${{ secrets.SMTP_PORT }}" ]; then echo "❌ MISSING: SMTP_PORT"; fi
-          if [ -z "${{ secrets.SMTP_USER }}" ]; then echo "❌ MISSING: SMTP_USER"; fi
-          if [ -z "${{ secrets.SMTP_PASS }}" ]; then echo "❌ MISSING: SMTP_PASS"; fi
-          if [ -z "${{ secrets.DEVICE_TOKEN_SECRET }}" ]; then echo "❌ MISSING: DEVICE_TOKEN_SECRET"; fi
-          if [ -z "${{ secrets.ENCRYPTION_KEY }}" ]; then echo "❌ MISSING: ENCRYPTION_KEY"; fi
+          [[ -z "${{ secrets.JWT_SECRET }}" ]] && echo "❌ MISSING: JWT_SECRET"
+          [[ -z "${{ secrets.PASSWORD_KEY }}" ]] && echo "❌ MISSING: PASSWORD_KEY"
+          [[ -z "${{ secrets.MONGODB_URI_TEST }}" ]] && echo "❌ MISSING: MONGODB_URI_TEST"
+          [[ -z "${{ secrets.SMTP_HOST }}" ]] && echo "❌ MISSING: SMTP_HOST"
+          [[ -z "${{ secrets.SMTP_PORT }}" ]] && echo "❌ MISSING: SMTP_PORT"
+          [[ -z "${{ secrets.SMTP_USER }}" ]] && echo "❌ MISSING: SMTP_USER"
+          [[ -z "${{ secrets.SMTP_PASS }}" ]] && echo "❌ MISSING: SMTP_PASS"
+          [[ -z "${{ secrets.DEVICE_TOKEN_SECRET }}" ]] && echo "❌ MISSING: DEVICE_TOKEN_SECRET"
+          [[ -z "${{ secrets.ENCRYPTION_KEY }}" ]] && echo "❌ MISSING: ENCRYPTION_KEY"
 
-      - name: Set Environment Variables
+
+        - name: Set Environment Variables
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          PASSWORD_KEY: ${{ secrets.PASSWORD_KEY }}
+          MONGODB_URI_TEST: ${{ secrets.MONGODB_URI_TEST }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          DEVICE_TOKEN_SECRET: ${{ secrets.DEVICE_TOKEN_SECRET }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
         run: |
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
-          echo "PASSWORD_KEY=${{ secrets.PASSWORD_KEY }}" >> $GITHUB_ENV
-          echo "MONGODB_URI_TEST=${{ secrets.MONGODB_URI_TEST }}" >> $GITHUB_ENV
-          echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> $GITHUB_ENV
-          echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> $GITHUB_ENV
-          echo "SMTP_USER=${{ secrets.SMTP_USER }}" >> $GITHUB_ENV
-          echo "SMTP_PASS=${{ secrets.SMTP_PASS }}" >> $GITHUB_ENV
-          echo "DEVICE_TOKEN_SECRET=${{ secrets.DEVICE_TOKEN_SECRET }}" >> $GITHUB_ENV
-          echo "ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}" >> $GITHUB_ENV
+          echo "✅ Environment variables set"
+
 
       - name: Test MongoDB Connection # ✅ Check if MongoDB is reachable
         run: |
