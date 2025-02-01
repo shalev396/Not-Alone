@@ -41,6 +41,16 @@ jobs:
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
           echo "PASSWORD_KEY=${{ secrets.PASSWORD_KEY }}" >> $GITHUB_ENV
           echo "MONGODB_URI_TEST=${{ secrets.MONGODB_URI_TEST }}" >> $GITHUB_ENV
+          echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> $GITHUB_ENV
+          echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> $GITHUB_ENV
+          echo "SMTP_USER=${{ secrets.SMTP_USER }}" >> $GITHUB_ENV
+          echo "SMTP_PASS=${{ secrets.SMTP_PASS }}" >> $GITHUB_ENV
+          echo "DEVICE_TOKEN_SECRET=${{ secrets.DEVICE_TOKEN_SECRET }}" >> $GITHUB_ENV
+          echo "ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}" >> $GITHUB_ENV
+
+      - name: Test MongoDB Connection # ✅ Check if MongoDB is reachable
+        run: |
+          mongo ${{ secrets.MONGODB_URI_TEST }} --eval "db.runCommand({ connectionStatus: 1 })"
 
       - name: Run Backend Tests # Run backend tests
         run: |
