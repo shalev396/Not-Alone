@@ -1,24 +1,24 @@
-name: CI/CD Pipeline  # Name of the GitHub Actions Workflow
+name: CI/CD Pipeline # Name of the GitHub Actions Workflow
 
 # 🚀 Workflow Triggers: When to run this workflow
 on:
   pull_request:
-    branches: [main]  # Run tests & build when a PR is made to 'main'
+    branches: [main] # Run tests & build when a PR is made to 'main'
   push:
-    branches: [main]  # Run deployment when code is merged into 'main'
+    branches: [main] # Run deployment when code is merged into 'main'
 
 jobs:
   # ✅ JOB 1: Run Tests (Backend Only)
   test:
-    runs-on: ubuntu-latest  # Use Ubuntu as the runner
+    runs-on: ubuntu-latest # Use Ubuntu as the runner
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3  # Get the latest code from the repo
+        uses: actions/checkout@v3 # Get the latest code from the repo
 
       - name: Set Up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'  # Ensure we're using Node.js 18
+          node-version: "18" # Ensure we're using Node.js 18
 
       # 🚫 No frontend tests, but keeping the structure for future use
       # - name: Install Frontend Dependencies
@@ -34,17 +34,23 @@ jobs:
       - name: Install Backend Dependencies # Install backend dependencies
         run: |
           cd Server
-          npm install  
+          npm install
 
-      - name: Run Backend Tests  # Run backend tests
+      - name: Set Environment Variables # 🔥 Add this block to load secrets
+        run: |
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
+          echo "PASSWORD_KEY=${{ secrets.PASSWORD_KEY }}" >> $GITHUB_ENV
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
+
+      - name: Run Backend Tests # Run backend tests
         run: |
           cd Server
-          npm test 
+          npm test
 
   # ✅ JOB 2: Build the Frontend (Acts as a Test)
   build:
     runs-on: ubuntu-latest
-    needs: test  # Runs only if backend tests pass
+    needs: test # Runs only if backend tests pass
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -52,32 +58,32 @@ jobs:
       - name: Build Frontend # Create the production build (output is in 'client/dist')
         run: |
           cd client
-          npm run build  
+          npm run build
 
   # ✅ JOB 3: Deploy Frontend to S3
   deploy_frontend:
     runs-on: ubuntu-latest
-    needs: build  # Runs only if build is successful
-    if: github.ref == 'refs/heads/main'  # Only deploy when pushing to 'main'
+    needs: build # Runs only if build is successful
+    if: github.ref == 'refs/heads/main' # Only deploy when pushing to 'main'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
       - name: Deploy to S3 # Sync the built frontend files to the S3 bucket
-        uses: jakejarvis/s3-sync-action@master  # AWS S3 sync action
+        uses: jakejarvis/s3-sync-action@master # AWS S3 sync action
         with:
-          args: --delete  # Remove old files from S3
+          args: --delete # Remove old files from S3
         env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}  # S3 Bucket Name
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}  # AWS Key
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # AWS Secret
-          AWS_REGION: 'us-east-1'  # Change to your AWS region
-          SOURCE_DIR: 'client/dist'  # Only upload the built frontend files
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} # S3 Bucket Name
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} # AWS Key
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # AWS Secret
+          AWS_REGION: "us-east-1" # Change to your AWS region
+          SOURCE_DIR: "client/dist" # Only upload the built frontend files
 
   # ✅ JOB 4: Deploy Backend to EC2
   deploy_backend:
     runs-on: ubuntu-latest
-    needs: build  # Runs only if build is successful
+    needs: build # Runs only if build is successful
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout Code
@@ -85,9 +91,9 @@ jobs:
 
       - name: Deploy to EC2
         env:
-          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}  # SSH Private Key for EC2
-          HOST: ${{ secrets.EC2_HOST }}  # EC2 Public IP
-          USER: 'ec2-user'  # EC2 User (default for Amazon Linux)
+          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }} # SSH Private Key for EC2
+          HOST: ${{ secrets.EC2_HOST }} # EC2 Public IP
+          USER: "ec2-user" # EC2 User (default for Amazon Linux)
         run: |
           echo "$PRIVATE_KEY" > private_key && chmod 600 private_key  # Save private key
           scp -o StrictHostKeyChecking=no -i private_key -r Server $USER@$HOST:/home/ec2-user/backend  # Copy backend files
