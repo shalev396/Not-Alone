@@ -36,7 +36,7 @@ jobs:
           cd Server
           npm install
 
-            - name: Check & Log Environment Variables
+      - name: Check & Log Environment Variables
         run: |
           echo "Checking required secrets..."
           if [ -z "${{ secrets.JWT_SECRET }}" ]; then echo "❌ MISSING: JWT_SECRET"; fi
@@ -48,7 +48,6 @@ jobs:
           if [ -z "${{ secrets.SMTP_PASS }}" ]; then echo "❌ MISSING: SMTP_PASS"; fi
           if [ -z "${{ secrets.DEVICE_TOKEN_SECRET }}" ]; then echo "❌ MISSING: DEVICE_TOKEN_SECRET"; fi
           if [ -z "${{ secrets.ENCRYPTION_KEY }}" ]; then echo "❌ MISSING: ENCRYPTION_KEY"; fi
-
 
       - name: Set Environment Variables
         run: |
