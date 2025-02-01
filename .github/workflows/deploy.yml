@@ -20,6 +20,11 @@ jobs:
         with:
           node-version: "18" # Ensure we're using Node.js 18
 
+      - name: Install MongoDB CLI
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y mongodb-clients
+
       # 🚫 No frontend tests, but keeping the structure for future use
       # - name: Install Frontend Dependencies
       #   run: |
@@ -51,15 +56,15 @@ jobs:
 
       - name: Set Environment Variables
         run: |
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" | sed 's/&/\\&/g' >> $GITHUB_ENV
-          echo "PASSWORD_KEY=${{ secrets.PASSWORD_KEY }}" | sed 's/&/\\&/g' >> $GITHUB_ENV
-          echo "MONGODB_URI_TEST=${{ secrets.MONGODB_URI_TEST }}" | sed 's/&/\\&/g' >> $GITHUB_ENV
-          echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" | sed 's/&/\\&/g' >> $GITHUB_ENV
-          echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" | sed 's/&/\\&/g' >> $GITHUB_ENV
-          echo "SMTP_USER=${{ secrets.SMTP_USER }}" | sed 's/&/\\&/g' >> $GITHUB_ENV
-          echo "SMTP_PASS=${{ secrets.SMTP_PASS }}" | sed 's/&/\\&/g' >> $GITHUB_ENV
-          echo "DEVICE_TOKEN_SECRET=${{ secrets.DEVICE_TOKEN_SECRET }}" | sed 's/&/\\&/g' >> $GITHUB_ENV
-          echo "ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}" | sed 's/&/\\&/g' >> $GITHUB_ENV
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
+          echo "PASSWORD_KEY=${{ secrets.PASSWORD_KEY }}" >> $GITHUB_ENV
+          echo "MONGODB_URI_TEST='${{ secrets.MONGODB_URI_TEST }}'" >> $GITHUB_ENV
+          echo "SMTP_HOST='${{ secrets.SMTP_HOST }}'" >> $GITHUB_ENV
+          echo "SMTP_PORT='${{ secrets.SMTP_PORT }}'" >> $GITHUB_ENV
+          echo "SMTP_USER='${{ secrets.SMTP_USER }}'" >> $GITHUB_ENV
+          echo "SMTP_PASS='${{ secrets.SMTP_PASS }}'" >> $GITHUB_ENV
+          echo "DEVICE_TOKEN_SECRET='${{ secrets.DEVICE_TOKEN_SECRET }}'" >> $GITHUB_ENV
+          echo "ENCRYPTION_KEY='${{ secrets.ENCRYPTION_KEY }}'" >> $GITHUB_ENV
 
       - name: Test MongoDB Connection # ✅ Check if MongoDB is reachable
         run: |
