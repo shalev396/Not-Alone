@@ -141,6 +141,17 @@ jobs:
           AWS_REGION: "eu-central-1" # Change to your AWS region
           SOURCE_DIR: "client/dist/" # Only upload the CONTENTS of client/dist
 
+      - name: Install AWS CLI
+        uses: aws-actions/setup-aws-cli@v2
+
+      - name: Invalidate CloudFront Cache
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+
   # ✅ JOB 4: Deploy Backend to EC2
   deploy_backend:
     runs-on: ubuntu-latest
@@ -150,29 +161,37 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "14" # Ensure the same Node.js version is used
-
       - name: Deploy to EC2
         env:
           PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
           USER: "ec2-user"
         run: |
-          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key  # Save private key
+          # Save the private key and set appropriate permissions
+          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
 
-          echo "🚀 Transferring Files to EC2..."
-          rsync -avz --exclude '.git' --exclude 'node_modules' -e "ssh -o StrictHostKeyChecking=no -i private_key" . $USER@$HOST:/home/ec2-user/Not-Alone
-
-          echo "🔧 Running Deployment Commands on EC2..."
+          # Execute commands on the EC2 instance
           ssh -o StrictHostKeyChecking=no -i private_key $USER@$HOST << 'EOF'
-            export PM2_HOME=/home/ec2-user/.pm2  # Ensure PM2 uses the correct home directory
-            cd /home/ec2-user/Not-Alone/Server  # Navigate to the Server directory
-            npm install  # Install dependencies
-            pm2 start npm --name "not-alone-backend" -- run start  # Start the application
-            pm2 save  # Save the current process list
+            # Display PM2 status
+            pm2 status
+
+            # Delete all PM2 processes
+            pm2 delete all
+
+            # Save the PM2 process list
+            pm2 save
+
+            # Navigate to the application directory
+            cd /home/ec2-user/Not-Alone/Server
+
+            # Install dependencies
+            npm install
+
+            # Start the application with PM2
+            pm2 start npm --name "Not-Alone-Backend" -- start
+
+            # Save the PM2 process list again to ensure persistence
+            pm2 save
           EOF
 
   # ✅ JOB 5: Notify on Discord After Deployment
