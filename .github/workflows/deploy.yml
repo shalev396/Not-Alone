@@ -180,16 +180,19 @@ jobs:
         run: |
           echo "🚀 Transferring Files to EC2..."
 
-          # Use rsync to exclude .git and set correct permissions
-          rsync -avz --exclude '.git' -e "ssh -o StrictHostKeyChecking=no -i private_key" . $USER@$HOST:/home/ec2-user/Not-Alone
+          # Use rsync to sync files and remove outdated ones
+          rsync -avz --delete --exclude '.git' -e "ssh -o StrictHostKeyChecking=no -i private_key" . $USER@$HOST:/home/ec2-user/Not-Alone
 
           echo "🔧 Running Deployment Commands on EC2..."
           ssh -o StrictHostKeyChecking=no -i private_key $USER@$HOST << 'EOF'
-            sudo chown -R ec2-user:ec2-user /home/ec2-user/Not-Alone  # Ensure proper permissions
+            sudo chown -R ec2-user:ec2-user /home/ec2-user/Not-Alone  # Ensure correct permissions
             cd /home/ec2-user/Not-Alone/Server  # Move into backend folder
+            
+            echo "📦 Installing dependencies..."
             npm install  # Install dependencies
-            pm2 stop all || true  # Stop any running backend services
-            pm2 start npm --name "not-alone-backend" -- run start  # Start backend service
+
+            echo "🔄 Restarting PM2 process..."
+            pm2 restart not-alone-backend || pm2 start npm --name "not-alone-backend" -- run start  # Restart or Start backend service
           EOF
 
   # ✅ JOB 5: Notify on Discord After Deployment
