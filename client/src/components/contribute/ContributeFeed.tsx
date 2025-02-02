@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import { api } from "@/api/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -38,8 +43,6 @@ const ContributePostCard: React.FC = () => {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
-  const [open, setOpen] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
 
   useEffect(() => {
@@ -66,14 +69,6 @@ const ContributePostCard: React.FC = () => {
     });
   };
 
-  if (loading) {
-    return (
-      <Card className="p-6 text-center">
-        <p className="text-muted-foreground">Loading requests...</p>
-      </Card>
-    );
-  }
-
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <h1 className="text-3xl font-bold text-center mb-8">
@@ -89,7 +84,7 @@ const ContributePostCard: React.FC = () => {
         </Alert>
       )}
 
-      {requests.length === 0 ? (
+      {requests.length === 0 && !loading ? (
         <Card className="p-6 text-center">
           <p className="text-muted-foreground">
             No approved requests available at the moment.
@@ -133,17 +128,12 @@ const ContributePostCard: React.FC = () => {
                   </div>
                 </div>
 
-                <Dialog
-                  open={open && selectedRequest?._id === request._id}
-                  onOpenChange={setOpen}
-                >
+                <Dialog>
                   <DialogTrigger asChild>
                     <Button
                       className="w-full mt-4 bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90 transition-opacity"
                       onClick={() => {
-                        setSelectedRequest(request);
                         setShowMessage(false);
-                        setOpen(true);
                       }}
                     >
                       Support This Request
@@ -163,7 +153,7 @@ const ContributePostCard: React.FC = () => {
                         <div className="space-y-4">
                           <Button
                             variant="outline"
-                            className="w-full text-left flex items-center justify-between"
+                            className="w-full text-left flex items-center justify-between py-6"
                             onClick={() => setShowMessage(true)}
                           >
                             <div>
@@ -179,7 +169,7 @@ const ContributePostCard: React.FC = () => {
 
                           <Button
                             variant="outline"
-                            className="w-full text-left flex items-center justify-between"
+                            className="w-full text-left flex items-center justify-between py-6"
                             onClick={() => setShowMessage(true)}
                           >
                             <div>
@@ -204,16 +194,12 @@ const ContributePostCard: React.FC = () => {
                           We are currently working on implementing this feature.
                           Please check back soon!
                         </p>
-                        <Button
-                          className="mt-4"
-                          variant="outline"
-                          onClick={() => {
-                            setOpen(false);
-                            setShowMessage(false);
-                          }}
-                        >
-                          Close
-                        </Button>
+
+                        <DialogClose asChild>
+                          <Button className="mt-4" variant="outline">
+                            Close
+                          </Button>
+                        </DialogClose>
                       </div>
                     )}
                   </DialogContent>

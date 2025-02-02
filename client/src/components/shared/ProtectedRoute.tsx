@@ -115,7 +115,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         break;
       case "soldier":
         routes = routeListSoldier;
-
         break;
       case "municipality":
         routes = routeListMunicipality;

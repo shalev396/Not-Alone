@@ -21,7 +21,7 @@ export const HomeNav = ({
   isAccordion,
   isVertical,
 }: HomeNavProps) => {
-  const renderContent = () => (
+  const HomePageNav = () => (
     <nav className="flex flex-col gap-4">
       <ChannelsDrawer channelsLinks={channelsLinks} navigate={navigate} />
       {routeList.map((route) => (
@@ -46,7 +46,8 @@ export const HomeNav = ({
       setAccordionOpen={setAccordionOpen}
       isAccordion={isAccordion}
       isVertical={isVertical}
-      renderContent={renderContent}
-    />
+    >
+      <HomePageNav />
+    </SideNavLayout>
   );
 };

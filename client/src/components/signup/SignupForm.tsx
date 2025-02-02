@@ -3,8 +3,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api/api";
 import { Button } from "@/components/ui/button";
+import { Formik, Form } from "formik";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { withZodSchema } from "formik-validator-zod";
 import {
   Select,
   SelectContent,
@@ -66,7 +68,7 @@ type FormData = {
   email: string;
   password: string;
   phone: string;
-  type: UserRole | "";
+  type: UserRole | "Soldier";
 };
 
 export function SignupForm({
@@ -74,81 +76,19 @@ export function SignupForm({
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const navigate = useNavigate();
-
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
-    firstName: "",
-    lastName: "",
-    passport: "",
-    email: "",
-    password: "",
-    phone: "",
-    type: "",
-  });
-  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
-    {}
-  );
 
-  const validateForm = () => {
-    try {
-      if (!formData.type) {
-        setErrors({ type: "Please select an account type" });
-        return false;
-      }
-
-      const validationResult = signupSchema.safeParse({
-        ...formData,
-        type: formData.type as UserRole,
-      });
-
-      if (!validationResult.success) {
-        const newErrors: Partial<Record<keyof FormData, string>> = {};
-        validationResult.error.errors.forEach((err) => {
-          if (err.path[0]) {
-            newErrors[err.path[0] as keyof FormData] = err.message;
-          }
-        });
-        setErrors(newErrors);
-        return false;
-      }
-
-      setErrors({});
-      return true;
-    } catch (error) {
-      if (error instanceof Error) {
-        setErrors({ type: error.message });
-      }
-      return false;
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setErrors({});
-
-    if (!validateForm()) {
-      return;
-    }
-
-    if (!formData.type) {
-      setErrors({ type: "Please select an account type" });
-      return;
-    }
-
-    setLoading(true);
-
+  const handleSubmit = async (values: FormData) => {
     try {
       // Prepare the data based on the user type
       const submitData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        passport: formData.passport,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone,
-        type: formData.type,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        passport: values.passport,
+        email: values.email,
+        password: values.password,
+        phone: values.phone,
+        type: values.type,
       };
 
       const response = await api.post("/auth/register", submitData);
@@ -166,25 +106,9 @@ export function SignupForm({
       });
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.error || "Failed to submit signup request";
+        error?.response?.data?.error || "Failed to submit signup request";
       setError(errorMessage);
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value,
-    });
-  };
-
-  const handleTypeChange = (value: UserRole) => {
-    setFormData({
-      ...formData,
-      type: value,
-    });
   };
 
   return (
@@ -197,154 +121,208 @@ export function SignupForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} noValidate className="w-full">
-            <div className="flex flex-col gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="type">Account Type</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) => handleTypeChange(value as UserRole)}
-                >
-                  <SelectTrigger
-                    className={cn(
-                      "w-full",
-                      errors.type ? "border-red-500" : ""
+          <Formik<FormData>
+            initialValues={{
+              firstName: "",
+              lastName: "",
+              passport: "",
+              email: "",
+              password: "",
+              phone: "",
+              type: "Soldier",
+            }}
+            onSubmit={handleSubmit}
+            validate={withZodSchema(signupSchema)}
+          >
+            {(formik) => (
+              <Form className="w-full">
+                <div className="flex flex-col gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="type">Account Type</Label>
+                    <Select
+                      value={formik.values.type}
+                      onValueChange={(value: UserRole) => {
+                        formik.setFieldValue("type", value);
+                      }}
+                    >
+                      <SelectTrigger
+                        className={cn(
+                          "w-full",
+                          formik.errors.type && "border-red-500"
+                        )}
+                      >
+                        <SelectValue placeholder="Select account type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {UserRoles.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {formik.errors.type && (
+                      <p className="text-sm text-red-500">
+                        {formik.errors.type}
+                      </p>
                     )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        placeholder="John"
+                        required
+                        value={formik.values.firstName}
+                        onChange={(e) => {
+                          formik.setFieldValue("firstName", e.target.value);
+                        }}
+                        className={cn(
+                          formik.errors.firstName && "border-red-500"
+                        )}
+                      />
+                      {formik.errors.firstName && (
+                        <p className="text-sm text-red-500">
+                          {formik.errors.firstName}
+                        </p>
+                      )}
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        placeholder="Doe"
+                        required
+                        value={formik.values.lastName}
+                        onChange={(e) => {
+                          formik.setFieldValue("lastName", e.target.value);
+                        }}
+                        className={
+                          formik.errors.lastName ? "border-red-500" : ""
+                        }
+                      />
+                      {formik.errors.lastName && (
+                        <p className="text-sm text-red-500">
+                          {formik.errors.lastName}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="passport">Passport Number</Label>
+                    <Input
+                      id="passport"
+                      placeholder="AB123456"
+                      required
+                      value={formik.values.passport}
+                      onChange={(e) => {
+                        formik.setFieldValue("passport", e.target.value);
+                      }}
+                      className={formik.errors.passport ? "border-red-500" : ""}
+                    />
+                    {formik.errors.passport && (
+                      <p className="text-sm text-red-500">
+                        {formik.errors.passport}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="m@example.com"
+                      required
+                      value={formik.values.email}
+                      onChange={(e) => {
+                        formik.setFieldValue("email", e.target.value);
+                      }}
+                      className={formik.errors.email ? "border-red-500" : ""}
+                    />
+                    {formik.errors.email && (
+                      <p className="text-sm text-red-500">
+                        {formik.errors.email}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      required
+                      value={formik.values.password}
+                      onChange={(e) => {
+                        formik.setFieldValue("password", e.target.value);
+                      }}
+                      className={formik.errors.password ? "border-red-500" : ""}
+                    />
+                    {formik.errors.password && (
+                      <p className="text-sm text-red-500">
+                        {formik.errors.password}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      placeholder="+1234567890"
+                      required
+                      value={formik.values.phone}
+                      onChange={(e) => {
+                        formik.setFieldValue("phone", e.target.value);
+                      }}
+                      className={formik.errors.phone ? "border-red-500" : ""}
+                    />
+                    {formik.errors.phone && (
+                      <p className="text-sm text-red-500">
+                        {formik.errors.phone}
+                      </p>
+                    )}
+                  </div>
+
+                  {error && (
+                    <div className="text-sm text-red-500 p-2 bg-red-50 dark:bg-red-950/50 rounded-md">
+                      {error}
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={formik.isValid}
                   >
-                    <SelectValue placeholder="Select account type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UserRoles.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {role}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.type && (
-                  <p className="text-sm text-red-500">{errors.type}</p>
-                )}
-              </div>
+                    {formik.isSubmitting
+                      ? "Creating account..."
+                      : "Create account"}
+                  </Button>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    placeholder="John"
-                    required
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className={errors.firstName ? "border-red-500" : ""}
-                  />
-                  {errors.firstName && (
-                    <p className="text-sm text-red-500">{errors.firstName}</p>
-                  )}
+                  <Button variant="outline" className="w-full">
+                    Sign up with Google
+                  </Button>
+
+                  <div className="text-center text-sm">
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => navigate("/login")}
+                      className="underline underline-offset-4"
+                    >
+                      Login
+                    </button>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    placeholder="Doe"
-                    required
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    className={errors.lastName ? "border-red-500" : ""}
-                  />
-                  {errors.lastName && (
-                    <p className="text-sm text-red-500">{errors.lastName}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="passport">Passport Number</Label>
-                <Input
-                  id="passport"
-                  placeholder="AB123456"
-                  required
-                  value={formData.passport}
-                  onChange={handleChange}
-                  className={errors.passport ? "border-red-500" : ""}
-                />
-                {errors.passport && (
-                  <p className="text-sm text-red-500">{errors.passport}</p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={errors.email ? "border-red-500" : ""}
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email}</p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={errors.password ? "border-red-500" : ""}
-                />
-                {errors.password && (
-                  <p className="text-sm text-red-500">{errors.password}</p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  placeholder="+1234567890"
-                  required
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className={errors.phone ? "border-red-500" : ""}
-                />
-                {errors.phone && (
-                  <p className="text-sm text-red-500">{errors.phone}</p>
-                )}
-              </div>
-
-              {error && (
-                <div className="text-sm text-red-500 p-2 bg-red-50 dark:bg-red-950/50 rounded-md">
-                  {error}
-                </div>
-              )}
-
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Creating account..." : "Create account"}
-              </Button>
-
-              <Button variant="outline" className="w-full">
-                Sign up with Google
-              </Button>
-
-              <div className="text-center text-sm">
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => navigate("/login")}
-                  className="underline underline-offset-4"
-                >
-                  Login
-                </button>
-              </div>
-            </div>
-          </form>
+              </Form>
+            )}
+          </Formik>
         </CardContent>
       </Card>
     </div>
