@@ -1,15 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Share, Heart } from "lucide-react";
+import { MessageSquare, Share, Heart, MoreVertical } from "lucide-react";
 import { api } from "@/api/api";
+import { RootState } from "@/Redux/store";
 import { CommentDialog } from "./CommentDialog";
-
 export interface Post {
   _id: string;
   content: string;
   media?: string[];
   author: {
+    _id: string;
     firstName: string;
     lastName: string;
     profileImage?: string;
@@ -30,7 +32,12 @@ export function PostCard({ post }: { post: Post }) {
   const [likes, setLikes] = useState(post.likes.length);
   const [isLiked, setIsLiked] = useState(false);
   const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // Estado para o menu
+  const user = useSelector((state: RootState) => state.user); // Obter o usuário autenticado
+  const isOwner = post.author._id === user._id;
 
+  const menuRef = useRef<HTMLDivElement>(null);
+  
   const nicknames = [
     "Arlo", "Finn", "Theo", "Milo", "Levi",
     "Ellis", "Ivy", "June", "Noa", "Jade",
@@ -43,10 +50,39 @@ export function PostCard({ post }: { post: Post }) {
     "Mae", "Eli", "Liv", "Ada", "Hale",
     "Cade", "Pax", "Vale", "Reed", "Noel",
   ];
+  const handleDeletePost = async () => {
+    try {
+      await api.delete(`/posts/${post._id}`);
+      alert("Post deleted successfully");
+      // Atualize a lista de posts (ex.: use um estado ou query)
+    } catch (error) {
+      alert("Failed to delete post");
+      console.error(error);
+    }
+  };
 
+  const handleReportPost = () => {
+    alert("Post reported successfully");
+  };
+  
+  
   const getRandomNickname = (): string => {
     return nicknames[Math.floor(Math.random() * nicknames.length)];
   };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false); 
+      }
+    };
+  
+    document.addEventListener("mousedown", handleClickOutside);
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+  
 
   useEffect(() => {
     const userId = sessionStorage.getItem("id");
@@ -100,6 +136,43 @@ export function PostCard({ post }: { post: Post }) {
               {new Date(post.createdAt).toLocaleDateString()}
             </p>
           </div>
+
+
+{/* Menu de ações */}
+<div className="ml-auto relative">
+            <Button
+              variant="ghost"
+              className="hover:bg-muted p-1 rounded-full"
+              onClick={() => setIsMenuOpen((prev) => !prev)}
+            >
+              <MoreVertical className="w-5 h-5" />
+            </Button>
+
+            {isMenuOpen && (
+              <div
+              ref={menuRef}  
+              className="absolute right-0 mt-2 w-40 bg-card shadow-lg rounded-lg z-10">
+                {isOwner ? (
+                  <button
+                    onClick={handleDeletePost}
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-muted"
+                  >
+                    Delete Post
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleReportPost}
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-muted"
+                  >
+                    Report Post
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+
+
         </div>
 
         {Array.isArray(post.media) && post.media.length > 0 && (
