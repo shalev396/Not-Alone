@@ -116,20 +116,20 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-
+  
       - name: Rebuild Frontend # Ensure we have the latest build
         run: |
           cd client
           npm install  # Install dependencies
           npm run build # Build frontend
-
+  
       - name: Ensure Frontend Build Directory Exists
         run: |
           if [ ! -d "client/dist" ]; then
-          echo "❌ ERROR: Build directory client/dist does not exist!"
-          exit 1
+            echo "❌ ERROR: Build directory client/dist does not exist!"
+            exit 1
           fi
-
+  
       - name: Deploy to S3 # Sync the built frontend files to the S3 bucket
         uses: jakejarvis/s3-sync-action@master # AWS S3 sync action
         with:
@@ -140,17 +140,18 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # AWS Secret
           AWS_REGION: "eu-central-1" # Change to your AWS region
           SOURCE_DIR: "client/dist/" # Only upload the CONTENTS of client/dist
-
-      - name: Install AWS CLI
-        uses: aws-actions/setup-aws-cli@v2
-
+  
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+  
       - name: Invalidate CloudFront Cache
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
         run: |
-          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
 
   # ✅ JOB 4: Deploy Backend to EC2
   deploy_backend:
