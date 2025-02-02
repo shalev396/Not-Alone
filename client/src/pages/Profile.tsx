@@ -15,7 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PostCard } from "@/components/social/PostCard";
 import { PostSkeleton } from "@/components/shared/feeds/PostFeed";
 import { useNavigate } from "react-router-dom";
-
+import Skeleton from "react-loading-skeleton";
 
 interface Request {
   _id: string;
@@ -71,6 +71,7 @@ const Profile: React.FC = () => {
   
     const [nickname, setNickname] = useState("");
     const [profileImage, setProfileImage] = useState("");
+    const [isImageLoading, setIsImageLoading] = useState(true);
     const [bio, setBio] = useState("");
     const [receiveNotifications, setReceiveNotifications] = useState(false);
     const navigate = useNavigate();
@@ -269,7 +270,6 @@ const Profile: React.FC = () => {
       <Navbar modes="home" isVertical={true} isAccordion={true} />
       <div className="flex-1 flex justify-center">
       {loadingProfile ? (
-        // Mostra um spinner ou uma mensagem enquanto o perfil está carregando
         <div className="flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-500"></div>
           <p className="ml-4">Loading profile...</p>
@@ -310,10 +310,18 @@ const Profile: React.FC = () => {
               </div>
               
               <div className="flex-shrink-0">
+              {isImageLoading && (
+                  <Skeleton circle={true} height={160} width={160} />
+                )}
                 <img
                   src={profileImage || DEFAULT_PROFILE_IMAGE}
                   alt="Profile"
                   onClick={() => setIsDialogOpen(true)}
+                  onLoad={() => setIsImageLoading(false)}
+                  onError={() => {
+                    setIsImageLoading(false);
+                    setProfileImage(DEFAULT_PROFILE_IMAGE); 
+                  }}
                   className="rounded-full cursor-pointer w-40 h-40 border border-gray-300 hover:border-green-500"
                 />
                 {isDialogOpen && (
@@ -472,28 +480,19 @@ const Profile: React.FC = () => {
       <p>Donations feature will be available soon.</p>
     </div>
   )
-
-
-            
+        
           ) : (
             <div>
-            <h2 className="text-2xl font-bold mb-16">{nickname} <span className="text-yellow-500">Posts</span></h2>
-            
-            
+            <h2 className="text-2xl font-bold mb-16">{nickname} <span className="text-yellow-500">Posts</span></h2>            
             {isLoadingPosts ? (
-  <PostSkeleton />
-) : Array.isArray(userPosts?.posts) && userPosts.posts.length > 0 ? (
-  userPosts.posts.map((post: Post) => (
-    <PostCard key={post._id} post={post} />
-  ))
-) : (
-  <p>No posts found.</p>
-)}
-
-
-
-
-
+              <PostSkeleton />
+            ) : Array.isArray(userPosts?.posts) && userPosts.posts.length > 0 ? (
+              userPosts.posts.map((post: Post) => (
+                <PostCard key={post._id} post={post} />
+              ))
+            ) : (
+              <p>No posts found.</p>
+            )}
           </div>      
           )}
         </div>

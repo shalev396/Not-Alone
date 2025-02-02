@@ -30,7 +30,7 @@ export const SideNavLayout = ({
           )}
         </button>
       )}
-
+ 
       {isVertical && (
         <aside
           className={`flex flex-col h-screen bg-background border-r border-border fixed top-0 z-40 shadow-lg transition-all duration-300 ${
