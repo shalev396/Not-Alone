@@ -11,11 +11,13 @@ import { Services } from "@/components/landing/Services";
 import { Sponsors } from "@/components/landing/Sponsors";
 import { Team } from "@/components/landing/Team";
 import { Testimonials } from "@/components/landing/Testimonials";
+import { DisclaimerDialog } from "@/components/landing/DisclaimerDialog";
 import "../App.css";
 
 function Landing() {
   return (
     <>
+      <DisclaimerDialog />
       <Navbar modes="landing" />
       {/*  */}
       <Hero />
