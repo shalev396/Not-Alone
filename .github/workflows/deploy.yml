@@ -192,17 +192,15 @@ jobs:
             pm2 start npm --name "not-alone-backend" -- run start  # Start backend service
           EOF
 
-  # ✅ JOB 5: Notify on Discord After Deployment
+  # ✅ JOB 5: Notify on Discord After Deployment     runs-on: ubuntu-latest
   notify:
     runs-on: ubuntu-latest
     needs: [deploy_frontend, deploy_backend] # Only run after both deployments
     if: github.event_name == 'push' # Only notify when deployed
     steps:
       - name: Send Discord Notification
-        uses: appleboy/discord-action@master # 🔄 Switch to a more reliable action
+        uses: appleboy/discord-action@master
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} # ✅ Use secrets properly
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} # ✅ Ensure this is correct
         with:
-          webhook_id: ${{ secrets.DISCORD_WEBHOOK_ID }}
-          webhook_token: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
           message: "🚀 Deployment of Not-Alone is complete! New version is live!"
