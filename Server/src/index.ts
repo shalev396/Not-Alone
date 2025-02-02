@@ -11,6 +11,7 @@ import { createServer, Server } from "http";
 import { fileURLToPath } from "url";
 import https from "https";
 import fs from "fs";
+import useragent from "express-useragent";
 //routes
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
@@ -23,12 +24,14 @@ import profileRoutes from "./routes/profileRoutes";
 import eatupRoutes from "./routes/eatupRoutes";
 import postRoutes from "./routes/postRoutes";
 import commentRoutes from "./routes/commentRoutes";
+import emailRoutes from "./routes/emailRoutes";
 //sockets
 import SocketService from "./services/socketService";
 //utils
 import { validateEnv } from "./utils/validateEnv";
 import channelRoutes from "./routes/channelRoutes";
 import messageRoutes from "./routes/messageRoutes";
+import verify2FARoutes from "./routes/verify2FARoutes";
 
 // Load and validate environment variables
 dotenv.config();
@@ -92,6 +95,7 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader("X-XSS-Protection", "1; mode=block");
   next();
 });
+app.use(useragent.express());
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 // Logging middleware
@@ -114,9 +118,11 @@ app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/channels", channelRoutes);
 app.use("/api/messages", messageRoutes);
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
-});
+app.use("/api/email", emailRoutes);
+app.use("/api/verify-2fa", verify2FARoutes);
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(__dirname, "../public/index.html"));
+// });
 
 // Global error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

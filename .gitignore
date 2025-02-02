@@ -11,4 +11,5 @@ Server/tests/posts.json
 Server/tests/profiles.json
 Server/tests/requests.json
 Server/tests/users.json
+*credentials.text
 *dist

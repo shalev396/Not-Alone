@@ -22,6 +22,18 @@ export const pendingCheckLimiter = rateLimit({
   message: { error: "Too many status check attempts, please try again later" },
 });
 
+export const twoFARequestLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: process.env.NODE_ENV === "test" ? 100 : 3, // 3 attempts per 5 minutes
+  message: { error: "Too many 2FA code requests, please try again later" },
+});
+
+export const twoFAVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === "test" ? 100 : 5, // 5 attempts per 15 minutes
+  message: { error: "Too many verification attempts, please try again later" },
+});
+
 // Request validation
 export const validateLogin = [
   body("email").isEmail().normalizeEmail(),
@@ -58,6 +70,14 @@ export const validateUserUpdate = [
     .matches(/^\+?[\d\s-]{10,}$/),
   body("firstName").optional().trim().notEmpty(),
   body("lastName").optional().trim().notEmpty(),
+  validateRequest,
+];
+
+// Validation for 2FA verification
+export const validate2FAVerification = [
+  body("userId").isMongoId(),
+  body("code").isLength({ min: 6, max: 6 }).isNumeric(),
+  body("deviceToken").notEmpty(),
   validateRequest,
 ];
 

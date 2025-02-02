@@ -9,8 +9,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  build: {
-    outDir: path.resolve(__dirname, "../Server/public"),
-    emptyOutDir: true,
-  },
+  // build: {
+  //   outDir: path.resolve(__dirname, "../Server/public"),
+  //   emptyOutDir: true,
+  // },
 });

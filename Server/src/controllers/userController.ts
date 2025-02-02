@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { UserModel } from "../models/userModel";
-import { AuditLogModel } from "../models/AuditLog";
+import { AuditLogAction, AuditLogModel } from "../models/AuditLog";
 import { UserUpdates, UserFilter } from "../types/user";
 
 // Helper function to ensure user exists
@@ -115,12 +115,17 @@ export const registerUser = async (
     if (!(process.env.NODE_ENV === "test") && req.body.type === "Admin") {
       delete req.body.approvalStatus;
     }
+    if (process.env.NODE_ENV === "test") {
+      req.body.is2FAEnabled = true;
+    } else {
+      req.body.is2FAEnabled = false;
+    }
     // Create user
     const user = await UserModel.create(req.body);
 
     // Create audit log
     await AuditLogModel.create({
-      action: "USER_CREATE",
+      action: AuditLogAction.USER_REGISTER,
       userId: user._id,
       targetId: user._id,
       changes: req.body,
