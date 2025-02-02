@@ -144,33 +144,16 @@ jobs:
   # ✅ JOB 4: Deploy Backend to EC2
   deploy_backend:
     runs-on: ubuntu-latest
-    needs: build # Runs only if build is successful
-    if: github.ref == 'refs/heads/main' # Deploy only when pushing to main
+    needs: build  # Runs only if the build job is successful
+    if: github.ref == 'refs/heads/main'  # Deploy only when pushing to main
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Debug EC2 Host
-        run: |
-          echo "EC2 Host: ${EC2_HOST:0:10}********"
-
-      - name: Check EC2 Connection
-        env:
-          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
-          HOST: ${{ secrets.EC2_HOST }}
-          USER: "ec2-user"
-        run: |
-          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key  # Save private key
-
-          # Ensure EC2_HOST is set
-          if [ -z "$HOST" ]; then
-            echo "❌ ERROR: EC2_HOST is empty!"
-            exit 1
-          fi
-
-          # Test SSH Connection
-          echo "🔍 Testing SSH Connection..."
-          ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -i private_key $USER@$HOST "echo '✅ SSH Connection Successful!'"
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14'  # Ensure the same Node.js version is used
 
       - name: Deploy to EC2
         env:
@@ -178,21 +161,16 @@ jobs:
           HOST: ${{ secrets.EC2_HOST }}
           USER: "ec2-user"
         run: |
-          echo "🚀 Transferring Files to EC2..."
+          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key  # Save private key
 
-          # Use rsync to sync files and remove outdated ones
-          rsync -avz --delete --exclude '.git' -e "ssh -o StrictHostKeyChecking=no -i private_key" . $USER@$HOST:/home/ec2-user/Not-Alone
+          echo "🚀 Transferring Files to EC2..."
+          rsync -avz --exclude '.git' --exclude 'node_modules' -e "ssh -o StrictHostKeyChecking=no -i private_key" . $USER@$HOST:/home/ec2-user/Not-Alone
 
           echo "🔧 Running Deployment Commands on EC2..."
           ssh -o StrictHostKeyChecking=no -i private_key $USER@$HOST << 'EOF'
-            sudo chown -R ec2-user:ec2-user /home/ec2-user/Not-Alone  # Ensure correct permissions
-            cd /home/ec2-user/Not-Alone/Server  # Move into backend folder
-            
-            echo "📦 Installing dependencies..."
+            cd /home/ec2-user/Not-Alone/Server  # Navigate to the Server directory
             npm install  # Install dependencies
-
-            echo "🔄 Restarting PM2 process..."
-            pm2 restart not-alone-backend || pm2 start npm --name "not-alone-backend" -- run start  # Restart or Start backend service
+            pm2 restart not-alone-backend || pm2 start npm --name "not-alone-backend" -- run start  # Start or restart the application
           EOF
 
   # ✅ JOB 5: Notify on Discord After Deployment
