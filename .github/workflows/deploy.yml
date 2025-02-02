@@ -192,15 +192,50 @@ jobs:
             pm2 start npm --name "not-alone-backend" -- run start  # Start backend service
           EOF
 
-  # ✅ JOB 5: Notify on Discord After Deployment     runs-on: ubuntu-latest
+  # ✅ JOB 5: Notify on Discord After Deployment
   notify:
     runs-on: ubuntu-latest
     needs: [deploy_frontend, deploy_backend] # Only run after both deployments
-    if: github.event_name == 'push' # Only notify when deployed
+    if: github.event_name == 'push' # Notify only on deployment
     steps:
       - name: Send Discord Notification
-        uses: appleboy/discord-action@master
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} # ✅ Ensure this is correct
-        with:
-          message: "🚀 Deployment of Not-Alone is complete! New version is live!"
+        run: |
+          RESPONSE=$(curl -H "Content-Type: application/json" -X POST -d '{
+            "username": "GitHub Actions",
+            "content": "@everyone 🚀 **Deployment of Not-Alone is complete!**",
+            "embeds": [
+              {
+                "title": "✅ Successful Deployment",
+                "description": "New changes in **Not-Alone** deployed by **${{ github.actor }}**",
+                "color": 5814783,
+                "timestamp": "${{ github.event.head_commit.timestamp }}",
+                "url": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}",
+                "thumbnail": {
+                  "url": "https://avatars.githubusercontent.com/u/${{ github.actor_id }}?v=4"
+                },
+                "author": {
+                  "name": "${{ github.actor }}",
+                  "url": "https://github.com/${{ github.actor }}",
+                  "icon_url": "https://avatars.githubusercontent.com/u/${{ github.actor_id }}?v=4"
+                },
+                "fields": [
+                  {
+                    "name": "🔀 Repository",
+                    "value": "[${{ github.repository }}](https://github.com/${{ github.repository }})",
+                    "inline": true
+                  },
+                  {
+                    "name": "📝 Commit",
+                    "value": "[View Commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})",
+                    "inline": true
+                  },
+                  {
+                    "name": "👤 Deployed By",
+                    "value": "${{ github.actor }}",
+                    "inline": true
+                  }
+                ]
+              }
+            ]
+          }' ${{ secrets.DISCORD_WEBHOOK }})
+          echo "Webhook server response: $RESPONSE"
