@@ -1,0 +1,13 @@
+Telnyx
+Plivo
+Vonage 
+MessageBird
+ClickSend
+SignalWire
+SMSGlobal
+TextMagic
+Bandwidth
+D7 Networks
+
+
+twillo
