@@ -46,6 +46,8 @@ export interface Post {
   content: string;
   media?: string[];
   author: {
+    // 
+    _id: string;
     firstName: string;
     lastName: string;
     profileImage?: string;
@@ -63,8 +65,9 @@ export interface Post {
 }
 
 const Profile: React.FC = () => {
-    const dispatch = useDispatch();
-    const [loadingProfile, setLoadingProfile] = useState(true);
+  
+  const dispatch = useDispatch();
+  const [loadingProfile, setLoadingProfile] = useState(true);
   
     const [nickname, setNickname] = useState("");
     const [profileImage, setProfileImage] = useState("");
@@ -265,6 +268,13 @@ const Profile: React.FC = () => {
     <div className="flex bg-background text-foreground min-h-screen">
       <Navbar modes="home" isVertical={true} isAccordion={true} />
       <div className="flex-1 flex justify-center">
+      {loadingProfile ? (
+        // Mostra um spinner ou uma mensagem enquanto o perfil está carregando
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-500"></div>
+          <p className="ml-4">Loading profile...</p>
+        </div>
+      ) : (
         <div className="w-full max-w-3xl px-4 sm:px-6 lg:px-8 py-6">
           <h1 className="text-3xl font-bold mb-6 text-center">
             <span className="bg-gradient-to-r text-green-500 bg-clip-text">
@@ -411,6 +421,7 @@ const Profile: React.FC = () => {
                     {request.status.charAt(0).toUpperCase() +
                       request.status.slice(1)}
                   </Badge>
+                
                   {request.paid && (
                     <Badge className="bg-blue-500">Paid</Badge>
                   )}
@@ -467,22 +478,28 @@ const Profile: React.FC = () => {
           ) : (
             <div>
             <h2 className="text-2xl font-bold mb-16">{nickname} <span className="text-yellow-500">Posts</span></h2>
+            
+            
             {isLoadingPosts ? (
-            <PostSkeleton />
-          ) : Array.isArray(userPosts?.posts) && userPosts.posts.length > 0 ? (
-            userPosts.posts.map((post: Post) => (
-              console.log("Post:", post),
-              <PostCard key={post._id} post={post} />
-            ))
-          ) : (
-            <p>No posts found.</p>
-          )}
+  <PostSkeleton />
+) : Array.isArray(userPosts?.posts) && userPosts.posts.length > 0 ? (
+  userPosts.posts.map((post: Post) => (
+    <PostCard key={post._id} post={post} />
+  ))
+) : (
+  <p>No posts found.</p>
+)}
+
+
+
+
+
           </div>      
           )}
         </div>
-      </div>
+      )}
     </div>
-  );
+  </div>
+);
 };
-
 export default Profile;
