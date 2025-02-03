@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/Redux/store";
 import { updateUser } from "@/Redux/userSlice";
@@ -11,12 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { PostCard } from "@/components/social/PostCard";
-import { PostSkeleton } from "@/components/shared/feeds/PostFeed";
+import { PostSkeleton } from "@/components/social/PostSkeleton";
 import { useNavigate } from "react-router-dom";
 import Skeleton from "react-loading-skeleton";
-
+import { fetchPosts, PaginationResponse } from "@/tenstack/query";
 interface Request {
   _id: string;
   service: "Regular" | "Reserves";
@@ -75,6 +75,8 @@ const Profile: React.FC = () => {
     const [bio, setBio] = useState("");
     const [receiveNotifications, setReceiveNotifications] = useState(false);
     const navigate = useNavigate();
+    const observerRef = useRef<HTMLDivElement | null>(null);
+
 
     const getStatusColor = (status: Request["status"]) => {
       switch (status) {
@@ -94,6 +96,9 @@ const Profile: React.FC = () => {
         day: "numeric",
       });
     };
+
+    
+    
 
     useEffect(() => {
       const fetchProfile = async () => {
@@ -163,20 +168,6 @@ const Profile: React.FC = () => {
   const [email] = useState(user.email || "");
   const [phone, setPhone] = useState(user.phone || "");
 
-  
-  const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
-    queryKey: ["userPosts", user._id],
-    queryFn: async () => {
-      console.log("Fetching posts for user:", user._id);
-      console.log("UserID:", user._id);
-       
-      const response = await api.get(`/posts/user/${user._id}`);
-      console.log("Fetched posts:", response.data);
-      return response.data;
-    },
-    enabled: !!user._id, // only get if the user._id exists
-  });
-  
 
   const { data: soldierRequests, isLoading: isLoadingSoldierRequests } = useQuery({
     queryKey: ["soldierRequests", user._id],
@@ -188,6 +179,51 @@ const Profile: React.FC = () => {
   });
   console.log("User ID in Profile:", user._id);
 
+  
+  const {
+    data: userPostsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isLoadingPosts,
+  } = useInfiniteQuery<PaginationResponse<Post>, Error>({
+    queryKey: ["userPosts", user._id], // Chave única para cache
+    queryFn: async (context) => {
+      const { pageParam = 1 } = context; // Extrai `pageParam` explicitamente
+      return fetchPosts({ pageParam }); 
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.page < lastPage.pagination.pages
+        ? lastPage.pagination.page + 1
+        : undefined, // Define a próxima página ou undefined
+    initialPageParam: 1,
+    enabled: !!user._id, // Ativa apenas se o `user._id` existir
+  });
+  
+  
+  
+  
+
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+  
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextPage(); // Chama a próxima página
+        }
+      },
+      { threshold: 1.0 }
+    );
+  
+    const currentRef = observerRef.current;
+    if (currentRef) observer.observe(currentRef);
+  
+    return () => {
+      if (currentRef) observer.unobserve(currentRef);
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  
 
   const handleNicknameChange = (value: string) => {
     if (value === "") {
@@ -357,17 +393,17 @@ const Profile: React.FC = () => {
               />
             </div>
   
-            <button
-  onClick={handleSubmit}
-  className={`mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded flex items-center justify-center`}
-  disabled={loading} // Evita múltiplos cliques enquanto está carregando
->
-  {loading ? (
-    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
-  ) : (
-    "Save Changes"
-  )}
-</button>
+                        <button
+              onClick={handleSubmit}
+              className={`mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded flex items-center justify-center`}
+              disabled={loading} // Evita múltiplos cliques enquanto está carregando
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
+              ) : (
+                "Save Changes"
+              )}
+            </button>
 
           </div>
   
@@ -483,22 +519,42 @@ const Profile: React.FC = () => {
         
           ) : (
             <div>
+
+
             <h2 className="text-2xl font-bold mb-16">{nickname} <span className="text-yellow-500">Posts</span></h2>            
+            
+            
+            
             {isLoadingPosts ? (
-              <PostSkeleton />
-            ) : Array.isArray(userPosts?.posts) && userPosts.posts.length > 0 ? (
-              userPosts.posts.map((post: Post) => (
-                <PostCard key={post._id} post={post} />
-              ))
-            ) : (
-              <p>No posts found.</p>
-            )}
-          </div>      
+  <PostSkeleton />
+) : userPostsData?.pages?.length ? (
+  userPostsData.pages.map((page, index) => (
+    <React.Fragment key={index}>
+      {page.posts.map((post) => (
+        <PostCard key={post._id} post={post} />
+      ))}
+    </React.Fragment>
+  ))
+) : (
+  <p>No posts found.</p>
+)}
+
+{hasNextPage && (
+  <div ref={observerRef} className="invisible"></div> // Div usada para observer
+)}
+
+{isFetchingNextPage && (
+  <div className="flex justify-center mt-4">
+    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-green-500"></div>
+  </div>
+)}
+
+            </div>
           )}
         </div>
       )}
+      </div>
     </div>
-  </div>
-);
+  )
 };
 export default Profile;

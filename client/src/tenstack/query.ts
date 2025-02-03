@@ -5,6 +5,17 @@ import { EatUp } from "@/types/EatUps";
 import store from "@/Redux/store";
 import { logout } from "@/Redux/authSlice";
 import { AxiosError } from "axios";
+import { Post } from "@/components/social/PostCard";
+
+export interface PaginationResponse<T> {
+  posts: T[];
+  pagination: {
+    page: number;
+    total: number;
+    pages: number;
+  };
+}
+
 
 export interface posts {
   author: {
@@ -81,25 +92,28 @@ export const fetchResidences = async (): Promise<Residence[]> => {
   }
 };
 
-export const fetchPosts = async (): Promise<posts[]> => {
-  try {
-    const res = await api.get("/posts");
-    console.log("Posts fetched:", res.data);
 
-    return res.data.posts.map((post: any) => ({
+export const fetchPosts = async ({
+  pageParam = 1, // Valor padrão
+}: {
+  pageParam: any;
+}): Promise<PaginationResponse<Post>> => {
+  const res = await api.get(`/posts?page=${pageParam}&limit=2`); // Configuração do limite
+  return {
+    posts: res.data.posts.map((post: any) => ({
       ...post,
-      comments: post.comments || [],
       author: {
-        ...post.author,
-        profileImage: post.author?.profileImage || "/assets/profilePictures/default.svg", // Fallback
+        _id: post.author._id,
+        firstName: post.author.firstName,
+        lastName: post.author.lastName,
+        profileImage: post.author.profileImage || "/assets/profilePictures/default.svg",
+        nickname: post.author.nickname || "",
       },
-    }));
-  } catch (error) {
-    console.error("Error fetching posts:", error);
-    return [];
-  }
+      comments: post.comments || [],
+    })),
+    pagination: res.data.pagination,
+  };
 };
-
 
 
 

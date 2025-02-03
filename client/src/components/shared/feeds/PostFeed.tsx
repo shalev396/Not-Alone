@@ -1,48 +1,74 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchPosts, posts } from "@/tenstack/query";
+import { useEffect, useRef } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { fetchPosts } from "@/tenstack/query";
 import { PostCard } from "@/components/social/PostCard";
 import { Post } from "@/components/social/PostCard";
-import { Skeleton } from "@/components/ui/skeleton";
-
-export const PostSkeleton = () => {
-  return (
-    <div className="space-y-4">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="p-6 bg-muted/50 rounded-lg space-y-3">
-          <Skeleton className="h-6 w-1/3" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-8 w-28" />
-        </div>
-      ))}
-    </div>
-  );
-};
+import { PostSkeleton } from "@/components/social/PostSkeleton";
 
 export function PostFeed() {
-  const { data: postsData, isLoading: isPostsLoading } = useQuery({
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteQuery({
     queryKey: ["posts"],
     queryFn: fetchPosts,
-    staleTime: 1000 * 60 * 5,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.page < lastPage.pagination.pages
+        ? lastPage.pagination.page + 1
+        : undefined,
+    initialPageParam: 1,
   });
 
+  const observerRef = useRef<HTMLDivElement | null>(null);
 
-  if (isPostsLoading) {
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextPage(); // Trigger next page load
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    const currentRef = observerRef.current;
+    if (currentRef) observer.observe(currentRef);
+
+    return () => {
+      if (currentRef) observer.unobserve(currentRef);
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  if (isLoading) {
     return <PostSkeleton />;
   }
 
-  if (!postsData || postsData.length === 0) {
-    return <div className="text-center py-4">No post found</div>;
+  if (!data?.pages?.[0]?.posts?.length) {
+    return <div className="text-center py-4">No posts found</div>;
   }
-  
 
   return (
     <div className="space-y-4">
       <h3 className="text-4xl font-bold mb-10 mt-20 ml-20">
         Your <span className="text-green-500">Social</span>
       </h3>
-      {postsData.map((post: posts) => (
-        <PostCard key={post._id} post={post as unknown as Post} />
-      ))}
+
+      {/* Render all loaded posts */}
+      {data.pages.map((page) =>
+        page.posts.map((post: Post) => <PostCard key={post._id} post={post} />)
+      )}
+
+      {/* Observed element */}
+      {hasNextPage && (
+        <div ref={observerRef} className="flex justify-center mt-6">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-green-500"></div>
+        </div>
+      )}
     </div>
   );
 }
