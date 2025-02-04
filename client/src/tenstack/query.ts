@@ -115,6 +115,39 @@ export const fetchPosts = async ({
   };
 };
 
+export const fetchUserPosts = async ({
+  userId,
+  pageParam = 1,
+}: {
+  userId: string;
+  pageParam: any;
+}): Promise<PaginationResponse<Post>> => {
+  const res = await api.get(`/posts/user/${userId}?page=${pageParam}&limit=2`);
+
+  return {
+    posts: res.data.posts.map((post: any) => ({
+      ...post,
+      author: {
+        _id: post.author._id,
+        firstName: post.author.firstName,
+        lastName: post.author.lastName,
+        profileImage: post.author.profileImage || "/assets/profilePictures/default.svg",
+        nickname: post.author.nickname || "",
+      },
+      comments: post.comments || [],
+    })),
+    pagination: {
+      page: res.data.pagination.page,
+      total: res.data.pagination.total,
+      pages: res.data.pagination.pages,
+    },
+  };
+};
+
+
+
+
+
 
 
 

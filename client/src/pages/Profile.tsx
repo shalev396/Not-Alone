@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/Redux/store";
 import { updateUser } from "@/Redux/userSlice";
@@ -11,12 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
-import { PostCard } from "@/components/social/PostCard";
+import { useQuery } from "@tanstack/react-query";
 import { PostSkeleton } from "@/components/social/PostSkeleton";
 import { useNavigate } from "react-router-dom";
 import Skeleton from "react-loading-skeleton";
-import { fetchPosts, PaginationResponse } from "@/tenstack/query";
+import { FilteredPostFeed } from "@/components/shared/feeds/FilteredPostFeed";
+
+
+
 interface Request {
   _id: string;
   service: "Regular" | "Reserves";
@@ -68,7 +70,6 @@ const Profile: React.FC = () => {
   
   const dispatch = useDispatch();
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [pagesLoaded, setPagesLoaded] = useState(0); 
 
     const [nickname, setNickname] = useState("");
     const [profileImage, setProfileImage] = useState("");
@@ -76,7 +77,6 @@ const Profile: React.FC = () => {
     const [bio, setBio] = useState("");
     const [receiveNotifications, setReceiveNotifications] = useState(false);
     const navigate = useNavigate();
-    const observerRef = useRef<HTMLDivElement | null>(null);
 
 
     const getStatusColor = (status: Request["status"]) => {
@@ -179,57 +179,6 @@ const Profile: React.FC = () => {
     enabled: !!user._id, 
   });
   console.log("User ID in Profile:", user._id);
-
-  
-  const {
-    data: userPostsData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading: isLoadingPosts,
-  } = useInfiniteQuery<PaginationResponse<Post>, Error>({
-    queryKey: ["userPosts", user._id], 
-    queryFn: async (context) => {
-      const { pageParam = 1 } = context; 
-      return fetchPosts({ pageParam }); 
-    },
-    getNextPageParam: (lastPage) =>
-      lastPage.pagination.page < lastPage.pagination.pages
-        ? lastPage.pagination.page + 1
-        : undefined, 
-    initialPageParam: 1,
-    enabled: !!user._id, 
-  });
-  
-  
-  
-  useEffect(() => {
-    if (!isFetchingNextPage && userPostsData) {
-      setPagesLoaded((prev) => prev + 1); 
-    }
-  }, [isFetchingNextPage, userPostsData]);
-  
-
-  useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return;
-  
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          fetchNextPage(); 
-        }
-      },
-      { threshold: 1.0 }
-    );
-  
-    const currentRef = observerRef.current;
-    if (currentRef) observer.observe(currentRef);
-  
-    return () => {
-      if (currentRef) observer.unobserve(currentRef);
-    };
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-  
 
   const handleNicknameChange = (value: string) => {
     if (value === "") {
@@ -530,29 +479,12 @@ const Profile: React.FC = () => {
             
             
             
-            {isLoadingPosts ? (
-  <PostSkeleton />
-) : userPostsData?.pages?.length ? (
-  userPostsData.pages.map((page, index) => (
-    <React.Fragment key={index}>
-      {page.posts.map((post) => (
-        <PostCard key={post._id} post={post} />
-      ))}
-    </React.Fragment>
-  ))
-) : (
-  <p>No posts found.</p>
-)}
+             {/* Feed de Posts Filtrado */}
+              <div className="mt-10">
+              <h2 className="text-2xl font-bold mb-4">Posts</h2>
+              <FilteredPostFeed userId={user._id} />
+            </div>
 
-{hasNextPage && (
-  <div ref={observerRef} className="invisible"></div> // Div usada para observer
-)}
-
-{isFetchingNextPage && pagesLoaded % 2 === 0 && (
-  <div className="flex justify-center mt-4">
-    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-green-500"></div>
-  </div>
-)}
 
 
             </div>
