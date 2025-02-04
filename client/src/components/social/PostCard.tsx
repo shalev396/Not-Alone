@@ -116,15 +116,19 @@ export function PostCard({ post }: { post: Post }) {
     <>
       <Card className="p-6 mb-6 max-w-2xl mx-auto shadow-lg bg-card text-card-foreground rounded-lg">
         <div className="flex items-center mb-14">
-          <img
-            src={
-              post.author.profileImage && post.author.profileImage.trim() !== ""
-                ? `${window.location.origin}${post.author.profileImage.startsWith("/") ? "" : "/"}${post.author.profileImage}`
-                : `${window.location.origin}/assets/profilePictures/default.svg`
-            }
-            alt={post.author.firstName}
-            className="w-12 h-12 rounded-full border border-muted mr-4"
-          />
+        <img
+  src={
+    post.author.profileImage && post.author.profileImage.trim() !== ""
+      ? `${window.location.origin}${post.author.profileImage.startsWith("/") ? "" : "/"}${post.author.profileImage}`
+      : `${window.location.origin}/assets/profilePictures/default.svg`
+  }
+  alt={post.author.firstName}
+  onError={(e) => {
+    (e.target as HTMLImageElement).src = "/assets/profilePictures/default.svg";
+  }}
+  className="w-12 h-12 rounded-full border border-muted mr-4"
+/>
+
 
           <div>
             <h3 className="font-bold text-base text-primary">

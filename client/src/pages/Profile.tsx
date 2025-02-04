@@ -12,9 +12,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
-import { PostCard } from "@/components/social/PostCard";
-import { PostSkeleton } from "@/components/shared/feeds/PostFeed";
+import { PostSkeleton } from "@/components/social/PostSkeleton";
 import { useNavigate } from "react-router-dom";
+import Skeleton from "react-loading-skeleton";
+import { FilteredPostFeed } from "@/components/shared/feeds/FilteredPostFeed";
+
 
 
 interface Request {
@@ -68,12 +70,14 @@ const Profile: React.FC = () => {
   
   const dispatch = useDispatch();
   const [loadingProfile, setLoadingProfile] = useState(true);
-  
+
     const [nickname, setNickname] = useState("");
     const [profileImage, setProfileImage] = useState("");
+    const [isImageLoading, setIsImageLoading] = useState(true);
     const [bio, setBio] = useState("");
     const [receiveNotifications, setReceiveNotifications] = useState(false);
     const navigate = useNavigate();
+
 
     const getStatusColor = (status: Request["status"]) => {
       switch (status) {
@@ -93,6 +97,9 @@ const Profile: React.FC = () => {
         day: "numeric",
       });
     };
+
+    
+    
 
     useEffect(() => {
       const fetchProfile = async () => {
@@ -162,20 +169,6 @@ const Profile: React.FC = () => {
   const [email] = useState(user.email || "");
   const [phone, setPhone] = useState(user.phone || "");
 
-  
-  const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
-    queryKey: ["userPosts", user._id],
-    queryFn: async () => {
-      console.log("Fetching posts for user:", user._id);
-      console.log("UserID:", user._id);
-       
-      const response = await api.get(`/posts/user/${user._id}`);
-      console.log("Fetched posts:", response.data);
-      return response.data;
-    },
-    enabled: !!user._id, // only get if the user._id exists
-  });
-  
 
   const { data: soldierRequests, isLoading: isLoadingSoldierRequests } = useQuery({
     queryKey: ["soldierRequests", user._id],
@@ -186,7 +179,6 @@ const Profile: React.FC = () => {
     enabled: !!user._id, 
   });
   console.log("User ID in Profile:", user._id);
-
 
   const handleNicknameChange = (value: string) => {
     if (value === "") {
@@ -210,7 +202,6 @@ const Profile: React.FC = () => {
   const handleDeleteRequest = async (requestId: string) => {
     try {
       await api.delete(`/requests/${requestId}`);
-      // Atualize os soldierRequests após excluir
       const updatedRequests = soldierRequests.filter(
         (request: Request) => request._id !== requestId
       );
@@ -269,7 +260,6 @@ const Profile: React.FC = () => {
       <Navbar modes="home" isVertical={true} isAccordion={true} />
       <div className="flex-1 flex justify-center">
       {loadingProfile ? (
-        // Mostra um spinner ou uma mensagem enquanto o perfil está carregando
         <div className="flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-500"></div>
           <p className="ml-4">Loading profile...</p>
@@ -310,10 +300,18 @@ const Profile: React.FC = () => {
               </div>
               
               <div className="flex-shrink-0">
+              {isImageLoading && (
+                  <Skeleton circle={true} height={160} width={160} />
+                )}
                 <img
                   src={profileImage || DEFAULT_PROFILE_IMAGE}
                   alt="Profile"
                   onClick={() => setIsDialogOpen(true)}
+                  onLoad={() => setIsImageLoading(false)}
+                  onError={() => {
+                    setIsImageLoading(false);
+                    setProfileImage(DEFAULT_PROFILE_IMAGE); 
+                  }}
                   className="rounded-full cursor-pointer w-40 h-40 border border-gray-300 hover:border-green-500"
                 />
                 {isDialogOpen && (
@@ -349,17 +347,17 @@ const Profile: React.FC = () => {
               />
             </div>
   
-            <button
-  onClick={handleSubmit}
-  className={`mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded flex items-center justify-center`}
-  disabled={loading} // Evita múltiplos cliques enquanto está carregando
->
-  {loading ? (
-    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
-  ) : (
-    "Save Changes"
-  )}
-</button>
+                        <button
+              onClick={handleSubmit}
+              className={`mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded flex items-center justify-center`}
+              disabled={loading} // Evita múltiplos cliques enquanto está carregando
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
+              ) : (
+                "Save Changes"
+              )}
+            </button>
 
           </div>
   
@@ -472,34 +470,29 @@ const Profile: React.FC = () => {
       <p>Donations feature will be available soon.</p>
     </div>
   )
-
-
-            
+        
           ) : (
             <div>
-            <h2 className="text-2xl font-bold mb-16">{nickname} <span className="text-yellow-500">Posts</span></h2>
+
+
+            <h2 className="text-2xl font-bold mb-16">{nickname} <span className="text-yellow-500">Posts</span></h2>            
             
             
-            {isLoadingPosts ? (
-  <PostSkeleton />
-) : Array.isArray(userPosts?.posts) && userPosts.posts.length > 0 ? (
-  userPosts.posts.map((post: Post) => (
-    <PostCard key={post._id} post={post} />
-  ))
-) : (
-  <p>No posts found.</p>
-)}
+            
+             {/* Feed de Posts Filtrado */}
+              <div className="mt-10">
+              <h2 className="text-2xl font-bold mb-4">Posts</h2>
+              <FilteredPostFeed userId={user._id} />
+            </div>
 
 
 
-
-
-          </div>      
+            </div>
           )}
         </div>
       )}
+      </div>
     </div>
-  </div>
-);
+  )
 };
 export default Profile;
