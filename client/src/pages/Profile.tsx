@@ -68,7 +68,8 @@ const Profile: React.FC = () => {
   
   const dispatch = useDispatch();
   const [loadingProfile, setLoadingProfile] = useState(true);
-  
+  const [pagesLoaded, setPagesLoaded] = useState(0); 
+
     const [nickname, setNickname] = useState("");
     const [profileImage, setProfileImage] = useState("");
     const [isImageLoading, setIsImageLoading] = useState(true);
@@ -187,21 +188,26 @@ const Profile: React.FC = () => {
     isFetchingNextPage,
     isLoading: isLoadingPosts,
   } = useInfiniteQuery<PaginationResponse<Post>, Error>({
-    queryKey: ["userPosts", user._id], // Chave única para cache
+    queryKey: ["userPosts", user._id], 
     queryFn: async (context) => {
-      const { pageParam = 1 } = context; // Extrai `pageParam` explicitamente
+      const { pageParam = 1 } = context; 
       return fetchPosts({ pageParam }); 
     },
     getNextPageParam: (lastPage) =>
       lastPage.pagination.page < lastPage.pagination.pages
         ? lastPage.pagination.page + 1
-        : undefined, // Define a próxima página ou undefined
+        : undefined, 
     initialPageParam: 1,
-    enabled: !!user._id, // Ativa apenas se o `user._id` existir
+    enabled: !!user._id, 
   });
   
   
   
+  useEffect(() => {
+    if (!isFetchingNextPage && userPostsData) {
+      setPagesLoaded((prev) => prev + 1); 
+    }
+  }, [isFetchingNextPage, userPostsData]);
   
 
   useEffect(() => {
@@ -210,7 +216,7 @@ const Profile: React.FC = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          fetchNextPage(); // Chama a próxima página
+          fetchNextPage(); 
         }
       },
       { threshold: 1.0 }
@@ -247,7 +253,6 @@ const Profile: React.FC = () => {
   const handleDeleteRequest = async (requestId: string) => {
     try {
       await api.delete(`/requests/${requestId}`);
-      // Atualize os soldierRequests após excluir
       const updatedRequests = soldierRequests.filter(
         (request: Request) => request._id !== requestId
       );
@@ -543,11 +548,12 @@ const Profile: React.FC = () => {
   <div ref={observerRef} className="invisible"></div> // Div usada para observer
 )}
 
-{isFetchingNextPage && (
+{isFetchingNextPage && pagesLoaded % 2 === 0 && (
   <div className="flex justify-center mt-4">
     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-green-500"></div>
   </div>
 )}
+
 
             </div>
           )}
