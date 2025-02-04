@@ -71,7 +71,98 @@ export const Footer = () => {
 
       <div className="border-t">
         <div className="container py-6 text-center text-muted-foreground">
-          © {new Date().getFullYear()} Not Alone Support. All rights reserved.
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <span>©2024</span>
+              <a
+                className="text-primary hover:underline"
+                property="dct:title"
+                rel="cc:attributionURL"
+                href="https://notalonesoldier.com"
+              >
+                Not Alone
+              </a>
+              <span>•</span>
+              <span>All Rights Reserved</span>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-sm flex-wrap">
+              <span>Created by</span>
+              <a
+                className="text-primary hover:underline"
+                rel="cc:attributionURL dct:creator"
+                property="cc:attributionName"
+                href="https://github.com/shalev396"
+              >
+                Shalev Ben Moshe
+              </a>
+              <span>•</span>
+              <a
+                className="text-primary hover:underline"
+                rel="cc:attributionURL dct:creator"
+                href="https://github.com/liavbenshimon"
+              >
+                Liav Ben Shimon
+              </a>
+              <span>•</span>
+              <a
+                className="text-primary hover:underline"
+                rel="cc:attributionURL dct:creator"
+                href="https://github.com/NathKilin"
+              >
+                Nathan Kilinski
+              </a>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <span>Based on a template by</span>
+              <a
+                className="text-primary hover:underline"
+                href="https://github.com/leoMirandaa"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Leopoldo Miranda
+              </a>
+              <span>(MIT License)</span>
+            </div>
+
+            <div className="flex flex-col items-center gap-2 text-sm mt-2">
+              <div className="flex items-center justify-center gap-2">
+                <span>Application licensed under</span>
+                <a
+                  href="https://creativecommons.org/licenses/by-nc-nd/4.0/?ref=chooser-v1"
+                  target="_blank"
+                  rel="license noopener noreferrer"
+                  className="flex items-center gap-1 hover:text-primary transition-colors"
+                >
+                  CC BY-NC-ND 4.0
+                  <div className="flex items-center">
+                    <img
+                      className="h-[22px] ml-1"
+                      src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1"
+                      alt="CC"
+                    />
+                    <img
+                      className="h-[22px] ml-1"
+                      src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1"
+                      alt="BY"
+                    />
+                    <img
+                      className="h-[22px] ml-1"
+                      src="https://mirrors.creativecommons.org/presskit/icons/nc.svg?ref=chooser-v1"
+                      alt="NC"
+                    />
+                    <img
+                      className="h-[22px] ml-1"
+                      src="https://mirrors.creativecommons.org/presskit/icons/nd.svg?ref=chooser-v1"
+                      alt="ND"
+                    />
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

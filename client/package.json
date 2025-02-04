@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "license": "Proprietary",
   "scripts": {
+    "postbuild": "cp public/LICENSE.txt build/ && cp public/YOUR_LICENSE.txt build/",
     "dev": "vite --host",
     "build": "npm install && tsc -b && vite build",
     "lint": "eslint .",
