@@ -1,5 +1,6 @@
 import express from "express";
 import { auth } from "../middleware/auth";
+import { createComment } from "../controllers/commentController";
 import { checkUserType } from "../middleware/checkUserType";
 import {
   createPost,
@@ -61,6 +62,17 @@ router.delete(
   auth,
   checkUserType(["Admin", "Soldier", "Municipality", "Organization"]),
   deletePost
+);
+
+router.post(
+  "/:postId/comment",
+  auth,
+  checkUserType(["Admin", "Soldier", "Municipality", "Organization"]),
+  (req, res, next) => {
+    req.body.postId = req.params.postId; // Passa o postId para o corpo da requisição
+    next();
+  },
+  createComment
 );
 
 export default router;
