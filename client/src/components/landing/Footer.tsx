@@ -6,9 +6,10 @@ export const Footer = () => {
   const navigate = useNavigate();
 
   const legalLinks = [
-    { text: "Privacy Policy", path: "/termofservice" },
-    { text: "Terms of Service", path: "/terms" },
-    { text: "Contact Us", path: "/contact" },
+    { text: "Privacy Policy", path: "/privacypolicy" },
+    { text: "Terms of Service", path: "/termsofservice" },
+    { text: "Contact Us", path: "/#" },
+    { text: "Licenses", path: "/licenses" },
   ];
 
   return (
@@ -124,10 +125,20 @@ export const Footer = () => {
               >
                 Leopoldo Miranda
               </a>
-              <span>(MIT License)</span>
+              <span>
+                (
+                <a
+                  className="text-primary hover:underline"
+                  onClick={() => navigate("/licenses")}
+                  style={{ cursor: "pointer" }}
+                >
+                  MIT License
+                </a>
+                )
+              </span>
             </div>
 
-            <div className="flex flex-col items-center gap-2 text-sm mt-2">
+            {/* <div className="flex flex-col items-center gap-2 text-sm mt-2">
               <div className="flex items-center justify-center gap-2">
                 <span>Application licensed under</span>
                 <a
@@ -161,7 +172,7 @@ export const Footer = () => {
                   </div>
                 </a>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
