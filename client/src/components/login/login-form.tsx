@@ -1,218 +1,244 @@
-import { z } from "zod";
-import { useState } from "react";
-import { useNavigate } from "react-router";
-import { useDispatch } from "react-redux";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { api } from "@/api/api";
+import { useFormik } from "formik";
+import { z } from "zod";
+import { toFormikValidationSchema } from "zod-formik-adapter";
+import { ArrowLeft } from "lucide-react";
+import { ModeToggle } from "@/components/custom-ui/mode-toggle";
 import { setUser } from "@/Redux/userSlice";
 import { login } from "@/Redux/authSlice";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useEffect } from "react";
+import { RootState } from "@/Redux/store";
 
 // Zod schema for login validation
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().min(1, "Email is required").email("Invalid email format"),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .max(50, "Password must be less than 50 characters"),
 });
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginForm = z.infer<typeof loginSchema>;
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export function LoginForm() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState<LoginFormData>({
-    email: "",
-    password: "",
-  });
-  const [errors, setErrors] = useState<Partial<LoginFormData>>({});
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const user = useSelector((state: RootState) => state.user);
 
-  const validateForm = () => {
-    try {
-      loginSchema.parse(formData);
-      setErrors({});
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const newErrors: Partial<LoginFormData> = {};
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            newErrors[err.path[0] as keyof LoginFormData] = err.message;
+  useEffect(() => {
+    // Check if user is already logged in
+    const token = sessionStorage.getItem("token");
+    const userId = sessionStorage.getItem("id");
+
+    if (token && userId && user.email) {
+      // Navigate based on user type
+      switch (user.type?.toLowerCase()) {
+        case "admin":
+          navigate("/admin/queue");
+          break;
+        case "soldier":
+          navigate("/home/eatup");
+          break;
+        case "municipality":
+          navigate("/my-eatups");
+          break;
+        case "donor":
+          navigate("/contribute");
+          break;
+        case "organization":
+          navigate("/social");
+          break;
+        case "business":
+          navigate("/profile");
+          break;
+        default:
+          navigate("/home");
+      }
+    }
+  }, [navigate, user]);
+
+  const formik = useFormik<LoginForm>({
+    initialValues: {
+      email: "",
+      password: "",
+    },
+    validationSchema: toFormikValidationSchema(loginSchema),
+    onSubmit: async (values, { setSubmitting, setFieldError }) => {
+      try {
+        const res = await api.post("/auth/login", values);
+
+        if (res?.data?.user?._id) {
+          // First check if 2FA needs to be set up
+          if (!res.data.user.is2FAEnabled) {
+            // Save user data to session storage
+            sessionStorage.setItem("user", JSON.stringify(res.data.user));
+
+            // Redirect to 2FA setup
+            navigate("/2fa", {
+              state: {
+                userId: res.data.user._id,
+                email: res.data.user.email,
+                isLogin: true,
+              },
+            });
+            return;
           }
-        });
-        setErrors(newErrors);
-      }
-      return false;
-    }
-  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setServerError(null);
+          // Only proceed with approval status check if 2FA is enabled
+          if (res.data.user.approvalStatus === "pending") {
+            sessionStorage.setItem("user", JSON.stringify(res.data.user));
+            navigate("/pending");
+            return;
+          }
 
-    if (!validateForm()) return;
+          // If both 2FA is enabled and user is approved, proceed with login
+          sessionStorage.setItem("token", res.data.token);
+          sessionStorage.setItem("id", res.data.user._id);
+          dispatch(setUser(res.data.user));
+          dispatch(login(res.data.token));
 
-    setLoading(true);
-    try {
-      const res = await api.post("/auth/login", formData);
-
-      if (res?.data?.user?._id) {
-        // First check if 2FA is required
-        if (!res.data.user.is2FAEnabled) {
-          // Redirect to 2FA setup regardless of approval status
-          navigate("/2fa", {
-            state: {
-              userId: res.data.user._id,
-              email: res.data.user.email,
-              isLogin: true,
-            },
+          // Navigate based on user type
+          switch (res.data.user.type.toLowerCase()) {
+            case "admin":
+              navigate("/admin/queue");
+              break;
+            case "soldier":
+              navigate("/home/eatup");
+              break;
+            case "municipality":
+              navigate("/my-eatups");
+              break;
+            case "donor":
+              navigate("/contribute");
+              break;
+            case "organization":
+              navigate("/social");
+              break;
+            case "business":
+              navigate("/profile");
+              break;
+            default:
+              navigate("/home");
+          }
+        } else if (res?.data?.type === "pending") {
+          navigate("/pending", {
+            state: { request: res.data.request },
           });
-          return;
         }
-
-        // Only proceed with approval status check if 2FA is enabled
-        if (res.data.user.approvalStatus === "pending") {
-          sessionStorage.setItem("user", JSON.stringify(res.data.user));
-          navigate("/pending");
-          return;
-        }
-
-        // If both 2FA is enabled and user is approved, proceed with login
-        sessionStorage.setItem("token", res.data.token);
-        sessionStorage.setItem("id", res.data.user._id);
-        dispatch(setUser(res.data.user));
-        dispatch(login(res.data.token));
-
-        // Navigate based on user type
-        switch (res.data.user.type.toLowerCase()) {
-          case "admin":
-            navigate("/admin/queue");
-            break;
-          case "soldier":
-            navigate("/home/eatup");
-            break;
-          case "municipality":
-            navigate("/my-eatups");
-            break;
-          case "donor":
-            navigate("/contribute");
-            break;
-          case "organization":
-            navigate("/social");
-            break;
-          case "business":
-            navigate("/profile");
-            break;
-          default:
-            navigate("/home");
-        }
-      } else if (res?.data?.type === "pending") {
-        navigate("/pending", {
-          state: { request: res.data.request },
-        });
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.message || "Failed to login";
+        setFieldError("password", errorMessage);
+      } finally {
+        setSubmitting(false);
       }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || "Failed to login";
-      setServerError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="w-full">
-            <div className="flex flex-col gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className={errors.email ? "border-red-500" : ""}
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email}</p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <button
-                    type="button"
-                    onClick={() => navigate("/forgot-password")}
-                    className="ml-auto text-sm hover:underline"
-                  >
-                    Forgot your password?
-                  </button>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  className={errors.password ? "border-red-500" : ""}
-                />
-                {errors.password && (
-                  <p className="text-sm text-red-500">{errors.password}</p>
-                )}
-              </div>
-
-              {serverError && (
-                <div className="text-sm text-red-500 p-2 bg-red-50 dark:bg-red-950/50 rounded-md">
-                  {serverError}
-                </div>
+    <div className="w-full max-w-xl mx-auto">
+      <div className="border rounded-lg shadow-sm bg-card">
+        <div className="px-8 py-10 space-y-8">
+          <div className="flex justify-end">
+            <ModeToggle />
+          </div>
+          <div className="space-y-2 text-center">
+            <h1 className="text-3xl md:text-4xl font-bold">
+              <span className="bg-gradient-to-b from-primary/60 to-primary text-transparent bg-clip-text">
+                Login
+              </span>
+            </h1>
+            <p className="text-muted-foreground text-lg">
+              Enter your credentials to access your account
+            </p>
+          </div>
+          <form onSubmit={formik.handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Email
+              </label>
+              <input
+                id="email"
+                placeholder="m@example.com"
+                className={`flex h-11 w-full rounded-md border ${
+                  formik.touched.email && formik.errors.email
+                    ? "border-destructive"
+                    : "border-input"
+                } bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
+                {...formik.getFieldProps("email")}
+              />
+              {formik.touched.email && formik.errors.email && (
+                <p className="text-sm text-destructive">
+                  {formik.errors.email}
+                </p>
               )}
-
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Logging in..." : "Login"}
-              </Button>
-
-              <Button variant="outline" className="w-full">
-                Login with Google
-              </Button>
-
-              <div className="text-center text-sm">
-                Don&apos;t have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => navigate("/signup")}
-                  className="underline underline-offset-4"
-                >
-                  Sign up
-                </button>
-              </div>
             </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="password"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                className={`flex h-11 w-full rounded-md border ${
+                  formik.touched.password && formik.errors.password
+                    ? "border-destructive"
+                    : "border-input"
+                } bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
+                {...formik.getFieldProps("password")}
+              />
+              {formik.touched.password && formik.errors.password && (
+                <p className="text-sm text-destructive">
+                  {formik.errors.password}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <Button
+                variant="link"
+                className="px-0 font-normal"
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+              >
+                Forgot password?
+              </Button>
+              <Button
+                variant="link"
+                className="px-0 font-normal"
+                type="button"
+                onClick={() => navigate("/signup")}
+              >
+                Don't have an account? Sign up
+              </Button>
+            </div>
+            <Button
+              className="w-full h-11 text-base"
+              type="submit"
+              disabled={formik.isSubmitting || !formik.isValid}
+            >
+              {formik.isSubmitting ? "Signing in..." : "Sign in"}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full h-11 text-base"
+              type="button"
+              onClick={() => navigate("/")}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
+            </Button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

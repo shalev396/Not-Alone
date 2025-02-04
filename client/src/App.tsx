@@ -8,8 +8,7 @@ import NewPost from "./pages/NewEatup";
 import SignUp from "./pages/Signup";
 import Tos from "./pages/Tos";
 import YourRights from "./pages/YourRights";
-import Terms from "./pages/Terms";
-import ContactUs from "./pages/ContactUs";
+import Terms from "./pages/PrivacyPolicy";
 import Social from "./pages/Social";
 import { Provider } from "react-redux";
 import store from "./Redux/store";
@@ -42,6 +41,7 @@ import SoldierJoinCity from "./pages/SoldierJoinCity";
 import TwoFactorAuth from "./pages/TwoFactorAuth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPasswordVerify from "./pages/ResetPasswordVerify";
+import Licenses from "./pages/Licenses";
 
 // Public routes that don't need protection
 // const publicRoutes = [
@@ -88,9 +88,9 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password-verify" element={<ResetPasswordVerify />} />
       <Route path="/pending" element={<PendingPage />} />
-      <Route path="/termofservice" element={<Tos />} />
-      <Route path="/terms" element={<Terms />} />
-      <Route path="/contact" element={<ContactUs />} />
+      <Route path="/termsofservice" element={<Tos />} />
+      <Route path="/privacypolicy" element={<Terms />} />
+      <Route path="/licenses" element={<Licenses />} />
       <Route path="/donation-status/:donationId" element={<DonationStatus />} />
 
       {/* Protected Routes */}
@@ -313,13 +313,13 @@ function AppRoutes() {
         }
       />
       <Route
-  path="/donation-requests"
-  element={
-    <ProtectedRoute>
-      <Profile />
-    </ProtectedRoute>
-  }
-/>
+        path="/donation-requests"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/soldier-join-city"
         element={
