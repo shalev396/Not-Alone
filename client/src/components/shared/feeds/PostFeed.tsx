@@ -54,7 +54,7 @@ export function PostFeed() {
 
 
   return (
-    <div className="space-y-4 mb-4">
+    <div className="space-y-16 mb-4">
       <h3 className="text-4xl font-bold mb-10 mt-20 ml-20">
         Your <span className="text-green-500">Social</span>
       </h3>

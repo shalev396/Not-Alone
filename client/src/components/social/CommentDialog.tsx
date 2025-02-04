@@ -44,10 +44,10 @@ export function CommentDialog({
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { nickname, profileImage } = useSelector((state: any) => state.user);
 
-  // **Busca os comentários do backend**
   useEffect(() => {
     const fetchComments = async () => {
       try {
@@ -132,143 +132,150 @@ export function CommentDialog({
         <DialogOverlay className="fixed inset-0 z-50 backdrop-blur-sm bg-black/50" />
         <DialogContent
           ref={dialogRef}
-          className="fixed left-1/2 top-1/2 z-50 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[90vh] overflow-hidden bg-gray-900 rounded-lg shadow-lg"
+          className="fixed left-1/2 top-1/2 z-50 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[90vh] overflow-hidden bg-gray-900 rounded-lg shadow-lg flex"
         >
           <DialogTitle className="sr-only">Comment on Post</DialogTitle>
-          <div className="w-full h-full flex">
-           {/* Lado esquerdo: Imagem */}
-{post.media?.[0] && (
-  <div
-    className="w-1/2 flex items-center justify-center bg-black"
-    style={{
-      height: "100%", // Contêiner ocupa toda a altura do Dialog
-    }}
-  >
-    <div
-      className="w-full h-full flex items-center justify-center"
-      style={{
-        height: "calc(90vh - 100px)", // Altura fixa calculada com base no Dialog
-        maxHeight: "calc(90vh - 100px)", // Garante limite de altura
-      }}
-    >
-      <img
-        src={post.media[0]}
-        alt="Post media"
-        className="object-contain max-w-full max-h-full rounded-md"
-      />
-    </div>
-  </div>
-)}
 
+          {/* Lado esquerdo: Imagem (somente em telas desktop) */}
+          {post.media?.[0] && (
+            <div className="hidden md:flex w-1/2 items-center justify-center bg-black h-full">
+              <img
+                src={post.media[0]}
+                alt="Post media"
+                className="object-contain max-w-full max-h-full rounded-md"
+              />
+            </div>
+          )}
 
-            {/* Lado direito: Texto do post e comentários */}
-            <div
-              className={`flex-1 flex flex-col ${
-                post.media?.[0] ? "w-1/2" : "w-full"
-              }`}
-            >
-              {/* Texto do Post */}
-              <div className="p-4 border-b border-gray-800 overflow-y-auto scrollbar-thin max-h-[20%]">
-                <p
-                  className="text-white text-sm whitespace-pre-wrap"
-                  style={{
-                    overflowWrap: "break-word",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {post.content}
-                </p>
-              </div>
+          {/* Lado direito */}
+          <div className={`flex-1 flex flex-col ${post.media?.[0] ? "md:w-1/2 w-full" : "w-full"}`}>
+            {/* Texto do Post */}
+            <div className="p-4 border-b border-gray-800 overflow-y-auto scrollbar-thin max-h-[15%]">
+              <p
+                className="text-white text-sm whitespace-pre-wrap"
+                style={{
+                  overflowWrap: "break-word",
+                  wordBreak: "break-word",
+                }}
+              >
+                {post.content}
+              </p>
+            </div>
 
-              {/* Lista de Comentários */}
-<div
-  className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin"
-  style={{
-    maxHeight: "calc(90vh - 150px)", // Define uma altura máxima para a lista de comentários
-  }}
->
-  {comments.map((comment) => (
-    <div key={comment._id} className="flex items-start space-x-3">
-      <div className="flex-shrink-0">
-        <img
-          src={comment.authorId.profileImage || "/default-avatar.png"}
-          alt={comment.authorId.nickname}
-          className="w-10 h-10 rounded-full bg-gray-800"
-        />
-      </div>
-      <div className="flex-1">
-        <p
-          className="text-sm"
-          style={{
-            wordWrap: "break-word",
-            overflowWrap: "anywhere",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-          }}
-        >
-          <span className="font-semibold text-primary">
-            {comment.authorId.nickname || "Anonymous"}
-          </span>{" "}
-          {comment.content}
-        </p>
-        {comment.image && (
-          <img
-            src={comment.image}
-            alt="Comment media"
-            className="mt-2 rounded-md max-w-[300px] max-h-[200px] object-cover"
-          />
-        )}
-      </div>
-    </div>
-  ))}
-</div>
-
-
-              {/* Campo de Adicionar Comentário */}
-              <div className="bg-gray-800 p-4 border-t">
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                {previewUrl && (
-                  <div className="relative w-[200px] h-[200px] mb-4">
+            {/* Lista de Comentários */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+              {comments.map((comment) => (
+                <div key={comment._id} className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
                     <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="w-full h-full object-cover rounded-lg border border-gray-700"
+                      src={comment.authorId.profileImage || "/default-avatar.png"}
+                      alt={comment.authorId.nickname}
+                      className="w-10 h-10 rounded-full bg-gray-800"
                     />
-                    <button
-                      onClick={handleRemoveImage}
-                      className="absolute top-[-10px] right-[-10px] bg-gray-200 rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-gray-300"
-                    >
-                      ❌
-                    </button>
                   </div>
-                )}
-                <div className="flex items-center space-x-2">
-                  <Textarea
-                    ref={textareaRef}
-                    placeholder="Add a comment..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="flex-1 resize-none bg-gray-700 text-gray-200 border border-gray-600 focus:ring-primary focus:border-primary rounded-lg"
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="cursor-pointer bg-pink-500 hover:bg-pink-400 text-white py-2 px-4 rounded-lg flex justify-center items-center"
-                  >
-                    <img src={upload} alt="upload" className="w-5 h-5" />
-                  </label>
-                  <Button
-                    onClick={handleAddComment}
-                    disabled={loading || uploading}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 py-2 px-4 rounded-lg"
-                  >
-                    {loading ? "Posting..." : "Add"}
-                  </Button>
+                  <div className="flex-1">
+                    <p
+                      className="text-sm"
+                      style={{
+                        wordWrap: "break-word",
+                        overflowWrap: "anywhere",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      <span className="font-semibold text-primary">
+                        {comment.authorId.nickname || "Anonymous"}
+                      </span>{" "}
+                      {comment.content}
+                    </p>
+                    {comment.image && (
+                      <img
+                        src={comment.image}
+                        alt="Comment media"
+                        className="mt-2 rounded-md max-w-[300px] max-h-[200px] object-cover"
+                      />
+                    )}
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {/* Rodapé */}
+            <div className="bg-gray-800 p-4 border-t">
+              {error && (
+                <Alert variant="destructive" className="mb-4"> {/* Espaçamento entre erro e campo de comentário */}
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              {previewUrl && (
+                <div className="relative w-[200px] h-[200px] mb-4">
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover rounded-lg border border-gray-700"
+                  />
+                  <button
+                    onClick={handleRemoveImage}
+                    className="absolute top-[-10px] right-[-10px] bg-gray-200 rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-gray-300"
+                  >
+                    ❌
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center space-x-2">
+                <Textarea
+                  ref={textareaRef}
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="flex-1 resize-none bg-gray-700 text-gray-200 border border-gray-600 focus:ring-primary focus:border-primary rounded-lg"
+                />
+                <button
+                  className="cursor-pointer bg-pink-500 hover:bg-pink-400 text-white py-2 px-4 rounded-lg flex justify-center items-center"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <img src={upload} alt="Upload" className="w-5 h-5" />
+                </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <Button
+                  onClick={handleAddComment}
+                  disabled={loading || uploading}
+                  className={`bg-primary text-primary-foreground hover:bg-primary/90 py-4 w-15 rounded-lg flex items-center justify-center space-x-2 ${
+                    loading || uploading ? "opacity-70 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {loading || uploading ? (
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      ></path>
+                    </svg>
+                  ) : (
+                    "Add"
+                  )}
+                </Button>
               </div>
             </div>
           </div>
