@@ -5,9 +5,9 @@
   "type": "module",
   "license": "Proprietary",
   "scripts": {
-    "postbuild": "cp public/LICENSE.txt build/ && cp public/YOUR_LICENSE.txt build/",
     "dev": "vite --host",
     "build": "npm install && tsc -b && vite build",
+    "postbuild": "node -e \"const fs=require('fs'); const path=require('path'); const landingDir='dist/LandingPage'; if(!fs.existsSync(landingDir)){fs.mkdirSync(landingDir, {recursive: true})}; fs.copyFileSync('public/LandingPage/LICENSE.txt', 'dist/LandingPage/LICENSE.txt'); fs.copyFileSync('public/LICENSE.txt', 'dist/LICENSE.txt');\"",
     "lint": "eslint .",
     "preview": "vite preview"
   },

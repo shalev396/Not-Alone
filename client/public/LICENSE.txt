@@ -1,0 +1,30 @@
+NOT ALONE COMBINED LICENSE
+1. Main Code Restrictive License
+Copyright © 2024 Not Alone
+
+All rights reserved.
+
+1.1 Purpose and Scope
+This software (the “Software”), excluding the LandingPage folder, is provided solely for the purpose of accessing and using the official Not Alone website at https://notalonesoldier.com. No other use, reproduction, modification, distribution, or creation of derivative works is permitted without express written permission from Not Alone.
+
+
+1.2 Restricted Use
+You may only use the Software to interact with the official Not Alone website and services as they are publicly offered.
+You may not copy, modify, merge, publish, distribute, sublicense, sell, or otherwise exploit the Software or any portion of it.
+You may not decompile, reverse engineer, or attempt to extract source code from the Software, except to the extent allowed by applicable law (and then only with prior notice to Not Alone ).
+1.3 Disclaimer of Warranty
+THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+1.4 Limitation of Liability
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE (OR INABILITY TO USE) THE SOFTWARE.
+
+1.5 Termination
+Your rights under this License automatically terminate if you violate any part of this agreement. Upon termination, you must immediately cease all use of the Software and destroy any copies of it in your possession or control.
+
+1.6 Governing Law
+This License shall be governed by and construed in accordance with the laws of Israel, without regard to its conflict of law provisions.
+
+
+2. Note Regarding the LandingPage Folder in Build Artifacts
+
+In the final build output, a folder named LandingPage appears. This folder only contains a separate MIT license file, with no additional code. This license applies exclusively to the landing page portion of the project and is not part of the main application code.
