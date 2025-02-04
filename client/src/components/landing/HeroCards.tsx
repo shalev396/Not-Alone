@@ -1,6 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,14 +10,9 @@ import {
 } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { GiftIcon } from "@/components/landing/Icons";
-import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
-import { useState } from "react";
 import { PaymentDialog } from "./PaymentDialog";
 
 export const HeroCards = () => {
-  const [open, setOpen] = useState(false); // Estado para o modal
-  const [showMessage, setShowMessage] = useState(false); // Controle para mostrar a mensagem de carinha triste
-
   return (
     <div className="hidden lg:flex flex-row flex-wrap gap-6 relative w-[600px] h-[450px]">
       {/* Testimonial */}
