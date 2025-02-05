@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { uploadImage } from "@/components/shared/UploadPhoto";
 import { api } from "@/api/api";
 import upload from "@/assets/upload.png";
@@ -156,9 +155,7 @@ export function CommentDialog({
             </div>
           )}
 
-          {/* Lado direito */}
           <div className={`relative flex-1 flex flex-col ${post.media?.[0] ? "md:w-1/2 w-full" : "w-full"}`}>
-            {/* Texto do Post */}
             <div className="p-4 border-b border-muted bg-card max-h-[15%]">
             <p
               className="text-card-foreground text-sm truncate"

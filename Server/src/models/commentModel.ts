@@ -34,13 +34,18 @@ const commentSchema = new Schema<IComment>(
     image: {
       type: String, 
       trim: true,
-      required: false,
+      required: function () {
+        return !this.content; 
+      },
     },
     content: {
       type: String,
       trim: true,
       minlength: [1, "Content must be at least 1 character long"],
       maxlength: [1000, "Content cannot exceed 1000 characters"],
+      required: function () {
+        return !this.image; 
+      },
     },
     likes: [
       {
