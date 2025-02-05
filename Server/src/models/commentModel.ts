@@ -3,7 +3,8 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface IComment extends Document {
   authorId: mongoose.Types.ObjectId;
   postId: mongoose.Types.ObjectId;
-  content: string;
+  content?: string;
+  image?: string;
   likes: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -30,12 +31,21 @@ const commentSchema = new Schema<IComment>(
         message: "Post does not exist",
       },
     },
+    image: {
+      type: String, 
+      trim: true,
+      required: function () {
+        return !this.content; 
+      },
+    },
     content: {
       type: String,
-      required: [true, "Content is required"],
       trim: true,
       minlength: [1, "Content must be at least 1 character long"],
       maxlength: [1000, "Content cannot exceed 1000 characters"],
+      required: function () {
+        return !this.image; 
+      },
     },
     likes: [
       {
