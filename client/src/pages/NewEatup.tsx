@@ -33,7 +33,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { FormItem, FormLabel } from "@/components/ui/form";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/shared/Navbar";
@@ -91,7 +91,7 @@ export default function NewEatup() {
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const { data: cities = [], isLoading: isLoadingCities } = useQuery<City[]>({
+  const { data: cities = [] } = useQuery<City[]>({
     queryKey: ["cities"],
     queryFn: async () => {
       const response = await api.get("/cities");

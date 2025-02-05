@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import { api } from "@/api/api";
 import { Formik, Form, Field } from "formik";
 import { z } from "zod";
@@ -63,7 +62,6 @@ const initialValues: SignupForm = {
 
 export function SignupForm() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   return (
     <div className="w-full">

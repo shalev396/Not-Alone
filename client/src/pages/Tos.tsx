@@ -21,7 +21,7 @@ export const Tos = () => {
   const makeLinksClickable = (text: string | string[]): React.ReactNode => {
     // If text is an array, process each item
     if (Array.isArray(text)) {
-      return text.map((item, index) => makeLinksClickable(item));
+      return text.map((item) => makeLinksClickable(item));
     }
 
     // Special handling for items with "Privacy Policy:" format

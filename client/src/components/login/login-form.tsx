@@ -2,14 +2,14 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { api } from "@/api/api";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import { Formik, Form, Field } from "formik";
 import { z } from "zod";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import { ArrowLeft, AlertCircle, X, Mail, Lock } from "lucide-react";
 import { ModeToggle } from "@/components/custom-ui/mode-toggle";
 import { setUser } from "@/Redux/userSlice";
 import { login } from "@/Redux/authSlice";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { RootState } from "@/Redux/store";
 
 // Zod schema for login validation
