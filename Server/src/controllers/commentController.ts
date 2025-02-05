@@ -142,15 +142,13 @@ export const createComment = async (req: Request, res: Response) => {
     const userInfo = ensureUser(req, res);
     if (!userInfo) return;
 
-    console.log("Request body:", req.body); // Log para debug
-
-    // Validação adicional
     if (!req.body.postId || !mongoose.Types.ObjectId.isValid(req.body.postId)) {
       return res.status(400).json({ message: "Invalid or missing postId" });
     }
-    if (!req.body.content || req.body.content.trim().length === 0) {
-      return res.status(400).json({ message: "Comment content is required" });
+    if ((!req.body.content || req.body.content.trim().length === 0) && !req.body.image) {
+      return res.status(400).json({ message: "You must provide either text or an image." });
     }
+    
 
     const authorId = userInfo.userId;
     const postId = new mongoose.Types.ObjectId(req.body.postId);

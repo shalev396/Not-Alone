@@ -36,7 +36,7 @@ router.get(
   getPostById
 );
 
-router.get(
+router.get( 
   "/user/:userId",
   auth,
   checkUserType(["Admin", "Soldier", "Municipality", "Organization"]),

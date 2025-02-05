@@ -66,8 +66,8 @@ export function CommentDialog({
   const handleAddComment = async () => {
     setError(null);
 
-    if (!newComment && !newCommentImage) {
-      setError("You must provide text or an image.");
+    if (!newComment.trim() && !newCommentImage) {
+      setError("You must provide either text comment or image.");
       return;
     }
 
@@ -84,8 +84,8 @@ export function CommentDialog({
 
       const newCommentData = {
         postId: post._id,
-        content: newComment,
-        image: imageUrl,
+        content: newComment.trim() || "",
+        image: imageUrl || null,
       };
 
       const response = await api.post(`/posts/${post._id}/comment`, newCommentData);
@@ -148,7 +148,7 @@ export function CommentDialog({
           )}
 
           {/* Lado direito */}
-          <div className={`flex-1 flex flex-col ${post.media?.[0] ? "md:w-1/2 w-full" : "w-full"}`}>
+          <div className={`relative flex-1 flex flex-col ${post.media?.[0] ? "md:w-1/2 w-full" : "w-full"}`}>
             {/* Texto do Post */}
             <div className="p-4 border-b border-gray-800 overflow-y-auto scrollbar-thin max-h-[15%]">
               <p
@@ -163,7 +163,7 @@ export function CommentDialog({
             </div>
 
             {/* Lista de Comentários */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+            <div className="relative flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
               {comments.map((comment) => (
                 <div key={comment._id} className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
@@ -200,29 +200,33 @@ export function CommentDialog({
               ))}
             </div>
 
-            {/* Rodapé */}
-            <div className="bg-gray-800 p-4 border-t">
-              {error && (
-                <Alert variant="destructive" className="mb-4"> {/* Espaçamento entre erro e campo de comentário */}
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+            {/* Pré-visualização da Imagem e Mensagem de Erro */}
+            <div className="absolute bottom-20 left-0 w-full px-4">
               {previewUrl && (
-                <div className="relative w-[200px] h-[200px] mb-4">
+                <div className="relative w-[200px] h-[200px] mb-4 mx-auto">
                   <img
                     src={previewUrl}
                     alt="Preview"
                     className="w-full h-full object-cover rounded-lg border border-gray-700"
-                  />
+                    />
                   <button
                     onClick={handleRemoveImage}
                     className="absolute top-[-10px] right-[-10px] bg-gray-200 rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-gray-300"
-                  >
+                    >
                     ❌
                   </button>
                 </div>
               )}
+              {error && (
+                <Alert variant="destructive" className="mb-4 bg-gray-800">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+            </div>
+
+            {/* Rodapé */}
+            <div className="bg-gray-800 p-4 border-t">
               <div className="flex items-center space-x-2">
                 <Textarea
                   ref={textareaRef}
