@@ -26,15 +26,16 @@
 ### User Management Routes
 
 - [ ] Profile Page (`/profile`)
-- [ ] Logout Page (`/logout`)
-- [ ] Your Rights Page (`/rights`)
+- [V] Logout Page (`/logout`)
+- [V] Your Rights Page (`/rights`)
 
 ### Home and Navigation
 
 - [ ] Home Page - Donations (`/home`, `/home/donations`)
-- [ ] Home Page - Residences (`/home/residences`)
+- [X] Home Page - Residences (`/home/residences`) notes : removed (noted in app.tsx)
 - [ ] Home Page - EatUp (`/home/eatup`)
 - [ ] Channel Page (`/channel/:channelId`)
+
 
 ### Social and Posts
 
@@ -66,4 +67,10 @@
 
 ### Other Features
 
-- [ ] Vouchers Grid Page (`/Vouchers`)
+- [X] Vouchers Grid Page (`/Vouchers`)
+## progress
+ total 37 pages
+ finished 14 pages
+ removed 2 pages
+
+ 21 pages to go
