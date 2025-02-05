@@ -7,9 +7,19 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { uploadImage } from "@/components/shared/UploadPhoto";
 import { api } from "@/api/api";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  MapPin,
+  Building2,
+  Type,
+  Languages,
+  Users,
+  UtensilsCrossed,
+  FileText,
+  Image as ImageIcon,
+} from "lucide-react";
 import { format } from "date-fns";
-import { useFormik } from "formik";
+import { Formik, Form, Field, ErrorMessage } from "formik";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import {
   Popover,
@@ -78,6 +88,8 @@ type EatupFormValues = z.infer<typeof eatupSchema>;
 export default function NewEatup() {
   const navigate = useNavigate();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const { data: cities = [], isLoading: isLoadingCities } = useQuery<City[]>({
     queryKey: ["cities"],
@@ -87,41 +99,46 @@ export default function NewEatup() {
     },
   });
 
-  const formik = useFormik<EatupFormValues>({
-    initialValues: {
-      city: null,
-      location: "",
-      title: "",
-      media: [],
-      date: "",
-      kosher: false,
-      description: "",
-      languages: ["Hebrew"],
-      hosting: "organization",
-      limit: 2,
-    },
-    validationSchema: toFormikValidationSchema(eatupSchema),
-    onSubmit: async (values, { setSubmitting, setStatus }) => {
-      try {
-        const submitData = {
-          ...values,
-          date: new Date(values.date).toISOString(),
-          media: [values.media[0]],
-          authorId: sessionStorage.getItem("id"),
-          owner: sessionStorage.getItem("id"),
-          language: values.languages[0],
-          limit: values.limit.toString(),
-        };
+  const initialValues: EatupFormValues = {
+    city: null,
+    location: "",
+    title: "",
+    media: [],
+    date: "",
+    kosher: false,
+    description: "",
+    languages: ["Hebrew"],
+    hosting: "organization",
+    limit: 2,
+  };
 
-        await api.post("/eatups", submitData);
-        navigate("/my-eatups");
-      } catch (error: any) {
-        setStatus(error.response?.data?.error || "Failed to create EatUp");
-      } finally {
-        setSubmitting(false);
-      }
-    },
-  });
+  const handleSubmit = async (
+    values: EatupFormValues,
+    { setSubmitting, setStatus }: any
+  ) => {
+    try {
+      const submitData = {
+        ...values,
+        date: new Date(values.date).toISOString(),
+        media: [values.media[0]],
+        authorId: sessionStorage.getItem("id"),
+        owner: sessionStorage.getItem("id"),
+        language: values.languages[0],
+        limit: values.limit.toString(),
+      };
+
+      await api.post("/eatups", submitData);
+      navigate("/my-eatups");
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error || "Failed to create EatUp";
+      setStatus(errorMessage);
+      setErrorMessage(errorMessage);
+      setShowError(true);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex bg-background text-foreground min-h-screen">
@@ -150,356 +167,401 @@ export default function NewEatup() {
                 Host a meal and connect with fellow soldiers
               </p>
 
-              <form onSubmit={formik.handleSubmit} className="grid gap-6">
-                {/* City and Location Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormItem>
-                    <FormLabel>City</FormLabel>
-                    <Select
-                      name="city"
-                      value={formik.values.city || "none"}
-                      onValueChange={(value) =>
-                        formik.setFieldValue(
-                          "city",
-                          value === "none" ? null : value
-                        )
-                      }
-                    >
-                      <SelectTrigger
-                        className={
-                          formik.touched.city && formik.errors.city
-                            ? "border-red-500"
-                            : ""
-                        }
-                      >
-                        <SelectValue placeholder="Select city (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None of these</SelectItem>
-                        {cities.map((city) => (
-                          <SelectItem key={city._id} value={city._id}>
-                            {city.name} (
-                            {city.zone.charAt(0).toUpperCase() +
-                              city.zone.slice(1)}
+              {showError && (
+                <Alert variant="destructive">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{errorMessage}</AlertDescription>
+                </Alert>
+              )}
+
+              <Formik
+                initialValues={initialValues}
+                validationSchema={toFormikValidationSchema(eatupSchema)}
+                onSubmit={handleSubmit}
+              >
+                {({ isSubmitting, touched, errors, setFieldValue, values }) => (
+                  <Form className="grid gap-6">
+                    {/* City and Location Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <Select
+                          value={values.city || "none"}
+                          onValueChange={(value) =>
+                            setFieldValue(
+                              "city",
+                              value === "none" ? null : value
                             )
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {formik.touched.city && formik.errors.city && (
-                      <FormMessage>{formik.errors.city}</FormMessage>
-                    )}
-                  </FormItem>
-
-                  <FormItem>
-                    <FormLabel>Location *</FormLabel>
-                    <Input
-                      {...formik.getFieldProps("location")}
-                      placeholder="Enter specific location"
-                      className={
-                        formik.touched.location && formik.errors.location
-                          ? "border-red-500"
-                          : ""
-                      }
-                    />
-                    {formik.touched.location && formik.errors.location && (
-                      <FormMessage>{formik.errors.location}</FormMessage>
-                    )}
-                  </FormItem>
-                </div>
-
-                {/* Title and Date Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormItem>
-                    <FormLabel>Title *</FormLabel>
-                    <Input
-                      {...formik.getFieldProps("title")}
-                      placeholder="Enter title"
-                      className={
-                        formik.touched.title && formik.errors.title
-                          ? "border-red-500"
-                          : ""
-                      }
-                    />
-                    {formik.touched.title && formik.errors.title && (
-                      <FormMessage>{formik.errors.title}</FormMessage>
-                    )}
-                  </FormItem>
-
-                  <FormItem>
-                    <FormLabel>Date and Time *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant={"outline"}
-                          className={`w-full justify-start text-left font-normal ${
-                            formik.touched.date && formik.errors.date
-                              ? "border-red-500"
-                              : ""
-                          }`}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {formik.values.date ? (
-                            format(new Date(formik.values.date), "PPP HH:mm")
-                          ) : (
-                            <span>Pick a date and time</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={
-                            formik.values.date
-                              ? new Date(formik.values.date)
-                              : undefined
                           }
-                          onSelect={(date) => {
-                            if (date) {
-                              const currentDate = formik.values.date
-                                ? new Date(formik.values.date)
-                                : new Date();
-                              date.setHours(currentDate.getHours());
-                              date.setMinutes(currentDate.getMinutes());
-                              formik.setFieldValue("date", date.toISOString());
-                            }
-                          }}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                        />
-                        <div className="p-3 border-t">
-                          <Input
-                            type="time"
-                            value={
-                              formik.values.date
-                                ? format(new Date(formik.values.date), "HH:mm")
+                        >
+                          <SelectTrigger
+                            className={
+                              touched.city && errors.city
+                                ? "border-destructive"
                                 : ""
                             }
-                            onChange={(e) => {
-                              const [hours, minutes] =
-                                e.target.value.split(":");
-                              const newDate = formik.values.date
-                                ? new Date(formik.values.date)
-                                : new Date();
-                              newDate.setHours(parseInt(hours));
-                              newDate.setMinutes(parseInt(minutes));
-                              formik.setFieldValue(
-                                "date",
-                                newDate.toISOString()
-                              );
-                            }}
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    {formik.touched.date && formik.errors.date && (
-                      <FormMessage>{formik.errors.date}</FormMessage>
-                    )}
-                  </FormItem>
-                </div>
-
-                {/* Hosting, Language, and Guest Limit Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormItem>
-                    <FormLabel>Hosting Type *</FormLabel>
-                    <Select
-                      value={formik.values.hosting}
-                      onValueChange={(value) =>
-                        formik.setFieldValue("hosting", value)
-                      }
-                    >
-                      <SelectTrigger
-                        className={
-                          formik.touched.hosting && formik.errors.hosting
-                            ? "border-red-500"
-                            : ""
-                        }
-                      >
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {hostingTypes.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {formik.touched.hosting && formik.errors.hosting && (
-                      <FormMessage>{formik.errors.hosting}</FormMessage>
-                    )}
-                  </FormItem>
-
-                  <FormItem>
-                    <FormLabel>Language *</FormLabel>
-                    <Select
-                      value={formik.values.languages[0]}
-                      onValueChange={(value) =>
-                        formik.setFieldValue("languages", [value])
-                      }
-                    >
-                      <SelectTrigger
-                        className={
-                          formik.touched.languages && formik.errors.languages
-                            ? "border-red-500"
-                            : ""
-                        }
-                      >
-                        <SelectValue placeholder="Select language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {languages.map((lang) => (
-                          <SelectItem key={lang} value={lang}>
-                            {lang}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {formik.touched.languages && formik.errors.languages && (
-                      <FormMessage>{formik.errors.languages}</FormMessage>
-                    )}
-                  </FormItem>
-
-                  <FormItem>
-                    <FormLabel>Guest Limit *</FormLabel>
-                    <Input
-                      type="number"
-                      {...formik.getFieldProps("limit")}
-                      placeholder="Max guests"
-                      min={2}
-                      max={100}
-                      className={
-                        formik.touched.limit && formik.errors.limit
-                          ? "border-red-500"
-                          : ""
-                      }
-                    />
-                    {formik.touched.limit && formik.errors.limit && (
-                      <FormMessage>{formik.errors.limit}</FormMessage>
-                    )}
-                  </FormItem>
-                </div>
-
-                {/* Kosher Switch */}
-                <FormItem>
-                  <FormLabel>Kosher</FormLabel>
-                  <Select
-                    value={formik.values.kosher ? "yes" : "no"}
-                    onValueChange={(value) =>
-                      formik.setFieldValue("kosher", value === "yes")
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Is it kosher?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-
-                {/* Description */}
-                <FormItem>
-                  <FormLabel>Description *</FormLabel>
-                  <Textarea
-                    {...formik.getFieldProps("description")}
-                    placeholder="Tell us about your EatUp event..."
-                    className={`min-h-[80px] ${
-                      formik.touched.description && formik.errors.description
-                        ? "border-red-500"
-                        : ""
-                    }`}
-                  />
-                  {formik.touched.description && formik.errors.description && (
-                    <FormMessage>{formik.errors.description}</FormMessage>
-                  )}
-                </FormItem>
-
-                {/* Image Upload */}
-                <FormItem>
-                  <FormLabel>Event Image</FormLabel>
-                  <div className="space-y-4">
-                    <input
-                      type="file"
-                      id="file-upload"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setPreviewUrl(URL.createObjectURL(file));
-                          const imageUrl = await uploadImage(file);
-                          formik.setFieldValue("media", [imageUrl]);
-                        }
-                      }}
-                    />
-
-                    <div className="flex items-center gap-4">
-                      {previewUrl && (
-                        <div className="relative w-40 h-40">
-                          <img
-                            src={previewUrl}
-                            alt="Preview"
-                            className="w-full h-full object-cover rounded-lg shadow-md border border-border"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPreviewUrl(null);
-                              formik.setFieldValue("media", []);
-                            }}
-                            className="absolute top-[-10px] right-[-10px] bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-destructive/90"
                           >
-                            ×
-                          </button>
+                            <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Select city (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None of these</SelectItem>
+                            {cities.map((city) => (
+                              <SelectItem key={city._id} value={city._id}>
+                                {city.name} (
+                                {city.zone.charAt(0).toUpperCase() +
+                                  city.zone.slice(1)}
+                                )
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <ErrorMessage
+                          name="city"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+
+                      <FormItem>
+                        <FormLabel>Location *</FormLabel>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Field
+                            as={Input}
+                            name="location"
+                            placeholder="Enter specific location"
+                            className={`pl-10 ${
+                              touched.location && errors.location
+                                ? "border-destructive"
+                                : ""
+                            }`}
+                          />
                         </div>
-                      )}
+                        <ErrorMessage
+                          name="location"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
                     </div>
 
-                    {formik.touched.media && formik.errors.media && (
-                      <FormMessage>{formik.errors.media}</FormMessage>
-                    )}
-                    {formik.values.media.length > 0 && !formik.errors.media && (
-                      <p className="text-sm text-muted-foreground">
-                        Image uploaded successfully
-                      </p>
-                    )}
-                  </div>
-                </FormItem>
+                    {/* Title and Date Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormItem>
+                        <FormLabel>Title *</FormLabel>
+                        <div className="relative">
+                          <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Field
+                            as={Input}
+                            name="title"
+                            placeholder="Enter title"
+                            className={`pl-10 ${
+                              touched.title && errors.title
+                                ? "border-destructive"
+                                : ""
+                            }`}
+                          />
+                        </div>
+                        <ErrorMessage
+                          name="title"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
 
-                {formik.status && (
-                  <Alert variant="destructive">
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{formik.status}</AlertDescription>
-                  </Alert>
+                      <FormItem>
+                        <FormLabel>Date and Time *</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant={"outline"}
+                              className={`w-full justify-start text-left font-normal ${
+                                touched.date && errors.date
+                                  ? "border-destructive"
+                                  : ""
+                              }`}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {values.date ? (
+                                format(new Date(values.date), "PPP HH:mm")
+                              ) : (
+                                <span>Pick a date and time</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={
+                                values.date ? new Date(values.date) : undefined
+                              }
+                              onSelect={(date) => {
+                                if (date) {
+                                  const currentDate = values.date
+                                    ? new Date(values.date)
+                                    : new Date();
+                                  date.setHours(currentDate.getHours());
+                                  date.setMinutes(currentDate.getMinutes());
+                                  setFieldValue("date", date.toISOString());
+                                }
+                              }}
+                              disabled={(date) => date < new Date()}
+                              initialFocus
+                            />
+                            <div className="p-3 border-t">
+                              <Input
+                                type="time"
+                                value={
+                                  values.date
+                                    ? format(new Date(values.date), "HH:mm")
+                                    : ""
+                                }
+                                onChange={(e) => {
+                                  const [hours, minutes] =
+                                    e.target.value.split(":");
+                                  const newDate = values.date
+                                    ? new Date(values.date)
+                                    : new Date();
+                                  newDate.setHours(parseInt(hours));
+                                  newDate.setMinutes(parseInt(minutes));
+                                  setFieldValue("date", newDate.toISOString());
+                                }}
+                              />
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <ErrorMessage
+                          name="date"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+                    </div>
+
+                    {/* Hosting, Language, and Guest Limit Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormItem>
+                        <FormLabel>Hosting Type *</FormLabel>
+                        <Select
+                          value={values.hosting}
+                          onValueChange={(value) =>
+                            setFieldValue("hosting", value)
+                          }
+                        >
+                          <SelectTrigger
+                            className={
+                              touched.hosting && errors.hosting
+                                ? "border-destructive"
+                                : ""
+                            }
+                          >
+                            <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {hostingTypes.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <ErrorMessage
+                          name="hosting"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+
+                      <FormItem>
+                        <FormLabel>Language *</FormLabel>
+                        <Select
+                          value={values.languages[0]}
+                          onValueChange={(value) =>
+                            setFieldValue("languages", [value])
+                          }
+                        >
+                          <SelectTrigger
+                            className={
+                              touched.languages && errors.languages
+                                ? "border-destructive"
+                                : ""
+                            }
+                          >
+                            <Languages className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Select language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {languages.map((lang) => (
+                              <SelectItem key={lang} value={lang}>
+                                {lang}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <ErrorMessage
+                          name="languages"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+
+                      <FormItem>
+                        <FormLabel>Guest Limit *</FormLabel>
+                        <div className="relative">
+                          <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Field
+                            as={Input}
+                            type="number"
+                            name="limit"
+                            placeholder="Max guests"
+                            min={2}
+                            max={100}
+                            className={`pl-10 ${
+                              touched.limit && errors.limit
+                                ? "border-destructive"
+                                : ""
+                            }`}
+                          />
+                        </div>
+                        <ErrorMessage
+                          name="limit"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+                    </div>
+
+                    {/* Kosher Switch */}
+                    <FormItem>
+                      <FormLabel>Kosher</FormLabel>
+                      <Select
+                        value={values.kosher ? "yes" : "no"}
+                        onValueChange={(value) =>
+                          setFieldValue("kosher", value === "yes")
+                        }
+                      >
+                        <SelectTrigger>
+                          <UtensilsCrossed className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <SelectValue placeholder="Is it kosher?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+
+                    {/* Description */}
+                    <FormItem>
+                      <FormLabel>Description *</FormLabel>
+                      <div className="relative">
+                        <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Field
+                          as={Textarea}
+                          name="description"
+                          placeholder="Tell us about your EatUp event..."
+                          className={`pl-10 min-h-[80px] ${
+                            touched.description && errors.description
+                              ? "border-destructive"
+                              : ""
+                          }`}
+                        />
+                      </div>
+                      <ErrorMessage
+                        name="description"
+                        component="p"
+                        className="text-sm text-destructive mt-1"
+                      />
+                    </FormItem>
+
+                    {/* Image Upload */}
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                        Event Image
+                      </FormLabel>
+                      <div className="space-y-4">
+                        <input
+                          type="file"
+                          id="file-upload"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setPreviewUrl(URL.createObjectURL(file));
+                              const imageUrl = await uploadImage(file);
+                              setFieldValue("media", [imageUrl]);
+                            }
+                          }}
+                        />
+
+                        <div className="flex items-center gap-4">
+                          {previewUrl && (
+                            <div className="relative w-40 h-40">
+                              <img
+                                src={previewUrl}
+                                alt="Preview"
+                                className="w-full h-full object-cover rounded-lg shadow-md border border-border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPreviewUrl(null);
+                                  setFieldValue("media", []);
+                                }}
+                                className="absolute top-[-10px] right-[-10px] bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-destructive/90"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <ErrorMessage
+                          name="media"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                        {values.media.length > 0 && !errors.media && (
+                          <p className="text-sm text-muted-foreground">
+                            Image uploaded successfully
+                          </p>
+                        )}
+                      </div>
+                    </FormItem>
+
+                    <div className="flex items-center gap-4">
+                      <label
+                        htmlFor={previewUrl ? undefined : "file-upload"}
+                        className={`${
+                          previewUrl
+                            ? "opacity-50 cursor-not-allowed bg-muted"
+                            : "cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground"
+                        } h-10 w-10 rounded-lg shadow-md inline-flex items-center justify-center transition-colors`}
+                      >
+                        <img
+                          src={upload}
+                          alt="upload"
+                          className={`w-5 h-5 ${
+                            previewUrl ? "opacity-50" : ""
+                          }`}
+                        />
+                      </label>
+                      <Button
+                        type="submit"
+                        className="flex-1 bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? "Creating..." : "Create EatUp"}
+                      </Button>
+                    </div>
+                  </Form>
                 )}
-
-                <div className="flex items-center gap-4">
-                  <label
-                    htmlFor={previewUrl ? undefined : "file-upload"}
-                    className={`${
-                      previewUrl
-                        ? "opacity-50 cursor-not-allowed bg-muted"
-                        : "cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground"
-                    } h-10 w-10 rounded-lg shadow-md inline-flex items-center justify-center transition-colors`}
-                  >
-                    <img
-                      src={upload}
-                      alt="upload"
-                      className={`w-5 h-5 ${previewUrl ? "opacity-50" : ""}`}
-                    />
-                  </label>
-                  <Button
-                    type="submit"
-                    className="flex-1 bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity"
-                    disabled={formik.isSubmitting}
-                  >
-                    {formik.isSubmitting ? "Creating..." : "Create EatUp"}
-                  </Button>
-                </div>
-              </form>
+              </Formik>
             </div>
           </Card>
         </div>

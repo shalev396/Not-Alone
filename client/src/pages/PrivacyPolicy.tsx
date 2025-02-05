@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 
 interface ContentSection {
   subtitle?: string;
@@ -15,6 +16,56 @@ interface Section {
 
 export const Terms = () => {
   const navigate = useNavigate();
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Helper function to make URLs clickable
+  const makeLinksClickable = (text: string) => {
+    // Special handling for items with "Privacy Policy:" format
+    if (text.includes("Privacy Policy:")) {
+      const [prefix, urlPart] = text.split(": ");
+      // Remove trailing parenthesis if it exists
+      const url = urlPart.replace(/\)$/, "");
+      return (
+        <>
+          {prefix}:{" "}
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            {url}
+          </a>
+          {urlPart.endsWith(")") ? ")" : ""}
+        </>
+      );
+    }
+
+    // Regular URL handling for other cases
+    const urlRegex = /(https?:\/\/[^\s)]+)/g;
+    const parts = text.split(urlRegex);
+
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -72,13 +123,13 @@ export const Terms = () => {
                     )}
                     {content.text && (
                       <p className="text-muted-foreground mb-4">
-                        {content.text}
+                        {makeLinksClickable(content.text)}
                       </p>
                     )}
                     {content.list && (
                       <ul className="list-disc list-inside space-y-2 text-muted-foreground pl-4">
                         {content.list.map((item, j) => (
-                          <li key={j}>{item}</li>
+                          <li key={j}>{makeLinksClickable(item)}</li>
                         ))}
                       </ul>
                     )}
@@ -93,7 +144,14 @@ export const Terms = () => {
                 If you have any questions or concerns about this Privacy Policy
                 or our data practices, please contact us:
               </p>
-              <p className="text-primary mt-2">Email: shalev396@gmail.com</p>
+              <p className="text-primary mt-2">
+                <a
+                  href="mailto:shalev396@gmail.com"
+                  className="hover:underline"
+                >
+                  Email: shalev396@gmail.com
+                </a>
+              </p>
             </div>
 
             <div className="text-center mt-12 text-xl font-semibold text-primary">

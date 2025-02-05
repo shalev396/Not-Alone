@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 
 interface Section {
   title: string;
@@ -10,6 +11,61 @@ interface Section {
 
 export const Tos = () => {
   const navigate = useNavigate();
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Helper function to make URLs clickable
+  const makeLinksClickable = (text: string | string[]): React.ReactNode => {
+    // If text is an array, process each item
+    if (Array.isArray(text)) {
+      return text.map((item, index) => makeLinksClickable(item));
+    }
+
+    // Special handling for items with "Privacy Policy:" format
+    if (text.includes("Privacy Policy:")) {
+      const [prefix, urlPart] = text.split(": ");
+      // Remove trailing parenthesis if it exists
+      const url = urlPart.replace(/\)$/, "");
+      return (
+        <>
+          {prefix}:{" "}
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            {url}
+          </a>
+          {urlPart.endsWith(")") ? ")" : ""}
+        </>
+      );
+    }
+
+    // Regular URL handling for other cases
+    const urlRegex = /(https?:\/\/[^\s)]+)/g;
+    const parts = text.split(urlRegex);
+
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
 
   const sections: Section[] = [
     {
@@ -98,11 +154,6 @@ export const Tos = () => {
       content:
         "We reserve the right to modify these terms at any time. Changes will be posted with an updated date, and where feasible, we will notify you via email or other means. Continued use after changes constitutes acceptance of the modifications.",
     },
-    {
-      title: "Contact Us",
-      content:
-        "If you have any questions, concerns, or complaints regarding these Terms and Conditions, please contact us at shalev396@gmail.com",
-    },
   ];
 
   return (
@@ -145,16 +196,32 @@ export const Tos = () => {
                 {section.isList ? (
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground pl-4">
                     {(section.content as string[]).map((item, i) => (
-                      <li key={i}>{item}</li>
+                      <li key={i}>{makeLinksClickable(item)}</li>
                     ))}
                   </ul>
                 ) : (
                   <p className="text-muted-foreground">
-                    {section.content as string}
+                    {makeLinksClickable(section.content as string)}
                   </p>
                 )}
               </div>
             ))}
+
+            <div className="bg-card rounded-lg p-6 mt-12">
+              <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
+              <p className="text-muted-foreground">
+                If you have any questions or concerns about these Terms and
+                Conditions or our services, please contact us:
+              </p>
+              <p className="text-primary mt-2">
+                <a
+                  href="mailto:shalev396@gmail.com"
+                  className="hover:underline"
+                >
+                  Email: shalev396@gmail.com
+                </a>
+              </p>
+            </div>
 
             <div className="text-center mt-12 text-xl font-semibold text-primary">
               THANK YOU FOR USING NOT ALONE!
