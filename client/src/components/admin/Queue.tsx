@@ -1,11 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "@/api/api";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
+
 import {
   Table,
   TableBody,
@@ -116,18 +111,18 @@ const QueueSkeleton = () => (
   </Table>
 );
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "approved":
-      return "bg-green-500";
-    case "denied":
-      return "bg-red-500";
-    case "pending":
-      return "bg-yellow-500";
-    default:
-      return "bg-gray-500";
-  }
-};
+// const getStatusColor = (status: string) => {
+//   switch (status) {
+//     case "approved":
+//       return "bg-green-500";
+//     case "denied":
+//       return "bg-red-500";
+//     case "pending":
+//       return "bg-yellow-500";
+//     default:
+//       return "bg-gray-500";
+//   }
+// };
 
 export default function Queue() {
   const queryClient = useQueryClient();
