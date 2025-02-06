@@ -27,10 +27,12 @@ export const routeListSoldier: RouteProps[] = [
   {
     href: "/requestForm",
     label: "Request Form #",
+    hideInNavbar: true,
   },
   {
     href: "/my-requests",
     label: "My Requests",
+    hideInNavbar: true,
   },
   {
     href: "/my-donations",
@@ -43,6 +45,7 @@ export const routeListSoldier: RouteProps[] = [
   {
     href: "/create-post",
     label: "Create Post",
+    hideInNavbar: true,
   },
   {
     href: "/home/eatup",

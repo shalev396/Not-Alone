@@ -16,6 +16,7 @@ import { PostSkeleton } from "@/components/social/PostSkeleton";
 import { useNavigate } from "react-router-dom";
 import Skeleton from "react-loading-skeleton";
 import { FilteredPostFeed } from "@/components/shared/feeds/FilteredPostFeed";
+import JoinCityRequest from "./JoinCityRequest";
 
 
 
@@ -67,17 +68,21 @@ export interface Post {
 }
 
 const Profile: React.FC = () => {
+
+  
   
   const dispatch = useDispatch();
   const [loadingProfile, setLoadingProfile] = useState(true);
-
-    const [nickname, setNickname] = useState("");
-    const [profileImage, setProfileImage] = useState("");
-    const [isImageLoading, setIsImageLoading] = useState(true);
-    const [bio, setBio] = useState("");
-    const [receiveNotifications, setReceiveNotifications] = useState(false);
-    const navigate = useNavigate();
-
+  
+  const [nickname, setNickname] = useState("");
+  const [profileImage, setProfileImage] = useState("");
+  const [isImageLoading, setIsImageLoading] = useState(true);
+  const [bio, setBio] = useState("");
+  const [receiveNotifications, setReceiveNotifications] = useState(false);
+  const navigate = useNavigate();
+  const DEFAULT_PROFILE_IMAGE =
+  "boy_1.svg";
+  
 
     const getStatusColor = (status: Request["status"]) => {
       switch (status) {
@@ -149,13 +154,11 @@ const Profile: React.FC = () => {
     "girl_5.svg",
     "girl_6.svg",
   ];
-  const DEFAULT_PROFILE_IMAGE =
-  "boy_1.svg";
   const getRandomNickname = () => {
     return NICKNAME_OPTIONS[Math.floor(Math.random() * NICKNAME_OPTIONS.length)];
   };
 
-  const [showAlternateTab, setShowAlternateTab] = useState(false);
+  const [activeTab, setActiveTab] = useState<"posts" | "requests" | "joinCity">("posts");
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [error, setError] = useState("");
@@ -259,240 +262,214 @@ const Profile: React.FC = () => {
     <div className="flex bg-background text-foreground min-h-screen">
       <Navbar modes="home" isVertical={true} isAccordion={true} />
       <div className="flex-1 flex justify-center">
-      {loadingProfile ? (
-        <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-500"></div>
-          <p className="ml-4">Loading profile...</p>
-        </div>
-      ) : (
-        <div className="w-full max-w-3xl px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold mb-6 text-center">
-            <span className="bg-gradient-to-r text-green-500 bg-clip-text">
-              Profile
-            </span>{" "}
-            Page
-          </h1>
-          <div className="bg-card p-6 rounded-lg shadow-md">
-            <div className="flex items-start space-x-4">
-              <div className="flex-1">
-              <div className="flex-1">
-                <label className="block text-sm font-medium mb-1">Nickname</label>
-                <Input
-                  value={nickname}
-                  onChange={(e) => handleNicknameChange(e.target.value)}
-                  placeholder="Enter a unique nickname"
-                />
-                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-                {/* Button to suggest nickname */}
-                <div className="mt-2 flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setNickname(getRandomNickname())}
-                  className="text-blue-500 ml-4 text-xs font-medium hover:scale-105 transition-transform duration-100"
-                >
-                    Suggest Nickname
-                  </button>
+        {loadingProfile ? (
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-500"></div>
+            <p className="ml-4">Loading profile...</p>
+          </div>
+        ) : (
+          <div className="w-full max-w-3xl px-4 sm:px-6 lg:px-8 py-6">
+            <h1 className="text-3xl font-bold mb-6 text-center">
+              <span className="bg-gradient-to-r text-green-500 bg-clip-text">
+                Profile
+              </span>{" "}
+              Page
+            </h1>
+            <div className="bg-card p-6 rounded-lg shadow-md">
+              <div className="flex items-start space-x-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-1">Nickname</label>
+                  <Input
+                    value={nickname}
+                    onChange={(e) => handleNicknameChange(e.target.value)}
+                    placeholder="Enter a unique nickname"
+                  />
+                  {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+                  {/* Button to suggest nickname */}
+                  <div className="mt-2 flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setNickname(getRandomNickname())}
+                      className="text-blue-500 ml-4 text-xs font-medium hover:scale-105 transition-transform duration-100"
+                    >
+                      Suggest Nickname
+                    </button>
+                  </div>
+                  <label className="block text-sm font-medium mt-6 mb-1">Email</label>
+                  <Input value={email} disabled />
+                </div>
+  
+                <div className="flex-shrink-0">
+                  {isImageLoading && <Skeleton circle={true} height={160} width={160} />}
+                  <img
+                    src={profileImage || DEFAULT_PROFILE_IMAGE}
+                    alt="Profile"
+                    onClick={() => setIsDialogOpen(true)}
+                    onLoad={() => setIsImageLoading(false)}
+                    onError={() => {
+                      setIsImageLoading(false);
+                      setProfileImage(DEFAULT_PROFILE_IMAGE);
+                    }}
+                    className="rounded-full cursor-pointer w-40 h-40 border border-gray-300 hover:border-green-500"
+                  />
+                  {isDialogOpen && (
+                    <ProfileImageDialog
+                      profileImages={profileImages}
+                      onSelectImage={(img) => setProfileImage(img)}
+                      onClose={() => setIsDialogOpen(false)}
+                    />
+                  )}
                 </div>
               </div>
-                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-                <label className="block text-sm font-medium mt-6 mb-1">Email</label>
-                <Input value={email} disabled />
-              </div>
-              
-              <div className="flex-shrink-0">
-              {isImageLoading && (
-                  <Skeleton circle={true} height={160} width={160} />
-                )}
-                <img
-                  src={profileImage || DEFAULT_PROFILE_IMAGE}
-                  alt="Profile"
-                  onClick={() => setIsDialogOpen(true)}
-                  onLoad={() => setIsImageLoading(false)}
-                  onError={() => {
-                    setIsImageLoading(false);
-                    setProfileImage(DEFAULT_PROFILE_IMAGE); 
-                  }}
-                  className="rounded-full cursor-pointer w-40 h-40 border border-gray-300 hover:border-green-500"
-                />
-                {isDialogOpen && (
-                  <ProfileImageDialog
-                    profileImages={profileImages}
-                    onSelectImage={(img) => setProfileImage(img)}
-                    onClose={() => setIsDialogOpen(false)}
-                  />
-                )}
-              </div>
-            </div>
   
-            <label className="block text-sm font-medium mt-4 mb-1">Phone</label>
-            <Input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Enter phone number"
-            />
-            <label className="block text-sm font-medium mt-4 mb-1">Biography</label>
-            <Textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Write a short bio"
-              rows={4}
-            />
-            <div className="mt-4">
-              <Checkbox
-                checked={receiveNotifications}
-                onCheckedChange={(checked: boolean) =>
-                  setReceiveNotifications(checked)
-                }
+              <label className="block text-sm font-medium mt-4 mb-1">Phone</label>
+              <Input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Enter phone number"
               />
+              <label className="block text-sm font-medium mt-4 mb-1">Biography</label>
+              <Textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Write a short bio"
+                rows={4}
+              />
+              <div className="mt-4">
+                <Checkbox
+                  checked={receiveNotifications}
+                  onCheckedChange={(checked: boolean) => setReceiveNotifications(checked)}
+                />
+              </div>
+  
+              <button
+                onClick={handleSubmit}
+                className="mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded flex items-center justify-center"
+                disabled={loading} 
+              >
+                {loading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
+                ) : (
+                  "Save Changes"
+                )}
+              </button>
             </div>
   
-                        <button
-              onClick={handleSubmit}
-              className={`mt-4 w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-white py-2 rounded flex items-center justify-center`}
-              disabled={loading} // Evita múltiplos cliques enquanto está carregando
-            >
-              {loading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
-              ) : (
-                "Save Changes"
-              )}
-            </button>
-
-          </div>
-  
-          <div className="flex space-x-5 mt-14 mb-12">
+ {/* Botões de navegação */}
+ <div className="flex space-x-5 mt-14 mb-12">
             <button
-              onClick={() => setShowAlternateTab(false)}
+              onClick={() => setActiveTab("posts")}
               className={`font-bold text-green-500 hover:cursor-pointer ${
-                !showAlternateTab ? "underline" : ""
+                activeTab === "posts" ? "underline" : ""
               }`}
             >
               Posts
             </button>
             <button
-              onClick={() => setShowAlternateTab(true)}
+              onClick={() => setActiveTab("requests")}
               className={`font-bold text-green-500 hover:cursor-pointer ${
-                showAlternateTab ? "underline" : ""
+                activeTab === "requests" ? "underline" : ""
               }`}
             >
               {isSoldier ? "Donation Requests" : "Donations"}
             </button>
+            <button
+              onClick={() => setActiveTab("joinCity")}
+              className={`font-bold text-green-500 hover:cursor-pointer ${
+                activeTab === "joinCity" ? "underline" : ""
+              }`}
+            >
+              Join City
+            </button>
           </div>
-  
 
-
-
-          {showAlternateTab ? (
-  isSoldier ? (
-    <div>
-      {/* Botão "New Request" */}
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-bold">
-          {nickname} <span className="text-sky-500">Donation Requests</span>
-        </h2>
-        <button
-          onClick={() => navigate("/requestForm")}
-          className="bg-green-500 text-white px-4 py-2 rounded-md hover:opacity-90"
-        >
-          New Request
-        </button>
-      </div>
-
-      {/* Conteúdo dos Donation Requests */}
-      {isLoadingSoldierRequests ? (
-        <PostSkeleton />
-      ) : soldierRequests && soldierRequests.length > 0 ? (
-        <div className="grid gap-6">
-          {soldierRequests.map((request: Request) => (
-            <Card key={request._id} className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">{request.item}</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Created on {formatDate(request.createdAt)}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Badge variant="outline">{request.service}</Badge>
-                  <Badge className={getStatusColor(request.status)}>
-                    {request.status.charAt(0).toUpperCase() +
-                      request.status.slice(1)}
-                  </Badge>
-                
-                  {request.paid && (
-                    <Badge className="bg-blue-500">Paid</Badge>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2 mb-4">
-                <p className="text-sm">
-                  <span className="font-semibold">Description:</span>{" "}
-                  {request.itemDescription}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Quantity:</span>{" "}
-                  {request.quantity}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Location:</span>{" "}
-                  {request.cityDetails.name} ({request.zone})
-                </p>
-                {request.paid && request.paidBy && (
-                  <p className="text-sm">
-                    <span className="font-semibold">Paid by:</span>{" "}
-                    {request.paidBy.firstName} {request.paidBy.lastName}
-                  </p>
-                )}
-              </div>
-
-              {request.status === "in process" && (
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => handleDeleteRequest(request._id)}
-                    className="bg-red-500 text-white px-3 py-1 rounded-md hover:opacity-90"
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <p>No donation requests found.</p>
-      )}
-    </div>
-  ) : (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">{nickname} Donations</h2>
-      <p>Donations feature will be available soon.</p>
-    </div>
-  )
-        
-          ) : (
+          {/* Renderização condicional baseada no estado activeTab */}
+          {activeTab === "posts" && (
             <div>
-
-
-            <h2 className="text-2xl font-bold mb-16">{nickname} <span className="text-yellow-500">Posts</span></h2>            
-            
-            
-            
-             {/* Feed de Posts Filtrado */}
+              <h2 className="text-2xl font-bold mb-16">
+                {nickname} <span className="text-yellow-500">Posts</span>
+              </h2>
               <div className="mt-10">
-              <h2 className="text-2xl font-bold mb-4">Posts</h2>
-              <FilteredPostFeed userId={user._id} />
+                <FilteredPostFeed userId={user._id} />
+              </div>
             </div>
+          )}
 
+          {activeTab === "requests" && (
+            <div>
+              <h2 className="text-2xl font-bold mb-16">
+                Donation Requests
+              </h2>
+              {isLoadingSoldierRequests ? (
+                <PostSkeleton />
+              ) : soldierRequests && soldierRequests.length > 0 ? (
+                <div className="grid gap-6">
+                  {soldierRequests.map((request: Request) => (
+                    <Card key={request._id} className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-xl font-semibold mb-2">{request.item}</h3>
+                          <p className="text-muted-foreground text-sm">
+                            Created on {formatDate(request.createdAt)}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Badge variant="outline">{request.service}</Badge>
+                          <Badge className={getStatusColor(request.status)}>
+                            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                          </Badge>
+                          {request.paid && <Badge className="bg-blue-500">Paid</Badge>}
+                        </div>
+                      </div>
 
+                      <div className="space-y-2 mb-4">
+                        <p className="text-sm">
+                          <span className="font-semibold">Description:</span> {request.itemDescription}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Quantity:</span> {request.quantity}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Location:</span> {request.cityDetails.name} ({request.zone})
+                        </p>
+                        {request.paid && request.paidBy && (
+                          <p className="text-sm">
+                            <span className="font-semibold">Paid by:</span> {request.paidBy.firstName} {request.paidBy.lastName}
+                          </p>
+                        )}
+                      </div>
 
+                      {request.status === "in process" && (
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => handleDeleteRequest(request._id)}
+                            className="bg-red-500 text-white px-3 py-1 rounded-md hover:opacity-90"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <p>No donation requests found.</p>
+              )}
+            </div>
+          )}
+
+          {activeTab === "joinCity" && (
+            <div>
+              <h2 className="text-2xl font-bold mb-16">Join City</h2>
+              <JoinCityRequest />
             </div>
           )}
         </div>
       )}
-      </div>
     </div>
-  )
+  </div>
+);
+  
 };
 export default Profile;

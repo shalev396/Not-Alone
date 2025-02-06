@@ -36,7 +36,7 @@ export const Navbar = ({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Fetch user's city using React Query only for Municipality and Admin users
+  // Fetch user's city using React Query
   const { data: userCity = [] } = useQuery({
     queryKey: ["user-city"],
     queryFn: async () => {
@@ -48,10 +48,10 @@ export const Navbar = ({
         return [];
       }
     },
-    enabled:
-      !!user.email && (user.type === "Municipality" || user.type === "Admin"),
+    enabled: !!user.email && (user.type === "Municipality" || user.type === "Admin"),
   });
 
+  // Fetch channels data
   const { data: channelsData, refetch } = useQuery({
     queryKey: ["channels"],
     queryFn: fetchChannels,
@@ -63,43 +63,40 @@ export const Navbar = ({
     refetchOnWindowFocus: false,
   });
 
-  // Function to filter routes based on city membership
-  const filterRoutesByAccess = (
-    routes: (RouteProps | AdminRouteSection)[]
-  ): (RouteProps | AdminRouteSection)[] => {
-    // If user is not Municipality or Admin, filter out routes that require city access
-    if (user.type !== "Municipality" && user.type !== "Admin") {
-      return routes
-        .map((route) => {
-          if ("routes" in route && route.routes) {
-            const filteredRoutes = route.routes.filter(
-              (r) => !r.requiresCityOrAdmin
-            );
-            return filteredRoutes.length > 0
-              ? { ...route, routes: filteredRoutes }
-              : null;
-          }
-          return !route.requiresCityOrAdmin ? route : null;
-        })
-        .filter(
-          (route): route is RouteProps | AdminRouteSection => route !== null
-        );
+  // Update Redux store with channels data
+  useEffect(() => {
+    if (channelsData) {
+      dispatch(setChannels(channelsData));
+      const links = channelsData.map((channel: any) => ({
+        href: `/channel/${channel._id}`,
+        label: channel.name,
+      }));
+      setChannelsLinks(links);
+    } else {
+      setChannelsLinks([]);
     }
+  }, [channelsData, dispatch]);
 
-    // For Municipality and Admin users, check city membership
+  // Function to filter routes based on city membership
+  const filterRoutesByAccess = (routes: (RouteProps | AdminRouteSection)[]): RouteProps[] => {
     return routes
       .map((route) => {
+        // Exclude routes hidden in the navbar
+        if ("hideInNavbar" in route && route.hideInNavbar) return null;
+
+        // Filter nested routes for Admin sections
         if ("routes" in route && route.routes) {
           const filteredRoutes = route.routes.filter(
             (r) =>
-              !r.requiresCityOrAdmin ||
-              user.type === "Admin" ||
-              (Array.isArray(userCity) && userCity.length > 0)
+              !r.hideInNavbar &&
+              (!r.requiresCityOrAdmin ||
+                user.type === "Admin" ||
+                (Array.isArray(userCity) && userCity.length > 0))
           );
-          return filteredRoutes.length > 0
-            ? { ...route, routes: filteredRoutes }
-            : null;
+          return filteredRoutes.length > 0 ? filteredRoutes : null;
         }
+
+        // Exclude routes requiring city/admin access if not eligible
         if (
           route.requiresCityOrAdmin &&
           user.type !== "Admin" &&
@@ -107,13 +104,14 @@ export const Navbar = ({
         ) {
           return null;
         }
-        return route;
+
+        return route as RouteProps;
       })
-      .filter(
-        (route): route is RouteProps | AdminRouteSection => route !== null
-      );
+      .flat()
+      .filter((route): route is RouteProps => route !== null);
   };
 
+  // Handle accordion toggle
   const handleAccordionToggle = async (newState: boolean) => {
     if (newState && modes !== "landing") {
       console.log("Navbar menu opened");
@@ -132,28 +130,8 @@ export const Navbar = ({
     setAccordionOpen(newState);
   };
 
-  useEffect(() => {
-    if (channelsData?.data) {
-      dispatch(setChannels(channelsData.data));
-      const links = channelsData.data.map((channel: any) => ({
-        href: `/channel/${channel._id}`,
-        label: channel.name,
-      }));
-      setChannelsLinks(links);
-    } else if (channelsData) {
-      dispatch(setChannels(channelsData));
-      const links = channelsData.map((channel: any) => ({
-        href: `/channel/${channel._id}`,
-        label: channel.name,
-      }));
-      setChannelsLinks(links);
-    } else {
-      setChannelsLinks([]);
-    }
-    console.log("Channels data updated:", channelsData);
-  }, [channelsData, dispatch]);
-
-  const getRouteList = () => {
+  // Get filtered route list based on user type
+  const getRouteList = (): RouteProps[] => {
     const userType = user.type?.toLowerCase();
     let routes: (RouteProps | AdminRouteSection)[];
     switch (userType) {
@@ -161,9 +139,7 @@ export const Navbar = ({
         routes = routeListAdmin;
         break;
       case "soldier":
-        routes = 
-          routeListSoldier
-        ;
+        routes = routeListSoldier;
         break;
       case "municipality":
         routes = routeListMunicipality;
@@ -194,9 +170,10 @@ export const Navbar = ({
   }
 
   const routeList = getRouteList();
+
   const navProps = {
     routeList,
-    channelsLinks: channelsLinks || [],
+    channelsLinks,
     navigate,
     accordionOpen,
     setAccordionOpen: handleAccordionToggle,
@@ -208,5 +185,5 @@ export const Navbar = ({
     return <AdminNav {...navProps} />;
   }
 
-  return <HomeNav {...navProps} routeList={routeList as RouteProps[]} />;
+  return <HomeNav {...navProps} />;
 };
