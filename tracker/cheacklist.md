@@ -32,10 +32,9 @@
 ### Home and Navigation
 
 - [ ] Home Page - Donations (`/home`, `/home/donations`)
-- [X] Home Page - Residences (`/home/residences`) notes : removed (noted in app.tsx)
+- [x] Home Page - Residences (`/home/residences`) notes : removed (noted in app.tsx)
 - [ ] Home Page - EatUp (`/home/eatup`)
 - [ ] Channel Page (`/channel/:channelId`)
-
 
 ### Social and Posts
 
@@ -67,10 +66,22 @@
 
 ### Other Features
 
-- [X] Vouchers Grid Page (`/Vouchers`)
-## progress
- total 37 pages
- finished 14 pages
- removed 2 pages
+- [x] Vouchers Grid Page (`/Vouchers`)
 
- 21 pages to go
+## progress
+
+total 37 pages
+finished 14 pages
+removed 2 pages
+
+21 pages to go
+prompt
+
+now in eatupsdialog i want you to do the same like in login and signup pages
+
+the form @https://formik.org/docs/overview
+of to formik doc and understand how to use it for the best
+i sent a photo of the docs navbar make use you understand every part og formik and implument it accodingly (api refs)
+
+make city edit disable
+and use zod for validation

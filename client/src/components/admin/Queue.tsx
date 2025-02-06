@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,7 @@ interface SignupRequest {
   denialReason?: string;
   createdAt: string;
   updatedAt: string;
+  is2FAEnabled: boolean;
 }
 
 const fetchSignupRequests = async () => {
@@ -127,21 +129,16 @@ const getStatusColor = (status: string) => {
   }
 };
 
-export default function AdminQueue() {
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
+export default function Queue() {
   const queryClient = useQueryClient();
   const [selectedRequest, setSelectedRequest] = useState<SignupRequest | null>(
     null
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"createdAt" | "updatedAt">("createdAt");
+  const [showDenyDialog, setShowDenyDialog] = useState(false);
+  const [denyReason, setDenyReason] = useState("");
+  const [requestToDeny, setRequestToDeny] = useState<string | null>(null);
 
   const {
     data: requests = [],
@@ -179,9 +176,17 @@ export default function AdminQueue() {
   };
 
   const handleDeny = (id: string) => {
-    const reason = window.prompt("Please provide a reason for denial:");
-    if (reason) {
-      denyMutation.mutate({ id, reason });
+    setRequestToDeny(id);
+    setDenyReason("");
+    setShowDenyDialog(true);
+  };
+
+  const submitDenial = () => {
+    if (requestToDeny && denyReason.trim()) {
+      denyMutation.mutate({ id: requestToDeny, reason: denyReason });
+      setShowDenyDialog(false);
+      setRequestToDeny(null);
+      setDenyReason("");
     }
   };
 
@@ -210,127 +215,160 @@ export default function AdminQueue() {
   }
 
   return (
-    <>
-      <Navbar modes={"admin"} />
-      <div className="container mx-auto py-10">
-        <h1 className="text-2xl font-bold mb-6">Pending Users Queue</h1>
-        {error && <div className="text-red-500 mb-4">{error.message}</div>}
+    <div className="space-y-6">
+      {error && <div className="text-red-500 mb-4">{error.message}</div>}
 
-        <div className="flex flex-col gap-4 mb-6">
+      <div className="flex items-center gap-4">
+        <div className="flex-1">
           <Input
-            placeholder="Search by name or email..."
+            placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full"
           />
-          <div className="flex gap-4">
-            <Select
-              value={sortBy}
-              onValueChange={(value: "createdAt" | "updatedAt") =>
-                setSortBy(value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt">Submitted Date</SelectItem>
-                <SelectItem value="updatedAt">Last Updated</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
+        <Select
+          value={sortBy}
+          onValueChange={(value: "createdAt" | "updatedAt") => setSortBy(value)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="createdAt">Submitted Date</SelectItem>
+            <SelectItem value="updatedAt">Last Updated</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        {isMobile ? (
-          <Accordion type="single" collapsible>
+      <div className="hidden md:block rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>2FA</TableHead>
+              <TableHead>Passport</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Submitted</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {filteredAndSortedRequests.map((request: SignupRequest) => (
-              <AccordionItem
-                key={request._id}
-                value={request._id}
-                className="mb-4"
-              >
-                <AccordionTrigger className="flex justify-between px-4 py-2 text-left bg-gray-800 rounded-lg">
-                  <span>
-                    {request.firstName} {request.lastName}
-                  </span>
-                  <Badge className={getStatusColor(request.approvalStatus)}>
+              <TableRow key={request._id}>
+                <TableCell className="font-medium">
+                  {request.firstName} {request.lastName}
+                </TableCell>
+                <TableCell>{request.email}</TableCell>
+                <TableCell className="capitalize">{request.type}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      request.approvalStatus === "pending"
+                        ? "outline"
+                        : "secondary"
+                    }
+                    className="capitalize"
+                  >
                     {request.approvalStatus}
                   </Badge>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="p-4 bg-gray-900 rounded-lg space-y-2">
-                    <p>
-                      <strong>Email:</strong> {request.email}
-                    </p>
-                    <p>
-                      <strong>Type:</strong> {request.type}
-                    </p>
-                    <p>
-                      <strong>Status:</strong>{" "}
-                      <Badge className={getStatusColor(request.approvalStatus)}>
-                        {request.approvalStatus}
-                      </Badge>
-                    </p>
-                    <Button
-                      onClick={() => setSelectedRequest(request)}
-                      className="w-full"
-                    >
-                      View Details
-                    </Button>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Passport</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead>Updated</TableHead>
-                <TableHead>Action</TableHead>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={request.is2FAEnabled ? "default" : "destructive"}
+                    className="capitalize"
+                  >
+                    {request.is2FAEnabled ? "Enabled" : "Disabled"}
+                  </Badge>
+                </TableCell>
+                <TableCell>{request.passport}</TableCell>
+                <TableCell>{request.phone}</TableCell>
+                <TableCell>
+                  {new Date(request.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedRequest(request)}
+                  >
+                    View Details
+                  </Button>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedRequests.map((request: SignupRequest) => (
-                <TableRow key={request._id}>
-                  <TableCell>
-                    {request.firstName} {request.lastName}
-                  </TableCell>
-                  <TableCell>{request.email}</TableCell>
-                  <TableCell>{request.type}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(request.approvalStatus)}>
-                      {request.approvalStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{request.passport}</TableCell>
-                  <TableCell>{request.phone}</TableCell>
-                  <TableCell>
-                    {new Date(request.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(request.updatedAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      onClick={() => setSelectedRequest(request)}
-                    >
-                      View Details
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="md:hidden space-y-4">
+        {filteredAndSortedRequests.map((request: SignupRequest) => (
+          <div
+            key={request._id}
+            className="border rounded-lg p-4 space-y-4 bg-card"
+          >
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <div className="font-medium">
+                  {request.firstName} {request.lastName}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {request.email}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {new Date(request.createdAt).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "2-digit",
+                  })}
+                </div>
+              </div>
+              <Badge
+                variant={
+                  request.approvalStatus === "pending" ? "outline" : "secondary"
+                }
+                className="capitalize"
+              >
+                {request.approvalStatus}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="text-muted-foreground">Type</div>
+                <div className="capitalize">{request.type}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">2FA</div>
+                <Badge
+                  variant={request.is2FAEnabled ? "default" : "destructive"}
+                  className="capitalize"
+                >
+                  {request.is2FAEnabled ? "Enabled" : "Disabled"}
+                </Badge>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Passport</div>
+                <div>{request.passport}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Phone</div>
+                <div>{request.phone}</div>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setSelectedRequest(request)}
+            >
+              View Details
+            </Button>
+          </div>
+        ))}
       </div>
 
       <Dialog
@@ -339,52 +377,83 @@ export default function AdminQueue() {
       >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>User Details</DialogTitle>
+            <DialogTitle className="text-xl font-semibold">
+              User Details
+            </DialogTitle>
           </DialogHeader>
           {selectedRequest && (
             <div className="space-y-4">
-              <p>
-                <strong>Name:</strong> {selectedRequest.firstName}{" "}
-                {selectedRequest.lastName}
-              </p>
-              <p>
-                <strong>Email:</strong> {selectedRequest.email}
-              </p>
-              <p>
-                <strong>Type:</strong> {selectedRequest.type}
-              </p>
-              <p>
-                <strong>Passport:</strong> {selectedRequest.passport}
-              </p>
-              <p>
-                <strong>Phone:</strong> {selectedRequest.phone}
-              </p>
-              <p>
-                <strong>Status:</strong>{" "}
-                <Badge
-                  className={getStatusColor(selectedRequest.approvalStatus)}
-                >
-                  {selectedRequest.approvalStatus}
-                </Badge>
-              </p>
+              <div className="grid gap-1">
+                <div className="text-sm text-muted-foreground">Name</div>
+                <div>
+                  {selectedRequest.firstName} {selectedRequest.lastName}
+                </div>
+              </div>
+              <div className="grid gap-1">
+                <div className="text-sm text-muted-foreground">Email</div>
+                <div>{selectedRequest.email}</div>
+              </div>
+              <div className="grid gap-1">
+                <div className="text-sm text-muted-foreground">Type</div>
+                <div className="capitalize">{selectedRequest.type}</div>
+              </div>
+              <div className="grid gap-1">
+                <div className="text-sm text-muted-foreground">Status</div>
+                <div>
+                  <Badge
+                    variant={
+                      selectedRequest.approvalStatus === "pending"
+                        ? "outline"
+                        : "secondary"
+                    }
+                    className="capitalize"
+                  >
+                    {selectedRequest.approvalStatus}
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid gap-1">
+                <div className="text-sm text-muted-foreground">2FA Status</div>
+                <div>
+                  <Badge
+                    variant={
+                      selectedRequest.is2FAEnabled ? "default" : "destructive"
+                    }
+                    className="capitalize"
+                  >
+                    {selectedRequest.is2FAEnabled ? "Enabled" : "Disabled"}
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid gap-1">
+                <div className="text-sm text-muted-foreground">Passport</div>
+                <div>{selectedRequest.passport}</div>
+              </div>
+              <div className="grid gap-1">
+                <div className="text-sm text-muted-foreground">Phone</div>
+                <div>{selectedRequest.phone}</div>
+              </div>
               {selectedRequest.denialReason && (
-                <p>
-                  <strong>Denial Reason:</strong> {selectedRequest.denialReason}
-                </p>
+                <div className="grid gap-1">
+                  <div className="text-sm text-muted-foreground">
+                    Denial Reason
+                  </div>
+                  <div>{selectedRequest.denialReason}</div>
+                </div>
               )}
-              <p>
-                <strong>Submitted On:</strong>{" "}
-                {new Date(selectedRequest.createdAt).toLocaleDateString()}
-              </p>
-              <p>
-                <strong>Last Updated:</strong>{" "}
-                {new Date(selectedRequest.updatedAt).toLocaleDateString()}
-              </p>
+              <div className="grid gap-1">
+                <div className="text-sm text-muted-foreground">
+                  Submitted On
+                </div>
+                <div>
+                  {new Date(selectedRequest.createdAt).toLocaleDateString()}
+                </div>
+              </div>
               {selectedRequest.approvalStatus === "pending" && (
-                <>
+                <div className="flex flex-col gap-2 pt-4">
                   <Button
                     onClick={() => handleAccept(selectedRequest._id)}
-                    className="w-full"
+                    className="w-full bg-primary"
                   >
                     Approve
                   </Button>
@@ -395,12 +464,58 @@ export default function AdminQueue() {
                   >
                     Deny
                   </Button>
-                </>
+                </div>
               )}
             </div>
           )}
         </DialogContent>
       </Dialog>
-    </>
+
+      <Dialog
+        open={showDenyDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowDenyDialog(false);
+            setRequestToDeny(null);
+            setDenyReason("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">
+              Provide Denial Reason
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Enter reason for denial"
+              value={denyReason}
+              onChange={(e) => setDenyReason(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDenyDialog(false);
+                setRequestToDeny(null);
+                setDenyReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={submitDenial}
+              disabled={!denyReason.trim()}
+            >
+              Deny Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
