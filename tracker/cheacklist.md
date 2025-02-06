@@ -14,13 +14,14 @@
 - [V] Privacy Policy Page (`/privacypolicy`) notes : PP is not correct
 - [V] Licenses Page (`/licenses`)
 
-- [ ] Donation Status Page (`/donation-status/:donationId`)
+- [V] Donation Status Page (`/donation-status/:donationId`) : notes : need to fix auth and navbar
 
 ## Protected Routes
 
 ### Admin Routes
 
 - [V] Admin Queue Page (`/admin/queue`)
+
 - [V] Admin City Queue Page (`/admin/city-queue`): notes : check images
 
 ### User Management Routes
@@ -31,10 +32,11 @@
 
 ### Home and Navigation
 
-- [ ] Home Page - Donations (`/home`, `/home/donations`)
+- [ ] Home Page - Donations (`/home`, `/home/donations`) notes : discontinued
 - [x] Home Page - Residences (`/home/residences`) notes : removed (noted in app.tsx)
 - [ ] Home Page - EatUp (`/home/eatup`)
 - [ ] Channel Page (`/channel/:channelId`)
+
 
 ### Social and Posts
 
@@ -44,9 +46,9 @@
 
 ### Donations and Contributions
 
-- [ ] Contribute Page (`/contribute`)
-- [ ] Create Donation Page (`/create-donation`)
-- [ ] My Donations Page (`/my-donations`)
+- [V] Contribute Page (`/contribute`)
+- [V] Create Donation Page (`/create-donation`)
+- [V] My Donations Page (`/my-donations`)
 - [ ] Donation Control Panel Page (`/donation-control-panel`)
 - [ ] Donation Assignment Page (`/donation-assignment`)
 
@@ -71,16 +73,26 @@
 ## progress
 
 total 37 pages
-finished 14 pages
+finished 21 pages
 removed 2 pages
 
-21 pages to go
+14 pages to go
+
+## progress by navbar
+- [V] admin
+- [V] donor notes: remove donation status from navbar
+- [ ] soldier
+- [ ] city
+- [ ] org
+- [ ] business
+
 prompt
 
 now in eatupsdialog i want you to do the same like in login and signup pages
 
 the form @https://formik.org/docs/overview
 of to formik doc and understand how to use it for the best
+
 i sent a photo of the docs navbar make use you understand every part og formik and implument it accodingly (api refs)
 
 make city edit disable
