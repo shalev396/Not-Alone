@@ -21,7 +21,7 @@
 ### Admin Routes
 
 - [V] Admin Queue Page (`/admin/queue`)
-- [ ] Admin City Queue Page (`/admin/city-queue`)
+- [V] Admin City Queue Page (`/admin/city-queue`): notes : check images
 
 ### User Management Routes
 
