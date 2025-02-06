@@ -29,6 +29,19 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/shared/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Search,
+  SortAsc,
+  User2,
+  Mail,
+  UserCog,
+  ShieldCheck,
+  KeyRound,
+  CreditCard,
+  Phone,
+  Calendar,
+  AlertCircle,
+} from "lucide-react";
 
 interface SignupRequest {
   _id: string;
@@ -124,6 +137,16 @@ const QueueSkeleton = () => (
 //   }
 // };
 
+// Add a helper function for date formatting
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
 export default function Queue() {
   const queryClient = useQueryClient();
   const [selectedRequest, setSelectedRequest] = useState<SignupRequest | null>(
@@ -214,12 +237,13 @@ export default function Queue() {
       {error && <div className="text-red-500 mb-4">{error.message}</div>}
 
       <div className="flex items-center gap-4">
-        <div className="flex-1">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
+            className="w-full pl-9"
           />
         </div>
         <Select
@@ -227,6 +251,7 @@ export default function Queue() {
           onValueChange={(value: "createdAt" | "updatedAt") => setSortBy(value)}
         >
           <SelectTrigger className="w-[180px]">
+            <SortAsc className="mr-2 h-4 w-4 text-muted-foreground" />
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
@@ -240,58 +265,112 @@ export default function Queue() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>2FA</TableHead>
-              <TableHead>Passport</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Submitted</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <User2 className="h-4 w-4 text-muted-foreground" />
+                  Name
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  Email
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <UserCog className="h-4 w-4 text-muted-foreground" />
+                  Type
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                  Status
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <KeyRound className="h-4 w-4 text-muted-foreground" />
+                  2FA
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  Passport
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  Phone
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  Submitted
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  Actions
+                </div>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredAndSortedRequests.map((request: SignupRequest) => (
               <TableRow key={request._id}>
-                <TableCell className="font-medium">
+                <TableCell className="text-center">
                   {request.firstName} {request.lastName}
                 </TableCell>
-                <TableCell>{request.email}</TableCell>
-                <TableCell className="capitalize">{request.type}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      request.approvalStatus === "pending"
-                        ? "outline"
-                        : "secondary"
-                    }
-                    className="capitalize"
-                  >
-                    {request.approvalStatus}
-                  </Badge>
+                <TableCell className="text-center">{request.email}</TableCell>
+                <TableCell className="text-center capitalize">
+                  {request.type}
                 </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={request.is2FAEnabled ? "default" : "destructive"}
-                    className="capitalize"
-                  >
-                    {request.is2FAEnabled ? "Enabled" : "Disabled"}
-                  </Badge>
+                <TableCell className="text-center">
+                  <div className="flex justify-center">
+                    <Badge
+                      variant={
+                        request.approvalStatus === "pending"
+                          ? "outline"
+                          : "secondary"
+                      }
+                      className="capitalize"
+                    >
+                      {request.approvalStatus}
+                    </Badge>
+                  </div>
                 </TableCell>
-                <TableCell>{request.passport}</TableCell>
-                <TableCell>{request.phone}</TableCell>
-                <TableCell>
-                  {new Date(request.createdAt).toLocaleDateString()}
+                <TableCell className="text-center">
+                  <div className="flex justify-center">
+                    <Badge
+                      variant={request.is2FAEnabled ? "default" : "destructive"}
+                      className="capitalize"
+                    >
+                      {request.is2FAEnabled ? "Enabled" : "Disabled"}
+                    </Badge>
+                  </div>
                 </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedRequest(request)}
-                  >
-                    View Details
-                  </Button>
+                <TableCell className="text-center">
+                  {request.passport}
+                </TableCell>
+                <TableCell className="text-center">{request.phone}</TableCell>
+                <TableCell className="text-center">
+                  {formatDate(request.createdAt)}
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedRequest(request)}
+                    >
+                      View Details
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -314,11 +393,7 @@ export default function Queue() {
                   {request.email}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  {new Date(request.createdAt).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    year: "2-digit",
-                  })}
+                  {formatDate(request.createdAt)}
                 </div>
               </div>
               <Badge
@@ -370,31 +445,42 @@ export default function Queue() {
         open={!!selectedRequest}
         onOpenChange={() => setSelectedRequest(null)}
       >
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
-              User Details
+            <DialogTitle className="text-xl sm:text-2xl font-bold">
+              <span className="bg-gradient-to-r from-primary/60 to-primary bg-clip-text text-transparent">
+                User Details
+              </span>
             </DialogTitle>
           </DialogHeader>
           {selectedRequest && (
-            <div className="space-y-4">
-              <div className="grid gap-1">
-                <div className="text-sm text-muted-foreground">Name</div>
-                <div>
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-muted/50 rounded-lg">
+                <User2 className="h-12 w-12 sm:h-16 sm:w-16 text-primary/80 mb-2" />
+                <h2 className="text-lg sm:text-xl font-semibold text-center">
                   {selectedRequest.firstName} {selectedRequest.lastName}
+                </h2>
+                <p className="text-sm sm:text-base text-muted-foreground capitalize text-center">
+                  {selectedRequest.type} Account
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </div>
+                  <p className="font-medium text-sm sm:text-base break-all">
+                    {selectedRequest.email}
+                  </p>
                 </div>
-              </div>
-              <div className="grid gap-1">
-                <div className="text-sm text-muted-foreground">Email</div>
-                <div>{selectedRequest.email}</div>
-              </div>
-              <div className="grid gap-1">
-                <div className="text-sm text-muted-foreground">Type</div>
-                <div className="capitalize">{selectedRequest.type}</div>
-              </div>
-              <div className="grid gap-1">
-                <div className="text-sm text-muted-foreground">Status</div>
-                <div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <ShieldCheck className="h-4 w-4" />
+                    Status
+                  </div>
                   <Badge
                     variant={
                       selectedRequest.approvalStatus === "pending"
@@ -406,10 +492,12 @@ export default function Queue() {
                     {selectedRequest.approvalStatus}
                   </Badge>
                 </div>
-              </div>
-              <div className="grid gap-1">
-                <div className="text-sm text-muted-foreground">2FA Status</div>
-                <div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <KeyRound className="h-4 w-4" />
+                    2FA Status
+                  </div>
                   <Badge
                     variant={
                       selectedRequest.is2FAEnabled ? "default" : "destructive"
@@ -419,43 +507,61 @@ export default function Queue() {
                     {selectedRequest.is2FAEnabled ? "Enabled" : "Disabled"}
                   </Badge>
                 </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CreditCard className="h-4 w-4" />
+                    Passport
+                  </div>
+                  <p className="font-medium text-sm sm:text-base">
+                    {selectedRequest.passport}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    Phone
+                  </div>
+                  <p className="font-medium text-sm sm:text-base">
+                    {selectedRequest.phone}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    Submitted On
+                  </div>
+                  <p className="font-medium text-sm sm:text-base">
+                    {formatDate(selectedRequest.createdAt)}
+                  </p>
+                </div>
               </div>
-              <div className="grid gap-1">
-                <div className="text-sm text-muted-foreground">Passport</div>
-                <div>{selectedRequest.passport}</div>
-              </div>
-              <div className="grid gap-1">
-                <div className="text-sm text-muted-foreground">Phone</div>
-                <div>{selectedRequest.phone}</div>
-              </div>
+
               {selectedRequest.denialReason && (
-                <div className="grid gap-1">
-                  <div className="text-sm text-muted-foreground">
+                <div className="space-y-1 p-2 sm:p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                  <div className="flex items-center gap-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
                     Denial Reason
                   </div>
-                  <div>{selectedRequest.denialReason}</div>
+                  <p className="text-destructive text-sm sm:text-base">
+                    {selectedRequest.denialReason}
+                  </p>
                 </div>
               )}
-              <div className="grid gap-1">
-                <div className="text-sm text-muted-foreground">
-                  Submitted On
-                </div>
-                <div>
-                  {new Date(selectedRequest.createdAt).toLocaleDateString()}
-                </div>
-              </div>
+
               {selectedRequest.approvalStatus === "pending" && (
-                <div className="flex flex-col gap-2 pt-4">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
                   <Button
                     onClick={() => handleAccept(selectedRequest._id)}
-                    className="w-full bg-primary"
+                    className="bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity"
                   >
                     Approve
                   </Button>
                   <Button
                     onClick={() => handleDeny(selectedRequest._id)}
                     variant="destructive"
-                    className="w-full"
                   >
                     Deny
                   </Button>
