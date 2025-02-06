@@ -13,6 +13,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Building2,
+  MapPin,
+  FileText,
+  Image as ImageIcon,
+  Calendar,
+  Loader2,
+} from "lucide-react";
 
 interface City {
   _id: string;
@@ -67,19 +75,18 @@ export default function AdminCityQueue() {
   };
 
   return (
-    <div className="flex h-screen">
-      <Navbar isVertical isAccordion modes="home" />
-
-      <div className="flex-1 overflow-auto">
-        <div className="flex-1 p-6 pl-20 md:pl-6 bg-background">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-bold">
-                <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
-                  City Approval Queue
+    <div className="flex min-h-screen bg-background">
+      <Navbar modes="home2" isVertical={true} isAccordion={true} />
+      <main className="flex-1">
+        <div className="p-4 pl-[72px] md:p-6">
+          <div className="mx-auto w-full max-w-[1200px]">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold">
+                <span className="bg-gradient-to-r from-primary/60 to-primary bg-clip-text text-transparent">
+                  Cities Queue
                 </span>
-              </h2>
-              <Badge variant="outline">
+              </h1>
+              <Badge variant="outline" className="h-7 px-3">
                 {cities.length} Pending{" "}
                 {cities.length === 1 ? "City" : "Cities"}
               </Badge>
@@ -93,52 +100,70 @@ export default function AdminCityQueue() {
             )}
 
             {isLoading ? (
-              <Card className="p-6 text-center">
-                <p className="text-muted-foreground">Loading cities...</p>
-              </Card>
+              <div className="flex items-center justify-center min-h-[200px]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
             ) : cities.length === 0 ? (
-              <Card className="p-6 text-center">
-                <p className="text-muted-foreground">
-                  No pending cities to approve
-                </p>
+              <Card className="p-6">
+                <CardContent className="flex items-center justify-center min-h-[100px]">
+                  <p className="text-muted-foreground">
+                    No pending cities to approve
+                  </p>
+                </CardContent>
               </Card>
             ) : (
-              cities.map((city) => (
-                <Card key={city._id} className="mb-6">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-xl mb-2">
-                          {city.name}
-                        </CardTitle>
-                        <CardDescription>
-                          Zone:{" "}
-                          {city.zone.charAt(0).toUpperCase() +
-                            city.zone.slice(1)}
-                        </CardDescription>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {cities.map((city) => (
+                  <Card key={city._id} className="flex flex-col">
+                    <CardHeader className="bg-muted/50">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-5 w-5 text-primary" />
+                            <CardTitle className="text-xl">
+                              {city.name}
+                            </CardTitle>
+                          </div>
+                          <CardDescription className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            {city.zone.charAt(0).toUpperCase() +
+                              city.zone.slice(1)}{" "}
+                            Zone
+                          </CardDescription>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-2"
+                        >
+                          <Calendar className="h-4 w-4" />
+                          {new Date(city.createdAt).toLocaleDateString()}
+                        </Badge>
                       </div>
-                      <Badge variant="outline">
-                        Created: {new Date(city.createdAt).toLocaleDateString()}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-medium mb-2">Bio</h4>
-                        <p className="text-muted-foreground">{city.bio}</p>
+                    </CardHeader>
+                    <CardContent className="flex-1 pt-6 space-y-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <FileText className="h-4 w-4 text-primary" />
+                          About
+                        </div>
+                        <p className="text-muted-foreground text-sm line-clamp-3">
+                          {city.bio}
+                        </p>
                       </div>
 
                       {city.media && city.media.length > 0 && (
-                        <div>
-                          <h4 className="font-medium mb-2">Photos</h4>
-                          <div className="grid grid-cols-2 gap-4">
-                            {city.media.map((url, index) => (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <ImageIcon className="h-4 w-4 text-primary" />
+                            Photos
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {city.media.slice(0, 2).map((url, index) => (
                               <img
                                 key={index}
                                 src={url}
                                 alt={`City ${index + 1}`}
-                                className="w-full h-40 object-cover rounded-md"
+                                className="w-full aspect-square object-cover rounded-lg border"
                               />
                             ))}
                           </div>
@@ -151,8 +176,9 @@ export default function AdminCityQueue() {
                             placeholder="Enter reason for denial"
                             value={denialReason}
                             onChange={(e) => setDenialReason(e.target.value)}
+                            className="min-h-[80px]"
                           />
-                          <div className="flex justify-end gap-4">
+                          <div className="flex justify-end gap-3">
                             <Button
                               variant="outline"
                               onClick={() => {
@@ -165,13 +191,14 @@ export default function AdminCityQueue() {
                             <Button
                               variant="destructive"
                               onClick={() => handleDeny(city._id)}
+                              disabled={!denialReason.trim()}
                             >
                               Confirm Denial
                             </Button>
                           </div>
                         </div>
                       ) : (
-                        <div className="flex justify-end gap-4">
+                        <div className="flex justify-end gap-3 pt-2">
                           <Button
                             variant="destructive"
                             onClick={() => setSelectedCity(city._id)}
@@ -179,21 +206,21 @@ export default function AdminCityQueue() {
                             Deny
                           </Button>
                           <Button
-                            className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90 transition-opacity"
+                            className="bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity"
                             onClick={() => handleApprove(city._id)}
                           >
                             Approve
                           </Button>
                         </div>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

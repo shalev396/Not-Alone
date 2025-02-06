@@ -20,7 +20,7 @@
 
 ### Admin Routes
 
-- [ ] Admin Queue Page (`/admin/queue`)
+- [V] Admin Queue Page (`/admin/queue`)
 - [ ] Admin City Queue Page (`/admin/city-queue`)
 
 ### User Management Routes
