@@ -16,8 +16,7 @@ import { PostSkeleton } from "@/components/social/PostSkeleton";
 import { useNavigate } from "react-router-dom";
 import Skeleton from "react-loading-skeleton";
 import { FilteredPostFeed } from "@/components/shared/feeds/FilteredPostFeed";
-import JoinCityRequest from "./JoinCityRequest";
-
+import SoldierJoinCity from "./SoldierJoinCity";
 
 
 interface Request {
@@ -43,6 +42,7 @@ interface Request {
   createdAt: string;
   updatedAt: string;
 }
+
 
 export interface Post {
   _id: string;
@@ -459,12 +459,13 @@ const Profile: React.FC = () => {
             </div>
           )}
 
-          {activeTab === "joinCity" && (
-            <div>
-              <h2 className="text-2xl font-bold mb-16">Join City</h2>
-              <JoinCityRequest />
-            </div>
-          )}
+{activeTab === "joinCity" && (
+  <div className="flex-1 flex flex-col bg-background text-foreground min-h-screen">
+    <SoldierJoinCity />
+  </div>
+)}
+
+
         </div>
       )}
     </div>
