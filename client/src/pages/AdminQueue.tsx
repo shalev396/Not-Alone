@@ -6,7 +6,7 @@ export default function AdminQueue() {
     <div className="flex min-h-screen bg-background">
       <Navbar modes="home2" isVertical={true} isAccordion={true} />
       <main className="flex-1">
-        <div className="p-4 pl-[72px] md:p-6">
+        <div className="p-4 pl-20 md:pl-17 lg:pl-17">
           <div className="mx-auto w-full max-w-[1200px]">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold">
