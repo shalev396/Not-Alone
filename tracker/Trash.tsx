@@ -36,7 +36,7 @@ export const Navbar = ({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Fetch user's city using React Query only for Municipality and Admin users
+  Fetch user's city using React Query only for Municipality and Admin users
   const { data: userCity = [] } = useQuery({
     queryKey: ["user-city"],
     queryFn: async () => {
@@ -63,16 +63,14 @@ export const Navbar = ({
     refetchOnWindowFocus: false,
   });
 
-  // Function to filter routes based on city membership
+  Function to filter routes based on city membership
   const filterRoutesByAccess = (
     routes: (RouteProps | AdminRouteSection)[]
   ): (RouteProps | AdminRouteSection)[] => {
-  
     // If user is not Municipality or Admin, filter out routes that require city access
     if (user.type !== "Municipality" && user.type !== "Admin") {
       return routes
-      .map((route) => {
-          if ("hideInNavbar" in route && route.hideInNavbar) return null; // Excluir rotas com hideInNavbar
+        .map((route) => {
           if ("routes" in route && route.routes) {
             const filteredRoutes = route.routes.filter(
               (r) => !r.requiresCityOrAdmin

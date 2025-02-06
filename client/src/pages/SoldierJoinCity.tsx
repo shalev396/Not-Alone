@@ -108,7 +108,7 @@ export default function SoldierJoinCity() {
         <div className="text-center">
           <h1 className="text-3xl font-bold">
             <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
-               Join a City
+              Join a City
               </span>
             </h1>
           </div>
