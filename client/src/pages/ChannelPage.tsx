@@ -1,16 +1,19 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "@/Redux/store";
 import { api } from "@/api/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send } from "lucide-react";
+import { Send, AlertCircle, X, Users, MessageCircle } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { socketService } from "@/services/socketService";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface Message {
   _id: string;
@@ -25,9 +28,10 @@ interface Message {
   createdAt: string;
 }
 
-const DEBUG_MODE = false; // You can change this to true to enable logging
+const DEBUG_MODE = false;
 
 export default function ChannelPage() {
+  const navigate = useNavigate();
   const { channelId } = useParams();
   const queryClient = useQueryClient();
   const users = useSelector((state: RootState) => state.user);
@@ -37,15 +41,28 @@ export default function ChannelPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isConnected, setIsConnected] = useState(false);
   console.log(isConnected);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const currentChannel = channels.find((channel) => channel._id === channelId);
 
   // Query for fetching messages
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [], isLoading } = useQuery({
     queryKey: ["messages", channelId],
     queryFn: async () => {
       if (!channelId) return [];
-      const response = await api.get(`/messages/channel/${channelId}`);
-      return Array.isArray(response.data) ? response.data : [];
+      try {
+        const response = await api.get(`/messages/channel/${channelId}`);
+        return Array.isArray(response.data) ? response.data : [];
+      } catch (error: any) {
+        if (error.response?.status === 401) {
+          navigate("/login");
+        }
+        setErrorMessage(
+          error.response?.data?.message || "Failed to fetch messages"
+        );
+        setShowError(true);
+        return [];
+      }
     },
     enabled: !!channelId,
     refetchOnWindowFocus: false,
@@ -53,7 +70,7 @@ export default function ChannelPage() {
     staleTime: Infinity,
   });
 
-  // Add a debug logger function
+  // Debug logger function
   const debugLog = (message: string, data?: any) => {
     if (DEBUG_MODE) {
       if (data) {
@@ -99,10 +116,14 @@ export default function ChannelPage() {
     // Error handling
     socket.on("connect_error", (error) => {
       debugLog(`🔴 Socket Connection Error:`, error);
+      setErrorMessage("Failed to connect to chat server");
+      setShowError(true);
     });
 
     socket.on("error", (error) => {
       debugLog(`❌ Socket Error:`, error);
+      setErrorMessage("An error occurred with the chat connection");
+      setShowError(true);
     });
 
     // Cleanup function
@@ -150,26 +171,101 @@ export default function ChannelPage() {
       debugLog(`✅ Message emission completed`);
     } catch (error) {
       debugLog(`❌ Error sending message:`, error);
+      setErrorMessage("Failed to send message");
+      setShowError(true);
     }
   };
 
-  return (
-    <div className="flex h-screen">
-      <Navbar isVertical isAccordion modes="home" />
+  if (isLoading) {
+    return (
+      <div className="flex bg-background text-foreground min-h-screen">
+        <Navbar modes="home" isVertical={true} isAccordion={true} />
+        <div className="flex-1 p-6 pl-[72px] sm:pl-20 md:pl-6">
+          <div className="max-w-3xl mx-auto">
+            <Card className="p-6">
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p className="ml-3 text-muted-foreground">
+                  Loading messages...
+                </p>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+  if (!currentChannel) {
+    return (
+      <div className="flex bg-background text-foreground min-h-screen">
+        <Navbar modes="home" isVertical={true} isAccordion={true} />
+        <div className="flex-1 p-6 pl-[72px] sm:pl-20 md:pl-6">
+          <div className="max-w-3xl mx-auto">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Channel Not Found</AlertTitle>
+              <AlertDescription>
+                The channel you're looking for doesn't exist or you don't have
+                access to it.
+              </AlertDescription>
+            </Alert>
+            <Button
+              onClick={() => navigate("/home")}
+              className="mt-6 bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity"
+            >
+              Return to Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex bg-background text-foreground min-h-screen">
+      <Navbar modes="home" isVertical={true} isAccordion={true} />
+
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {/* Channel Header */}
-        <div className="h-14 md:h-20 border-b flex items-center justify-center bg-background shrink-0">
-          <h1 className="text-xl md:text-3xl lg:text-4xl font-bold text-center bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text px-6">
-            {currentChannel?.name || "Channel"}
-          </h1>
+        <div className="h-14 md:h-20 border-b border-border flex items-center justify-between px-6 bg-background/50 shrink-0">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl md:text-3xl font-bold">
+              <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text">
+                {currentChannel?.name || "Channel"}
+              </span>
+            </h1>
+            <Badge
+              variant="outline"
+              className="bg-primary/5 text-primary border-primary/20"
+            >
+              <Users className="w-4 h-4 mr-1" />
+              {currentChannel.members?.length || 0} Members
+            </Badge>
+          </div>
         </div>
 
-        {/* Content Container - Updated with max-width and center alignment */}
+        {showError && (
+          <Alert variant="destructive" className="mx-6 mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription className="flex items-center justify-between">
+              {errorMessage}
+              <button
+                onClick={() => setShowError(false)}
+                className="rounded-full p-1 hover:bg-destructive/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Content Container */}
         <div className="flex-1 flex justify-center overflow-hidden">
           <div className="w-full max-w-3xl px-4 py-6 flex flex-col">
             {/* Chat Container */}
-            <div className="flex-1 flex flex-col rounded-lg border shadow-sm overflow-hidden bg-background/50">
+            <Card className="flex-1 flex flex-col overflow-hidden border-primary/20">
               {/* Messages Area */}
               <ScrollArea ref={scrollAreaRef} className="flex-1" type="always">
                 <div className="flex flex-col gap-4 p-4">
@@ -184,7 +280,7 @@ export default function ChannelPage() {
                           }`}
                         >
                           {/* Avatar */}
-                          <Avatar className="w-8 h-8 shrink-0 mt-1">
+                          <Avatar className="w-8 h-8 shrink-0 mt-1 border border-primary/20">
                             {message.sender.media?.[0] ? (
                               <AvatarImage src={message.sender.media[0]} />
                             ) : (
@@ -211,11 +307,11 @@ export default function ChannelPage() {
                             <div
                               className={`w-fit max-w-full ${
                                 isCurrentUser
-                                  ? "bg-[#F596D3]/20 border border-[#F596D3]/30 rounded-l-lg rounded-br-lg"
-                                  : "bg-gray-100 dark:bg-gray-800/50 rounded-r-lg rounded-bl-lg"
+                                  ? "bg-primary/10 border border-primary/20 rounded-l-lg rounded-br-lg"
+                                  : "bg-accent/50 rounded-r-lg rounded-bl-lg"
                               } px-3 py-2`}
                             >
-                              {/* Message Text - Added break-all for long words */}
+                              {/* Message Text */}
                               <div className="break-all whitespace-pre-wrap text-sm inline-block">
                                 {message.content}
                               </div>
@@ -236,32 +332,33 @@ export default function ChannelPage() {
                       );
                     })
                   ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                      No messages yet. Start the conversation!
+                    <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground gap-2">
+                      <MessageCircle className="h-8 w-8 text-primary/60" />
+                      <p>No messages yet. Start the conversation!</p>
                     </div>
                   )}
                 </div>
               </ScrollArea>
 
               {/* Message Input */}
-              <div className="p-4 bg-accent/30 border-t">
+              <div className="p-4 bg-accent/30 border-t border-border">
                 <form onSubmit={handleSendMessage} className="flex gap-2">
                   <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type your message..."
-                    className="flex-1 bg-background"
+                    className="flex-1 bg-background/50 border-primary/20"
                   />
                   <Button
                     type="submit"
                     disabled={!newMessage.trim()}
-                    className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90"
+                    className="bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
                 </form>
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       </div>

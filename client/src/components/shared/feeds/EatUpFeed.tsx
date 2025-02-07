@@ -9,9 +9,7 @@ import {
   Calendar,
   Utensils,
   Users,
-  AlertCircle,
   MapPin,
-  User,
 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "../DatePickerWithRange";

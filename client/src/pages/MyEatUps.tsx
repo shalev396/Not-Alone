@@ -4,7 +4,10 @@ import { Card } from "@/components/ui/card";
 import { api } from "@/api/api";
 import { EatUp } from "@/types/EatUps";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import {
+  useQueryClient,
+  //useQuery
+} from "@tanstack/react-query";
 import { Navbar } from "@/components/shared/Navbar";
 import { EditEatupDialog } from "@/components/myeatups/EditEatupDialog";
 import {
@@ -34,18 +37,18 @@ export default function MyEatUps() {
   const queryClient = useQueryClient();
 
   // Fetch all cities for reference
-  const { data: cities = [] } = useQuery({
-    queryKey: ["cities"],
-    queryFn: async () => {
-      const response = await api.get("/cities");
-      return response.data || [];
-    },
-  });
+  // const { data: cities = [] } = useQuery({
+  //   queryKey: ["cities"],
+  //   queryFn: async () => {
+  //     const response = await api.get("/cities");
+  //     return response.data || [];
+  //   },
+  // });
 
-  const getCityName = (cityId: string) => {
-    const city = cities.find((c: any) => c._id === cityId);
-    return city ? city.name : cityId;
-  };
+  // const getCityName = (cityId: string) => {
+  //   const city = cities.find((c: any) => c._id === cityId);
+  //   return city ? city.name : cityId;
+  // };
 
   const fetchEatUps = async () => {
     try {

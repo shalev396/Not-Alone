@@ -35,8 +35,7 @@
 - [x] Home Page - Donations (`/home`, `/home/donations`) notes : discontinued
 - [x] Home Page - Residences (`/home/residences`) notes : removed (noted in app.tsx)
 - [V] Home Page - EatUp (`/home/eatup`)
-- [ ] Channel Page (`/channel/:channelId`)
-
+- [V] Channel Page (`/channel/:channelId`) notes : need to test/fix
 
 ### Social and Posts
 
@@ -49,14 +48,14 @@
 - [V] Contribute Page (`/contribute`)
 - [V] Create Donation Page (`/create-donation`)
 - [V] My Donations Page (`/my-donations`)
-- [ ] Donation Control Panel Page (`/donation-control-panel`)
-- [ ] Donation Assignment Page (`/donation-assignment`)
+- [V] Donation Control Panel Page (`/donation-control-panel`)
+- [V] Donation Assignment Page (`/donation-assignment`)
 
 ### City Management
 
-- [ ] Create City Page (`/create-city`)
-- [ ] City Request Queue Page (`/city-request-queue`)
-- [ ] City User Approval Queue Page (`/city-user-approval-queue`)
+- [V] Create City Page (`/create-city`)
+- [V] City Request Queue Page (`/city-request-queue`)
+- [V] City User Approval Queue Page (`/city-user-approval-queue`)
 - [ ] Join City Request Page (`/join-city-request`)
 - [ ] Soldier Join City Page (`/soldier-join-city`)
 
@@ -73,20 +72,28 @@
 ## progress
 
 total 37 pages
-finished 21 pages
+finished 27 pages
 removed 3 pages
 
-14 pages to go
+7 pages to go
 
 ## progress by navbar
-- [V] admin
-- [V] donor notes: remove donation status from navbar
-- [ ] soldier
-- [ ] city
-- [ ] org
-- [ ] business
+/profile
+/social
+/create-post
+/join-city-request
+/soldier-join-city
+/RequestForm
+/my-requests
 
-prompt
+## discontined
+/Vouchers
+/home/donations
+/home/residences
+
+
+
+##prompt
 
 now in eatupsdialog i want you to do the same like in login and signup pages
 

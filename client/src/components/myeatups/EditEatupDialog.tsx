@@ -122,13 +122,14 @@ export function EditEatupDialog({
 
   const defaultLanguage: (typeof languages)[number] = "Hebrew";
   const initialValues: FormData = {
-    city: eatup.city || null,
+    city: eatup.city?._id || null,
     location: eatup.location,
     title: eatup.title,
     media: eatup.media || [],
     date: new Date(eatup.date).toISOString().slice(0, 16),
     kosher: eatup.kosher,
     description: eatup.description,
+
     languages: [
       (eatup.languages?.[0] || defaultLanguage) as (typeof languages)[number],
     ],
