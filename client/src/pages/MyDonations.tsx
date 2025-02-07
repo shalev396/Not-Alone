@@ -24,6 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSelector } from "react-redux";
+import { RootState } from "@/Redux/store";
 
 interface Donation {
   _id: string;
@@ -70,6 +72,7 @@ export default function MyDonations() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const user = useSelector((state: RootState) => state.user);
 
   // Get user's assigned donations
   const { data: myDonations = [], isLoading } = useQuery({
@@ -103,28 +106,21 @@ export default function MyDonations() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navbar isVertical isAccordion modes="home" />
-      <div className="flex-1 overflow-auto">
-        <div className="container py-4 sm:py-6 px-4 sm:pl-20 md:pl-6 max-w-[95vw] sm:max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 sm:mb-8">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-center md:text-left">
-                <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text">
-                  My Donations
-                </span>
-              </h1>
-              <p className="text-muted-foreground mt-1 text-sm sm:text-base text-center md:text-left">
-                Track and manage your donations
-              </p>
-            </div>
-            <Button
-              onClick={() => navigate("/create-donation")}
-              className="w-full md:w-auto bg-gradient-to-r from-primary/60 to-primary hover:opacity-90 transition-opacity"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Donation
-            </Button>
+    <div className="flex bg-background text-foreground min-h-screen">
+      <Navbar modes="home" isVertical={true} isAccordion={true} />
+      <div className="flex-1 p-4 pl-[72px] sm:pl-20 md:pl-6 pt-4 sm:pt-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-4 mb-6">
+            <h2 className="text-3xl font-bold text-center md:text-left">
+              <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text">
+                My Donations
+              </span>
+            </h2>
+            {user.type !== "Soldier" && (
+              <Button onClick={() => navigate("/create-donation")}>
+                Create Donation
+              </Button>
+            )}
           </div>
 
           {/* Search and Filters */}
@@ -202,12 +198,15 @@ export default function MyDonations() {
                     categoryFilter !== "all" ||
                     statusFilter !== "all"
                       ? "Try adjusting your filters or search term"
+                      : user.type === "Soldier"
+                      ? "No donations have been assigned to you yet"
                       : "Start by creating your first donation"}
                   </p>
                 </div>
                 {!search &&
                   categoryFilter === "all" &&
-                  statusFilter === "all" && (
+                  statusFilter === "all" &&
+                  user.type !== "Soldier" && (
                     <Button
                       onClick={() => navigate("/create-donation")}
                       variant="outline"
