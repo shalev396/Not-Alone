@@ -11,6 +11,7 @@ interface DetailsDialogProps {
   eatup?: EatUp | null;
   type: string;
   post?: posts | null;
+  trigger?: React.ReactNode;
 }
 
 export function DetailsDialog({
@@ -18,17 +19,18 @@ export function DetailsDialog({
   post,
   eatup,
   type,
+  trigger,
 }: DetailsDialogProps) {
   if (type === "post") {
-    return <PostDialog post={post || null} />;
+    return <PostDialog post={post || null} trigger={trigger} />;
   }
 
   if (type === "Donations") {
-    return <DonationDialog donation={donation || null} />;
+    return <DonationDialog donation={donation || null} trigger={trigger} />;
   }
 
   if (type === "EatUp") {
-    return <EatUpDialog eatup={eatup || null} />;
+    return <EatUpDialog eatup={eatup || null} trigger={trigger} />;
   }
 
   // Handle Residences case or return null

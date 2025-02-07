@@ -224,7 +224,7 @@ export default function MyEatUps() {
                               {eatup.location}
                               {eatup.city && (
                                 <span className="text-muted-foreground ml-1">
-                                  ({getCityName(eatup.city)})
+                                  ({eatup.city.name})
                                 </span>
                               )}
                             </span>

@@ -32,9 +32,9 @@
 
 ### Home and Navigation
 
-- [ ] Home Page - Donations (`/home`, `/home/donations`) notes : discontinued
+- [x] Home Page - Donations (`/home`, `/home/donations`) notes : discontinued
 - [x] Home Page - Residences (`/home/residences`) notes : removed (noted in app.tsx)
-- [ ] Home Page - EatUp (`/home/eatup`)
+- [V] Home Page - EatUp (`/home/eatup`)
 - [ ] Channel Page (`/channel/:channelId`)
 
 
@@ -74,7 +74,7 @@
 
 total 37 pages
 finished 21 pages
-removed 2 pages
+removed 3 pages
 
 14 pages to go
 

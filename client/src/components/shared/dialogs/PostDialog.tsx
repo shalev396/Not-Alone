@@ -10,39 +10,44 @@ import { posts } from "@/tenstack/query";
 
 interface PostDialogProps {
   post: posts | null;
+  trigger?: React.ReactNode;
 }
 
-export function PostDialog({ post }: PostDialogProps) {
+export function PostDialog({ post, trigger }: PostDialogProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-          <div className="p-4 flex gap-4">
-            <div className="w-[150px] h-[150px]">
-              {post?.image ? (
-                <img
-                  src={post?.image[0]} 
-                  alt="post"
-                  className="w-full h-full object-cover rounded-md"
-                />
-              ) : (
-                <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
-                  No Image
-                </div>
-              )}
+        {trigger || (
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <div className="p-4 flex gap-4">
+              <div className="w-[150px] h-[150px]">
+                {post?.image ? (
+                  <img
+                    src={post?.image[0]}
+                    alt="post"
+                    className="w-full h-full object-cover rounded-md"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
+                    No Image
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 className="font-bold text-lg md:text-xl">
+                  {post?.content}
+                </h3>
+                <p className="text-muted-foreground text-sm md:text-base">
+                  {post?.createdAt &&
+                    new Date(post.createdAt).toLocaleDateString()}
+                </p>
+                <p className="mb-4 text-muted-foreground leading-relaxed">
+                  {post?.likes.length} likes
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-lg md:text-xl">{post?.content}</h3>
-              <p className="text-muted-foreground text-sm md:text-base">
-                {post?.createdAt &&
-                  new Date(post.createdAt).toLocaleDateString()}
-              </p>
-              <p className="mb-4 text-muted-foreground leading-relaxed">
-                {post?.likes.length} likes
-              </p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-[800px]">
         <DialogHeader>
@@ -51,7 +56,7 @@ export function PostDialog({ post }: PostDialogProps) {
         <div className="mt-4">
           {/* Add detailed post content here */}
           <img
-            src={post?.image[0]} 
+            src={post?.image[0]}
             alt="post"
             className="w-full max-h-[400px] object-cover rounded-lg mb-4"
           />
