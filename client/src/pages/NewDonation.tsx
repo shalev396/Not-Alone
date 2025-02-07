@@ -7,11 +7,7 @@ import { uploadImage } from "@/components/shared/UploadPhoto";
 import { Navbar } from "@/components/shared/Navbar";
 import { Formik, Form, Field } from "formik";
 import { toFormikValidationSchema } from "zod-formik-adapter";
-import {
-  Card,
-  CardContent,
-
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +27,11 @@ import {
   Package2,
   FileText,
   ImageIcon,
+  ArrowLeft,
 } from "lucide-react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/Redux/store";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Constants
 const categories = [
@@ -86,6 +86,35 @@ export default function NewDonation() {
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [showError, setShowError] = useState(false);
+  const user = useSelector((state: RootState) => state.user);
+
+  // Redirect soldiers away from this page
+  if (user.type === "Soldier") {
+    return (
+      <div className="flex h-screen bg-background">
+        <Navbar isVertical isAccordion modes="home" />
+        <div className="flex-1 overflow-auto">
+          <div className="container max-w-3xl py-6 pl-20 md:pl-6">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Soldiers cannot create donations. This feature is only available
+                for donors and organizations.
+              </AlertDescription>
+            </Alert>
+            <Button
+              onClick={() => navigate(-1)}
+              variant="outline"
+              className="mt-6"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Go Back
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const { data: cities = [] } = useQuery<City[]>({
     queryKey: ["cities"],
@@ -397,17 +426,18 @@ export default function NewDonation() {
                       </FormItem>
                     </div>
 
-                    <div className="flex justify-end gap-4 pt-6">
+                    <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => navigate("/my-donations")}
+                        className="w-full sm:w-auto"
                       >
                         My Donations
                       </Button>
                       <Button
                         type="submit"
-                        className="bg-gradient-to-r from-primary/60 to-primary hover:opacity-90 transition-opacity"
+                        className="w-full sm:w-auto bg-gradient-to-r from-primary/60 to-primary hover:opacity-90 transition-opacity"
                         disabled={isSubmitting}
                       >
                         {isSubmitting ? "Creating..." : "Create Donation"}

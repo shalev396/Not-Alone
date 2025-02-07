@@ -19,7 +19,6 @@ import {
   CheckCircle,
   AlertCircle,
   X,
-  Filter,
 } from "lucide-react";
 import {
   Select,
@@ -239,243 +238,190 @@ export default function DonationControlPanel() {
   return (
     <div className="flex bg-background text-foreground min-h-screen">
       <Navbar modes="home" isVertical={true} isAccordion={true} />
-      <div className="flex-1 p-6 pl-[72px] sm:pl-20 md:pl-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">
+      <div className="flex-1 p-4 sm:p-6 pl-[72px] sm:pl-20 md:pl-6">
+        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold">
               <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text">
                 Donation Control Panel
               </span>
             </h1>
-            <Badge
-              variant="outline"
-              className="bg-primary/5 text-primary border-primary/20 flex items-center gap-2"
-            >
-              <MapPin className="w-4 h-4" />
-              {userCity.name} - {userCity.zone}
+            <Badge variant="outline" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              {userCity?.name || "No City"}
             </Badge>
           </div>
 
-          {showError && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription className="flex items-center justify-between">
-                {errorMessage}
-                <button
-                  onClick={() => setShowError(false)}
-                  className="rounded-full p-1 hover:bg-destructive/10"
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            <Card className="p-4 flex flex-col items-center text-center">
+              <Package className="h-8 w-8 text-primary mb-2" />
+              <p className="text-sm font-medium text-muted-foreground">Total</p>
+              <p className="text-2xl font-bold">{stats.total}</p>
+            </Card>
+            {Object.entries(statusConfig).map(([status, config]) => {
+              const Icon = config.icon;
+              return (
+                <Card
+                  key={status}
+                  className={`p-4 flex flex-col items-center text-center`}
                 >
-                  <X className="h-4 w-4" />
-                </button>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Card className="p-4 border-primary/20">
-              <p className="text-sm text-muted-foreground">Total Donations</p>
-              <p className="text-2xl font-bold text-primary">{stats.total}</p>
-            </Card>
-            <Card className="p-4 border-primary/20">
-              <p className="text-sm text-muted-foreground">Pending</p>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
-                <p className="text-2xl font-bold text-primary">
-                  {stats.pending}
-                </p>
-              </div>
-            </Card>
-            <Card className="p-4 border-primary/20">
-              <p className="text-sm text-muted-foreground">Assigned</p>
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-blue-500" />
-                <p className="text-2xl font-bold text-blue-500">
-                  {stats.assigned}
-                </p>
-              </div>
-            </Card>
-            <Card className="p-4 border-primary/20">
-              <p className="text-sm text-muted-foreground">In Delivery</p>
-              <div className="flex items-center gap-2">
-                <Truck className="h-4 w-4 text-purple-500" />
-                <p className="text-2xl font-bold text-purple-500">
-                  {stats.delivery}
-                </p>
-              </div>
-            </Card>
-            <Card className="p-4 border-primary/20">
-              <p className="text-sm text-muted-foreground">Arrived</p>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <p className="text-2xl font-bold text-green-500">
-                  {stats.arrived}
-                </p>
-              </div>
-            </Card>
+                  <Icon className={`h-8 w-8 ${config.color} mb-2`} />
+                  <p className="text-sm font-medium text-muted-foreground line-clamp-1">
+                    {config.text}
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {stats[status as keyof typeof stats]}
+                  </p>
+                </Card>
+              );
+            })}
           </div>
 
           {/* Filters */}
-          <Card className="p-6 border-primary/20">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex-1 min-w-[200px]">
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Card className="p-4">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search donations..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="pl-8 bg-background/50 border-primary/20"
+                    className="pl-9 w-full"
                   />
                 </div>
-              </div>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-[180px] bg-background/50 border-primary/20">
-                  <Filter className="w-4 h-4 mr-2 text-primary" />
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {uniqueCategories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px] bg-background/50 border-primary/20">
-                  <Clock className="w-4 h-4 mr-2 text-primary" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {Object.entries(statusConfig).map(([status, config]) => (
-                    <SelectItem key={status} value={status}>
-                      <div className="flex items-center gap-2">
-                        <config.icon className="w-4 h-4" />
-                        {config.text}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-[180px] bg-background/50 border-primary/20"
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  <Select
+                    value={categoryFilter}
+                    onValueChange={setCategoryFilter}
                   >
-                    <Calendar className="mr-2 h-4 w-4 text-primary" />
-                    {dateFilter ? format(dateFilter, "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <CalendarComponent
-                    mode="single"
-                    selected={dateFilter}
-                    onSelect={setDateFilter}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {(dateFilter ||
-                categoryFilter !== "all" ||
-                statusFilter !== "all" ||
-                search) && (
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setDateFilter(undefined);
-                    setCategoryFilter("all");
-                    setStatusFilter("all");
-                    setSearch("");
-                  }}
-                  className="text-primary hover:text-primary/80"
-                >
-                  Clear Filters
-                </Button>
-              )}
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {uniqueCategories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      {Object.entries(statusConfig).map(([status, config]) => (
+                        <SelectItem key={status} value={status}>
+                          {config.text}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={`w-full sm:w-[180px] justify-start text-left font-normal ${
+                          !dateFilter && "text-muted-foreground"
+                        }`}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {dateFilter ? format(dateFilter, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={dateFilter}
+                        onSelect={setDateFilter}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
             </div>
           </Card>
 
           {/* Donations List */}
           <div className="space-y-4">
             {filteredDonations.length === 0 ? (
-              <Card className="p-6 text-center border-primary/20">
-                <p className="text-muted-foreground">
-                  No donations found matching your filters
-                </p>
+              <Card className="p-6 text-center">
+                <p className="text-muted-foreground">No donations found</p>
               </Card>
             ) : (
-              filteredDonations.map((donation) => {
-                const StatusIcon = statusConfig[donation.status].icon;
-                return (
-                  <Card key={donation._id} className="p-6 border-primary/20">
-                    <div className="flex flex-col md:flex-row justify-between gap-4">
-                      <div className="flex gap-4">
-                        {donation.media?.[0] && (
-                          <img
-                            src={donation.media[0]}
-                            alt={donation.title}
-                            className="w-24 h-24 rounded-lg object-cover"
-                          />
-                        )}
-                        <div>
-                          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                            <Package className="h-4 w-4 text-primary" />
-                            {donation.title}
-                          </h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Badge
-                              variant="outline"
-                              className="bg-primary/5 text-primary border-primary/20"
-                            >
-                              {donation.category}
-                            </Badge>
-                            <span className="mx-2">•</span>
-                            <Calendar className="w-4 h-4" />
-                            <span>
-                              {format(new Date(donation.createdAt), "PPP")}
-                            </span>
-                          </div>
-                          <div className="mt-2">
-                            <p className="text-sm font-medium flex items-center gap-2">
-                              <User className="h-4 w-4 text-primary" />
-                              Assigned to:
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {donation.assignedTo
-                                ? `${donation.assignedTo.firstName} ${donation.assignedTo.lastName}`
-                                : "Not assigned yet"}
-                            </p>
-                          </div>
+              filteredDonations.map((donation) => (
+                <Card
+                  key={donation._id}
+                  className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleViewDetails(donation._id)}
+                >
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="w-full sm:w-[120px] h-[120px]">
+                      {donation.media && donation.media.length > 0 ? (
+                        <img
+                          src={donation.media[0]}
+                          alt={donation.title}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
+                          <Package className="h-8 w-8 text-muted-foreground" />
                         </div>
-                      </div>
-                      <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-lg truncate">
+                          {donation.title}
+                        </h3>
                         <Badge
                           className={`${
                             statusConfig[donation.status].color
-                          } px-4 py-2`}
+                          } w-fit`}
                         >
-                          <StatusIcon className="w-4 h-4 mr-2" />
                           {statusConfig[donation.status].text}
                         </Badge>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleViewDetails(donation._id)}
-                          className="bg-background/50 border-primary/20 hover:bg-primary/5"
-                        >
-                          View Details
-                        </Button>
+                      </div>
+                      <p className="text-muted-foreground text-sm line-clamp-2 mb-2">
+                        {donation.description}
+                      </p>
+                      <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <User className="h-4 w-4" />
+                          {donation.donor.firstName} {donation.donor.lastName}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {format(new Date(donation.createdAt), "PPP")}
+                        </span>
                       </div>
                     </div>
-                  </Card>
-                );
-              })
+                  </div>
+                </Card>
+              ))
             )}
           </div>
+
+          {/* Error Alert */}
+          {showError && (
+            <Alert variant="destructive" className="animate-in fade-in-0">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="ml-2">
+                {errorMessage}
+              </AlertDescription>
+              <button
+                onClick={() => setShowError(false)}
+                className="absolute right-2 top-2 p-1 hover:bg-destructive/10 rounded-full"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </Alert>
+          )}
         </div>
       </div>
     </div>
