@@ -101,7 +101,7 @@ export const getMyEatups = async (req: Request, res: Response) => {
       .skip(skipNum)
       .limit(limitNum)
       .populate("author", "firstName lastName email phone")
-      .populate("cityDetails", "name zone")
+      .populate("city", "name zone")
       .populate("guestDetails", "firstName lastName email phone")
       .lean();
 
@@ -161,7 +161,7 @@ export const getAllEatups = async (req: Request, res: Response) => {
       .skip(skipNum)
       .limit(limitNum)
       .populate("author", "firstName lastName email phone")
-      .populate("cityDetails", "name zone")
+      .populate("city", "name zone")
       .populate("guestDetails", "firstName lastName email phone")
       .lean();
 
@@ -208,7 +208,7 @@ export const getEatupById = async (req: Request, res: Response) => {
 
     const eatup = await EatupModel.findById(eatupId)
       .populate("author", "-password")
-      .populate("cityDetails")
+      .populate("city", "name zone")
       .populate("guestDetails", "-password")
       .lean();
 
@@ -255,7 +255,7 @@ export const createEatup = async (req: Request, res: Response) => {
 
     const populatedEatup = await EatupModel.findById(eatup._id)
       .populate("author", "firstName lastName email phone")
-      .populate("cityDetails", "name zone");
+      .populate("city", "name zone");
 
     return res.status(201).json(populatedEatup);
   } catch (error) {
@@ -314,7 +314,7 @@ export const subscribeToEatup = async (req: Request, res: Response) => {
       { new: true, runValidators: true }
     )
       .populate("author", "firstName lastName email phone")
-      .populate("cityDetails", "name zone")
+      .populate("city", "name zone")
       .populate("guestDetails", "firstName lastName email phone");
 
     return res.json(updatedEatup);
@@ -360,7 +360,7 @@ export const unsubscribeFromEatup = async (req: Request, res: Response) => {
       { new: true, runValidators: true }
     )
       .populate("author", "firstName lastName email phone")
-      .populate("cityDetails", "name zone")
+      .populate("city", "name zone")
       .populate("guestDetails", "firstName lastName email phone");
 
     return res.json(updatedEatup);
@@ -422,7 +422,7 @@ export const updateEatup = async (req: Request, res: Response) => {
       { new: true, runValidators: true }
     )
       .populate("author", "-password")
-      .populate("cityDetails")
+      .populate("city", "name zone")
       .populate("guestDetails", "-password");
 
     return res.json(updatedEatup);

@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "@/api/api";
-import { useFormik } from "formik";
+import { Formik, Form, Field, ErrorMessage } from "formik";
 import { z } from "zod";
 import { toFormikValidationSchema } from "zod-formik-adapter";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertCircle, X, Lock } from "lucide-react";
 import { ModeToggle } from "@/components/custom-ui/mode-toggle";
 import { useEffect, useState } from "react";
 
@@ -14,11 +14,16 @@ const resetPasswordSchema = z
     code: z
       .string()
       .min(6, "Code must be 6 digits")
-      .max(6, "Code must be 6 digits"),
+      .max(6, "Code must be 6 digits")
+      .regex(/^[0-9]{6}$/, "Code must contain only numbers"),
     password: z
       .string()
       .min(6, "Password must be at least 6 characters")
-      .max(50, "Password must be less than 50 characters"),
+      .max(50, "Password must be less than 50 characters")
+      .regex(
+        /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/,
+        "Password must contain at least one letter and one number"
+      ),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -33,75 +38,34 @@ export default function ResetPasswordVerify() {
   const location = useLocation();
   const { userId, email, isPasswordReset } = location.state || {};
   const [deviceToken, setDeviceToken] = useState<string | null>(null);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
     if (!userId || !email || !isPasswordReset) {
       navigate("/forgot-password");
       return;
     }
-
-    // Generate new code and get device token on component mount
-    const generateCode = async () => {
-      try {
-        const response = await api.post(
-          "/auth/verify-2fa/reset-password/generate",
-          {
-            email,
-          }
-        );
-        setDeviceToken(response.data.deviceToken);
-      } catch (error: any) {
-        console.error("Failed to generate code:", error);
-        navigate("/forgot-password");
-      }
-    };
-
     generateCode();
   }, [userId, email, isPasswordReset, navigate]);
 
-  const formik = useFormik<ResetPasswordForm>({
-    initialValues: {
-      code: "",
-      password: "",
-      confirmPassword: "",
-    },
-    validationSchema: toFormikValidationSchema(resetPasswordSchema),
-    onSubmit: async (values, { setSubmitting, setFieldError }) => {
-      if (!deviceToken) {
-        setFieldError("code", "Please try again, session expired");
-        return;
-      }
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
 
-      try {
-        // First verify the code
-        const verifyResponse = await api.post(
-          "/auth/verify-2fa/reset-password/verify",
-          {
-            userId,
-            code: values.code,
-            deviceToken,
-          }
-        );
+  const generateCode = async () => {
+    if (cooldown > 0) {
+      setErrorMessage(
+        `Please wait ${cooldown} seconds before requesting a new code`
+      );
+      setShowError(true);
+      return;
+    }
 
-        if (verifyResponse.data.verified) {
-          // If code is verified, update the password
-          await api.post("/auth/verify-2fa/reset-password/update", {
-            userId,
-            password: values.password,
-          });
-          navigate("/login");
-        }
-      } catch (error: any) {
-        const errorMessage =
-          error.response?.data?.message || "Verification failed";
-        setFieldError("code", errorMessage);
-      } finally {
-        setSubmitting(false);
-      }
-    },
-  });
-
-  const handleResendCode = async () => {
     try {
       const response = await api.post(
         "/auth/verify-2fa/reset-password/generate",
@@ -110,15 +74,57 @@ export default function ResetPasswordVerify() {
         }
       );
       setDeviceToken(response.data.deviceToken);
-      alert("New verification code has been sent to your email");
+      setShowError(false);
+      setCooldown(60); // Start 60-second cooldown
     } catch (error: any) {
-      formik.setFieldError("code", "Failed to resend code");
+      console.error("Failed to generate code:", error);
+      setErrorMessage("Failed to generate code. Please try again.");
+      setShowError(true);
+    }
+  };
+
+  const handleSubmit = async (
+    values: ResetPasswordForm,
+    { setSubmitting, setFieldError }: any
+  ) => {
+    if (!deviceToken) {
+      setFieldError("code", "Please try again, session expired");
+      return;
+    }
+
+    try {
+      // First verify the code
+      const verifyResponse = await api.post(
+        "/auth/verify-2fa/reset-password/verify",
+        {
+          userId,
+          code: values.code,
+          deviceToken,
+        }
+      );
+
+      if (verifyResponse.data.verified) {
+        // If code is verified, update the password
+        await api.post("/auth/verify-2fa/reset-password/update", {
+          userId,
+          password: values.password,
+        });
+        navigate("/login");
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Verification failed";
+      setFieldError("code", errorMessage);
+      setErrorMessage(errorMessage);
+      setShowError(true);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="container flex items-center justify-center min-h-screen py-12">
-      <div className="w-full max-w-xl mx-auto">
+      <div className="w-full max-w-md mx-auto">
         <div className="border rounded-lg shadow-sm bg-card">
           <div className="px-8 py-10 space-y-8">
             <div className="flex justify-end">
@@ -135,108 +141,145 @@ export default function ResetPasswordVerify() {
                 password
               </p>
             </div>
-            <form onSubmit={formik.handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label
-                    htmlFor="code"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Verification Code
-                  </label>
+
+            {/* Error Alert */}
+            {showError && (
+              <div className="bg-destructive/15 text-destructive rounded-lg p-3 flex items-center gap-2 relative">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <p className="text-sm">{errorMessage}</p>
+                <button
+                  onClick={() => setShowError(false)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-destructive/10 rounded-full"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
+            <Formik
+              initialValues={{ code: "", password: "", confirmPassword: "" }}
+              validationSchema={toFormikValidationSchema(resetPasswordSchema)}
+              onSubmit={handleSubmit}
+            >
+              {({ isSubmitting, touched, errors }) => (
+                <Form className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label
+                        htmlFor="code"
+                        className="text-sm font-medium leading-none"
+                      >
+                        Verification Code
+                      </label>
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="px-0 font-normal h-auto"
+                        onClick={generateCode}
+                        disabled={cooldown > 0 || isSubmitting}
+                      >
+                        {cooldown > 0
+                          ? `Resend Code (${cooldown}s)`
+                          : "Resend Code"}
+                      </Button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Field
+                        id="code"
+                        name="code"
+                        placeholder="Enter 6-digit code"
+                        maxLength={6}
+                        className={`flex h-11 w-full rounded-md border ${
+                          touched.code && errors.code
+                            ? "border-destructive"
+                            : "border-input"
+                        } bg-background pl-10 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
+                      />
+                    </div>
+                    <ErrorMessage
+                      name="code"
+                      component="p"
+                      className="text-sm text-destructive mt-1"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="password"
+                      className="text-sm font-medium leading-none"
+                    >
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Field
+                        id="password"
+                        name="password"
+                        type="password"
+                        placeholder="Enter new password"
+                        className={`flex h-11 w-full rounded-md border ${
+                          touched.password && errors.password
+                            ? "border-destructive"
+                            : "border-input"
+                        } bg-background pl-10 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
+                      />
+                    </div>
+                    <ErrorMessage
+                      name="password"
+                      component="p"
+                      className="text-sm text-destructive mt-1"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="confirmPassword"
+                      className="text-sm font-medium leading-none"
+                    >
+                      Confirm Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Field
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type="password"
+                        placeholder="Confirm new password"
+                        className={`flex h-11 w-full rounded-md border ${
+                          touched.confirmPassword && errors.confirmPassword
+                            ? "border-destructive"
+                            : "border-input"
+                        } bg-background pl-10 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
+                      />
+                    </div>
+                    <ErrorMessage
+                      name="confirmPassword"
+                      component="p"
+                      className="text-sm text-destructive mt-1"
+                    />
+                  </div>
+
                   <Button
-                    type="button"
-                    variant="link"
-                    className="px-0 font-normal h-auto"
-                    onClick={handleResendCode}
+                    className="w-full h-11 text-base"
+                    type="submit"
+                    disabled={isSubmitting}
                   >
-                    Resend Code
+                    {isSubmitting ? "Resetting..." : "Reset Password"}
                   </Button>
-                </div>
-                <input
-                  id="code"
-                  placeholder="Enter 6-digit code"
-                  maxLength={6}
-                  className={`flex h-11 w-full rounded-md border ${
-                    formik.touched.code && formik.errors.code
-                      ? "border-destructive"
-                      : "border-input"
-                  } bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
-                  {...formik.getFieldProps("code")}
-                />
-                {formik.touched.code && formik.errors.code && (
-                  <p className="text-sm text-destructive">
-                    {formik.errors.code}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <label
-                  htmlFor="password"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  New Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="Enter new password"
-                  className={`flex h-11 w-full rounded-md border ${
-                    formik.touched.password && formik.errors.password
-                      ? "border-destructive"
-                      : "border-input"
-                  } bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
-                  {...formik.getFieldProps("password")}
-                />
-                {formik.touched.password && formik.errors.password && (
-                  <p className="text-sm text-destructive">
-                    {formik.errors.password}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <label
-                  htmlFor="confirmPassword"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Confirm Password
-                </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Confirm new password"
-                  className={`flex h-11 w-full rounded-md border ${
-                    formik.touched.confirmPassword &&
-                    formik.errors.confirmPassword
-                      ? "border-destructive"
-                      : "border-input"
-                  } bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
-                  {...formik.getFieldProps("confirmPassword")}
-                />
-                {formik.touched.confirmPassword &&
-                  formik.errors.confirmPassword && (
-                    <p className="text-sm text-destructive">
-                      {formik.errors.confirmPassword}
-                    </p>
-                  )}
-              </div>
-              <Button
-                className="w-full h-11 text-base"
-                type="submit"
-                disabled={formik.isSubmitting || !formik.isValid}
-              >
-                {formik.isSubmitting ? "Resetting..." : "Reset Password"}
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full h-11 text-base"
-                type="button"
-                onClick={() => navigate("/forgot-password")}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Forgot Password
-              </Button>
-            </form>
+
+                  <Button
+                    variant="outline"
+                    className="w-full h-11 text-base"
+                    type="button"
+                    onClick={() => navigate("/forgot-password")}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Forgot Password
+                  </Button>
+                </Form>
+              )}
+            </Formik>
           </div>
         </div>
       </div>

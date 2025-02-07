@@ -1,7 +1,8 @@
-import { useState } from "react";
 import { api } from "@/api/api";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
+import { Formik, Form, Field } from "formik";
+import { toFormikValidationSchema } from "zod-formik-adapter";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,25 @@ import {
 import { FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { EatUp } from "@/types/EatUps";
+import {
+  AlertCircle,
+  X,
+  Building2,
+  MapPin,
+  Type,
+  Calendar as CalendarIcon,
+  Languages as LanguagesIcon,
+  Users,
+  UtensilsCrossed,
+  FileText,
+} from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // Constants
 const hostingTypes = ["organization", "donators", "city"] as const;
@@ -39,17 +59,6 @@ interface City {
   name: string;
   zone: string;
 }
-
-// Fetch cities query
-const fetchCities = async () => {
-  try {
-    const response = await api.get("/cities");
-    return response.data as City[];
-  } catch (error) {
-    console.error("Error fetching cities:", error);
-    return [];
-  }
-};
 
 // Zod schema for form validation
 const eatupSchema = z.object({
@@ -89,7 +98,6 @@ const eatupSchema = z.object({
 });
 
 type FormData = z.infer<typeof eatupSchema>;
-type FormErrors = Partial<Record<keyof FormData, string>>;
 
 interface EditEatupDialogProps {
   eatup: EatUp;
@@ -106,264 +114,405 @@ export function EditEatupDialog({
 }: EditEatupDialogProps) {
   const { data: cities = [] } = useQuery<City[]>({
     queryKey: ["cities"],
-    queryFn: fetchCities,
+    queryFn: async () => {
+      const response = await api.get("/cities");
+      return response.data;
+    },
   });
 
   const defaultLanguage: (typeof languages)[number] = "Hebrew";
-  const [formData, setFormData] = useState<FormData>({
-    city: eatup.city || null,
+  const initialValues: FormData = {
+    city: eatup.city?._id || null,
     location: eatup.location,
     title: eatup.title,
     media: eatup.media || [],
     date: new Date(eatup.date).toISOString().slice(0, 16),
     kosher: eatup.kosher,
     description: eatup.description,
+
     languages: [
       (eatup.languages?.[0] || defaultLanguage) as (typeof languages)[number],
     ],
     hosting: (eatup.hosting || "organization") as (typeof hostingTypes)[number],
     limit: eatup.limit ?? 2,
-  });
-
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const validateForm = () => {
-    try {
-      eatupSchema.parse(formData);
-      setErrors({});
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const newErrors: FormErrors = {};
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            newErrors[err.path[0] as keyof FormData] = err.message;
-          }
-        });
-        setErrors(newErrors);
-      }
-      return false;
-    }
-  };
-
-  const handleSave = async () => {
-    setServerError(null);
-    if (!validateForm()) return;
-
-    setLoading(true);
-    try {
-      const eatupData = {
-        ...formData,
-        date: new Date(formData.date).toISOString(),
-        city: formData.city || undefined,
-      };
-
-      await api.put(`/eatups/${eatup._id}`, eatupData);
-      onSave();
-      onClose();
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.error ||
-        "Failed to update EatUp. Please try again.";
-      setServerError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit EatUp</DialogTitle>
+          <DialogTitle className="text-2xl">
+            <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text font-bold">
+              Edit EatUp
+            </span>
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <FormItem>
-            <FormLabel>City</FormLabel>
-            <Select
-              value={formData.city || "none"}
-              onValueChange={(value) =>
-                setFormData({
-                  ...formData,
-                  city: value === "none" ? null : value,
-                })
-              }
-            >
-              <SelectTrigger className={errors.city ? "border-red-500" : ""}>
-                <SelectValue placeholder="Select city (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None of these</SelectItem>
-                {cities.map((city) => (
-                  <SelectItem key={city._id} value={city._id}>
-                    {city.name} ({city.zone})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.city && <FormMessage>{errors.city}</FormMessage>}
-          </FormItem>
+        <Formik
+          initialValues={initialValues}
+          validationSchema={toFormikValidationSchema(eatupSchema)}
+          onSubmit={async (values, { setSubmitting, setStatus }) => {
+            try {
+              const eatupData = {
+                ...values,
+                date: new Date(values.date).toISOString(),
+                city: values.city || undefined,
+              };
 
-          <FormItem>
-            <FormLabel>Location *</FormLabel>
-            <Input
-              placeholder="Enter specific location (e.g., address, venue name)"
-              value={formData.location}
-              onChange={(e) =>
-                setFormData({ ...formData, location: e.target.value })
-              }
-              className={errors.location ? "border-red-500" : ""}
-            />
-            {errors.location && <FormMessage>{errors.location}</FormMessage>}
-          </FormItem>
+              await api.put(`/eatups/${eatup._id}`, eatupData);
+              onSave();
+              onClose();
+            } catch (error: any) {
+              const errorMessage =
+                error.response?.data?.error ||
+                "Failed to update EatUp. Please try again.";
+              setStatus({ error: errorMessage });
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+        >
+          {({
+            isSubmitting,
+            status,
+            errors,
+            touched,
+            setFieldValue,
+            values,
+          }) => (
+            <Form className="space-y-6 py-4">
+              {status?.error && (
+                <Alert variant="destructive" className="text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{status.error}</AlertDescription>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute right-2 top-2"
+                    onClick={() => (status.error = null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </Alert>
+              )}
 
-          <FormItem>
-            <FormLabel>Title *</FormLabel>
-            <Input
-              placeholder="Enter title"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
-              className={errors.title ? "border-red-500" : ""}
-            />
-            {errors.title && <FormMessage>{errors.title}</FormMessage>}
-          </FormItem>
+              {/* City and Location Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* City - Disabled */}
+                <FormItem>
+                  <FormLabel>City</FormLabel>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Select
+                      disabled
+                      value={values.city || "none"}
+                      onValueChange={(value) =>
+                        setFieldValue("city", value === "none" ? null : value)
+                      }
+                    >
+                      <SelectTrigger
+                        className={`pl-10 ${
+                          errors.city && touched.city
+                            ? "border-destructive"
+                            : ""
+                        }`}
+                      >
+                        <SelectValue placeholder="Select city (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None of these</SelectItem>
+                        {cities.map((city) => (
+                          <SelectItem key={city._id} value={city._id}>
+                            {city.name} ({city.zone})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {errors.city && touched.city && (
+                    <FormMessage>{errors.city}</FormMessage>
+                  )}
+                </FormItem>
 
-          <FormItem>
-            <FormLabel>Date and Time *</FormLabel>
-            <Input
-              type="datetime-local"
-              value={formData.date}
-              onChange={(e) =>
-                setFormData({ ...formData, date: e.target.value })
-              }
-              className={errors.date ? "border-red-500" : ""}
-            />
-            {errors.date && <FormMessage>{errors.date}</FormMessage>}
-          </FormItem>
+                {/* Location */}
+                <FormItem>
+                  <FormLabel>Location *</FormLabel>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Field name="location">
+                      {({ field }: any) => (
+                        <Input
+                          {...field}
+                          placeholder="Enter specific location (e.g., address, venue name)"
+                          className={`pl-10 ${
+                            errors.location && touched.location
+                              ? "border-destructive"
+                              : ""
+                          }`}
+                        />
+                      )}
+                    </Field>
+                  </div>
+                  {errors.location && touched.location && (
+                    <FormMessage>{errors.location}</FormMessage>
+                  )}
+                </FormItem>
+              </div>
 
-          <FormItem>
-            <FormLabel>Hosting Type *</FormLabel>
-            <Select
-              value={formData.hosting}
-              onValueChange={(value: (typeof hostingTypes)[number]) =>
-                setFormData({ ...formData, hosting: value })
-              }
-            >
-              <SelectTrigger className={errors.hosting ? "border-red-500" : ""}>
-                <SelectValue placeholder="Select hosting type" />
-              </SelectTrigger>
-              <SelectContent>
-                {hostingTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.hosting && <FormMessage>{errors.hosting}</FormMessage>}
-          </FormItem>
+              {/* Title and Date Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Title */}
+                <FormItem>
+                  <FormLabel>Title *</FormLabel>
+                  <div className="relative">
+                    <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Field name="title">
+                      {({ field }: any) => (
+                        <Input
+                          {...field}
+                          placeholder="Enter title"
+                          className={`pl-10 ${
+                            errors.title && touched.title
+                              ? "border-destructive"
+                              : ""
+                          }`}
+                        />
+                      )}
+                    </Field>
+                  </div>
+                  {errors.title && touched.title && (
+                    <FormMessage>{errors.title}</FormMessage>
+                  )}
+                </FormItem>
 
-          <FormItem>
-            <FormLabel>Languages *</FormLabel>
-            <Select
-              value={formData.languages[0]}
-              onValueChange={(value: (typeof languages)[number]) =>
-                setFormData({ ...formData, languages: [value] })
-              }
-            >
-              <SelectTrigger
-                className={errors.languages ? "border-red-500" : ""}
-              >
-                <SelectValue placeholder="Select language" />
-              </SelectTrigger>
-              <SelectContent>
-                {languages.map((lang) => (
-                  <SelectItem key={lang} value={lang}>
-                    {lang}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.languages && <FormMessage>{errors.languages}</FormMessage>}
-          </FormItem>
+                {/* Date and Time */}
+                <FormItem>
+                  <FormLabel>Date and Time *</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant={"outline"}
+                        className={`w-full justify-start text-left font-normal ${
+                          touched.date && errors.date
+                            ? "border-destructive"
+                            : ""
+                        }`}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {values.date ? (
+                          format(new Date(values.date), "PPP HH:mm")
+                        ) : (
+                          <span>Pick a date and time</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={
+                          values.date ? new Date(values.date) : undefined
+                        }
+                        onSelect={(date) => {
+                          if (date) {
+                            const currentDate = values.date
+                              ? new Date(values.date)
+                              : new Date();
+                            date.setHours(currentDate.getHours());
+                            date.setMinutes(currentDate.getMinutes());
+                            setFieldValue("date", date.toISOString());
+                          }
+                        }}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                      />
+                      <div className="p-3 border-t">
+                        <Input
+                          type="time"
+                          value={
+                            values.date
+                              ? format(new Date(values.date), "HH:mm")
+                              : ""
+                          }
+                          onChange={(e) => {
+                            const [hours, minutes] = e.target.value.split(":");
+                            const newDate = values.date
+                              ? new Date(values.date)
+                              : new Date();
+                            newDate.setHours(parseInt(hours));
+                            newDate.setMinutes(parseInt(minutes));
+                            setFieldValue("date", newDate.toISOString());
+                          }}
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  {errors.date && touched.date && (
+                    <FormMessage>{errors.date}</FormMessage>
+                  )}
+                </FormItem>
+              </div>
 
-          <FormItem>
-            <FormLabel>Kosher</FormLabel>
-            <Select
-              value={formData.kosher ? "yes" : "no"}
-              onValueChange={(value) =>
-                setFormData({ ...formData, kosher: value === "yes" })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Is it kosher?" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="yes">Yes</SelectItem>
-                <SelectItem value="no">No</SelectItem>
-              </SelectContent>
-            </Select>
-          </FormItem>
+              {/* Hosting Type and Languages Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Hosting Type */}
+                <FormItem>
+                  <FormLabel>Hosting Type *</FormLabel>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Select
+                      value={values.hosting}
+                      onValueChange={(value: (typeof hostingTypes)[number]) =>
+                        setFieldValue("hosting", value)
+                      }
+                    >
+                      <SelectTrigger
+                        className={`pl-10 ${
+                          errors.hosting && touched.hosting
+                            ? "border-destructive"
+                            : ""
+                        }`}
+                      >
+                        <SelectValue placeholder="Select hosting type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hostingTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {errors.hosting && touched.hosting && (
+                    <FormMessage>{errors.hosting}</FormMessage>
+                  )}
+                </FormItem>
 
-          <FormItem>
-            <FormLabel>Guest Limit *</FormLabel>
-            <Input
-              type="number"
-              placeholder="Enter guest limit"
-              value={formData.limit}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  limit: parseInt(e.target.value) || 2,
-                })
-              }
-              min={2}
-              max={100}
-              className={errors.limit ? "border-red-500" : ""}
-            />
-            {errors.limit && <FormMessage>{errors.limit}</FormMessage>}
-          </FormItem>
+                {/* Languages */}
+                <FormItem>
+                  <FormLabel>Languages *</FormLabel>
+                  <div className="relative">
+                    <LanguagesIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Select
+                      value={values.languages[0]}
+                      onValueChange={(value: (typeof languages)[number]) =>
+                        setFieldValue("languages", [value])
+                      }
+                    >
+                      <SelectTrigger
+                        className={`pl-10 ${
+                          errors.languages && touched.languages
+                            ? "border-destructive"
+                            : ""
+                        }`}
+                      >
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {languages.map((lang) => (
+                          <SelectItem key={lang} value={lang}>
+                            {lang}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {errors.languages && touched.languages && (
+                    <FormMessage>{errors.languages}</FormMessage>
+                  )}
+                </FormItem>
+              </div>
 
-          <FormItem>
-            <FormLabel>Description *</FormLabel>
-            <Textarea
-              placeholder="Enter description"
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              className={errors.description ? "border-red-500" : ""}
-            />
-            {errors.description && (
-              <FormMessage>{errors.description}</FormMessage>
-            )}
-          </FormItem>
+              {/* Guest Limit and Kosher Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Guest Limit */}
+                <FormItem>
+                  <FormLabel>Guest Limit *</FormLabel>
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Field name="limit">
+                      {({ field }: any) => (
+                        <Input
+                          {...field}
+                          type="number"
+                          min={2}
+                          max={100}
+                          placeholder="Enter guest limit"
+                          className={`pl-10 ${
+                            errors.limit && touched.limit
+                              ? "border-destructive"
+                              : ""
+                          }`}
+                        />
+                      )}
+                    </Field>
+                  </div>
+                  {errors.limit && touched.limit && (
+                    <FormMessage>{errors.limit}</FormMessage>
+                  )}
+                </FormItem>
 
-          {serverError && (
-            <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{serverError}</AlertDescription>
-            </Alert>
+                {/* Kosher */}
+                <FormItem>
+                  <FormLabel>Kosher</FormLabel>
+                  <div className="relative">
+                    <UtensilsCrossed className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Select
+                      value={values.kosher ? "yes" : "no"}
+                      onValueChange={(value) =>
+                        setFieldValue("kosher", value === "yes")
+                      }
+                    >
+                      <SelectTrigger className="pl-10">
+                        <SelectValue placeholder="Is it kosher?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yes">Yes</SelectItem>
+                        <SelectItem value="no">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </FormItem>
+              </div>
+
+              {/* Description */}
+              <FormItem>
+                <FormLabel>Description *</FormLabel>
+                <div className="relative">
+                  <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Field name="description">
+                    {({ field }: any) => (
+                      <Textarea
+                        {...field}
+                        placeholder="Tell us about your EatUp event..."
+                        className={`pl-10 min-h-[120px] ${
+                          errors.description && touched.description
+                            ? "border-destructive"
+                            : ""
+                        }`}
+                      />
+                    )}
+                  </Field>
+                </div>
+                {errors.description && touched.description && (
+                  <FormMessage>{errors.description}</FormMessage>
+                )}
+              </FormItem>
+
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity"
+                >
+                  {isSubmitting ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </Form>
           )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90 transition-opacity"
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Save Changes"}
-          </Button>
-        </DialogFooter>
+        </Formik>
       </DialogContent>
     </Dialog>
   );

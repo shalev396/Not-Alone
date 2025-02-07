@@ -4,10 +4,16 @@ import { fetchEatUps } from "@/tenstack/query";
 import { EatUp } from "@/types/EatUps";
 import { DetailsDialog } from "../DetailsDialog";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import {
+  Search,
+  Calendar,
+  Utensils,
+  Users,
+  MapPin,
+} from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "../DatePickerWithRange";
-import { addDays, startOfDay, endOfDay } from "date-fns";
+import { addDays, startOfDay, endOfDay, format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -16,26 +22,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const EatUpsKosher = ["Kosher", "Not Kosher", "all"];
 const EatUpsHosting = ["organization", "donators", "city", "all"];
 
 const EatUpSkeleton = () => {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="p-6 bg-muted/50 rounded-lg space-y-3">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-7 w-1/3" />
-            <Skeleton className="h-7 w-32" />
-          </div>
-          <Skeleton className="h-4 w-full" />
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-8 w-28" />
-            <Skeleton className="h-8 w-28" />
-            <Skeleton className="h-8 w-32" />
-          </div>
-        </div>
+        <Card key={i} className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-primary/10 animate-pulse" />
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-8 w-2/5" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+            <Skeleton className="h-4 w-3/4" />
+            <div className="flex flex-wrap items-center gap-4">
+              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-8 w-40" />
+            </div>
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
@@ -78,56 +89,135 @@ export function EatUpFeed() {
     });
   };
 
+  const filteredEatUps = eatupsData ? filterEatUps(eatupsData) : [];
+
   return (
-    <div className="space-y-6">
-      <div className="bg-muted/50 p-4 rounded-lg space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Search eat-ups by title or location..."
-            className="pl-10 bg-background"
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+    <div className="w-full space-y-6">
+      <Card className="border-primary/20 w-full">
+        <CardContent className="p-6 space-y-6">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by title, location, or host..."
+              className="pl-10 bg-background/50 border-primary/20 h-11 w-full"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
 
-        <div className="flex flex-col md:flex-row gap-4">
-          <Select onValueChange={setKosher}>
-            <SelectTrigger className="w-full md:w-[180px] bg-background">
-              <SelectValue placeholder="Kosher" />
-            </SelectTrigger>
-            <SelectContent>
-              {EatUpsKosher.map((k) => (
-                <SelectItem key={k} value={k}>
-                  {k}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select onValueChange={setHosting}>
-            <SelectTrigger className="w-full md:w-[180px] bg-background">
-              <SelectValue placeholder="Hosting" />
-            </SelectTrigger>
-            <SelectContent>
-              {EatUpsHosting.map((h) => (
-                <SelectItem key={h} value={h}>
-                  {h.charAt(0).toUpperCase() + h.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <DatePickerWithRange date={date} setDate={setDate} />
-        </div>
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row gap-4 w-full">
+                <Select value={kosher} onValueChange={setKosher}>
+                  <SelectTrigger className="w-full sm:w-[180px] bg-background/50 border-primary/20">
+                    <Utensils className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Kosher Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EatUpsKosher.map((k) => (
+                      <SelectItem key={k} value={k}>
+                        {k}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={hosting} onValueChange={setHosting}>
+                  <SelectTrigger className="w-full sm:w-[180px] bg-background/50 border-primary/20">
+                    <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Host Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EatUpsHosting.map((h) => (
+                      <SelectItem key={h} value={h}>
+                        {h.charAt(0).toUpperCase() + h.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="flex-1 min-w-0">
+                  <DatePickerWithRange
+                    date={date}
+                    setDate={setDate}
+                    className="w-full bg-background/50 border-primary/20"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 w-full">
+        {isEatUpsLoading ? (
+          <EatUpSkeleton />
+        ) : filteredEatUps.length > 0 ? (
+          filteredEatUps.map((eatup) => (
+            <DetailsDialog
+              key={eatup._id}
+              type="EatUp"
+              eatup={eatup}
+              trigger={
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow w-full">
+                  <div className="p-4 flex gap-4">
+                    <div className="w-[150px] h-[150px] flex-shrink-0">
+                      {eatup.media && eatup.media.length > 0 ? (
+                        <img
+                          src={eatup.media[0]}
+                          alt={eatup.title}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted rounded-md flex items-center justify-center text-muted-foreground">
+                          No Image
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="font-bold text-lg md:text-xl mb-2">
+                        <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text">
+                          {eatup.title}
+                        </span>
+                      </h3>
+                      <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        <span>{eatup.location}</span>
+                        {eatup.city && (
+                          <>
+                            <span className="text-muted-foreground">•</span>
+                            <Badge
+                              variant="outline"
+                              className="bg-primary/5 text-primary border-primary/20"
+                            >
+                              {eatup.city.name}
+                            </Badge>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 items-center text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4 text-primary" />
+                          {format(new Date(eatup.date), "MMMM d, yyyy")}
+                        </div>
+                        <span>•</span>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4 text-primary" />
+                          {eatup.guests?.length || 0}/{eatup.limit || 2} Guests
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              }
+            />
+          ))
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No EatUps found.</p>
+          </div>
+        )}
       </div>
-
-      {isEatUpsLoading ? (
-        <EatUpSkeleton />
-      ) : eatupsData && Array.isArray(eatupsData) ? (
-        filterEatUps(eatupsData).map((eatup: EatUp) => (
-          <DetailsDialog key={eatup._id} eatup={eatup} type="EatUp" />
-        ))
-      ) : (
-        <div className="text-center py-4">No eat-ups found</div>
-      )}
     </div>
   );
 }

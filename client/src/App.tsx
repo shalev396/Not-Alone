@@ -174,14 +174,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
+      {/* <Route
         path="/home/residences"
         element={
           <ProtectedRoute>
             <HomePage mode="Residences" />
           </ProtectedRoute>
         }
-      />
+      /> */}
       <Route
         path="/home/eatup"
         element={

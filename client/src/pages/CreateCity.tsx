@@ -3,13 +3,7 @@ import { api } from "@/api/api";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 import { uploadImage } from "@/components/shared/UploadPhoto";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,229 +14,284 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { FormItem, FormLabel } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Navbar } from "@/components/shared/Navbar";
+import { MapPin, Building2, FileText, ImageIcon } from "lucide-react";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import { toFormikValidationSchema } from "zod-formik-adapter";
+import upload from "@/assets/upload.png";
 
 // Constants
-const zones = ["north", "south", "center"] as const;
+const zones = ["north", "center", "south"] as const;
 
-// Zod schema for form validation
+// Zod schema for city creation
 const citySchema = z.object({
   name: z
     .string()
     .min(2, "Name must be at least 2 characters")
-    .max(100, "Name cannot exceed 100 characters"),
-  zone: z.enum(zones, {
-    required_error: "Please select a zone",
-  }),
+    .max(50, "Name must be less than 50 characters"),
+  zone: z.enum(zones),
   bio: z
     .string()
-    .min(10, "Bio must be at least 10 characters")
-    .max(1000, "Bio cannot exceed 1000 characters"),
-  media: z.array(z.string()).max(10, "Cannot exceed 10 media items"),
+    .min(10, "Description must be at least 10 characters")
+    .max(500, "Description must be less than 500 characters"),
+  media: z.array(z.string()).default([]),
 });
 
-type FormData = z.infer<typeof citySchema>;
-type FormErrors = Partial<Record<keyof FormData, string>>;
+type CityFormValues = z.infer<typeof citySchema>;
 
 export default function CreateCity() {
   const navigate = useNavigate();
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<FormData>({
+  // const handleImageUpload = async (
+  //   file: File,
+  //   setFieldValue: any,
+  //   values: CityFormValues
+  // ) => {
+  //   try {
+  //     const imageUrl = await uploadImage(file);
+  //     setFieldValue("media", [...(values.media || []), imageUrl]);
+  //     setPreviewUrl(URL.createObjectURL(file));
+  //   } catch (error) {
+  //     console.error("Failed to upload image:", error);
+  //     setErrorMessage("Failed to upload image. Please try again.");
+  //     setShowError(true);
+  //   }
+  // };
+
+  const handleSubmit = async (
+    values: CityFormValues,
+    { setSubmitting, setStatus }: any
+  ) => {
+    try {
+      await api.post("/cities", values);
+      navigate("/admin/cities");
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error || "Failed to create city";
+      setStatus(errorMessage);
+      setErrorMessage(errorMessage);
+      setShowError(true);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const initialValues: CityFormValues = {
     name: "",
     zone: "center",
     bio: "",
     media: [],
-  });
-
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const validateForm = () => {
-    try {
-      citySchema.parse(formData);
-      setErrors({});
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const newErrors: FormErrors = {};
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            newErrors[err.path[0] as keyof FormData] = err.message;
-          }
-        });
-        setErrors(newErrors);
-      }
-      return false;
-    }
-  };
-
-  const handleImageUpload = async (file: File) => {
-    try {
-      const imageUrl = await uploadImage(file);
-      setFormData({
-        ...formData,
-        media: [...formData.media, imageUrl],
-      });
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      setServerError("Failed to upload image. Please try again.");
-    }
-  };
-
-  const handleSubmit = async () => {
-    setServerError(null);
-    if (!validateForm()) return;
-
-    setLoading(true);
-    try {
-      await api.post("/cities", formData);
-      navigate("/social");
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.error ||
-        "Failed to create city. Please try again.";
-      setServerError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
-    <div className="flex h-screen">
-      <Navbar isVertical isAccordion modes="home" />
+    <div className="flex bg-background text-foreground min-h-screen">
+      <Navbar modes="home" isVertical={true} isAccordion={true} />
 
-      <div className="flex-1 overflow-auto">
-        <div className="container max-w-2xl py-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create New City</CardTitle>
-              <CardDescription>
-                Fill in the details to create a new city
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormItem>
-                <FormLabel>City Name *</FormLabel>
-                <Input
-                  placeholder="Enter city name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className={errors.name ? "border-red-500" : ""}
-                />
-                {errors.name && <FormMessage>{errors.name}</FormMessage>}
-              </FormItem>
+      <div className="flex-1 p-6 pl-[72px] sm:pl-20 md:pl-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold">
+              <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text">
+                Create City
+              </span>
+            </h2>
+          </div>
 
-              <FormItem>
-                <FormLabel>Zone *</FormLabel>
-                <Select
-                  value={formData.zone}
-                  onValueChange={(value: (typeof zones)[number]) =>
-                    setFormData({ ...formData, zone: value })
-                  }
-                >
-                  <SelectTrigger
-                    className={errors.zone ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select zone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {zones.map((zone) => (
-                      <SelectItem key={zone} value={zone}>
-                        {zone.charAt(0).toUpperCase() + zone.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.zone && <FormMessage>{errors.zone}</FormMessage>}
-              </FormItem>
+          <Card className="p-4 sm:p-6">
+            <div className="space-y-6">
+              <p className="text-muted-foreground text-center">
+                Add a new city to support Lone Soldiers in your area
+              </p>
 
-              <FormItem>
-                <FormLabel>Bio *</FormLabel>
-                <Textarea
-                  placeholder="Enter city description"
-                  value={formData.bio}
-                  onChange={(e) =>
-                    setFormData({ ...formData, bio: e.target.value })
-                  }
-                  className={errors.bio ? "border-red-500" : ""}
-                />
-                {errors.bio && <FormMessage>{errors.bio}</FormMessage>}
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Photos</FormLabel>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      await handleImageUpload(file);
-                    }
-                  }}
-                  className={errors.media ? "border-red-500" : ""}
-                />
-                {errors.media && <FormMessage>{errors.media}</FormMessage>}
-                {formData.media.length > 0 && (
-                  <div className="mt-4 grid grid-cols-2 gap-4">
-                    {formData.media.map((url, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={url}
-                          alt={`Uploaded ${index + 1}`}
-                          className="w-full h-40 object-cover rounded-md"
-                        />
-                        <button
-                          onClick={() => {
-                            setFormData({
-                              ...formData,
-                              media: formData.media.filter(
-                                (_, i) => i !== index
-                              ),
-                            });
-                          }}
-                          className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {formData.media.length > 0 && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {formData.media.length} photo
-                    {formData.media.length !== 1 ? "s" : ""} uploaded
-                    {formData.media.length >= 10 && " (Maximum reached)"}
-                  </p>
-                )}
-              </FormItem>
-
-              {serverError && (
+              {showError && (
                 <Alert variant="destructive">
                   <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{serverError}</AlertDescription>
+                  <AlertDescription>{errorMessage}</AlertDescription>
                 </Alert>
               )}
 
-              <div className="flex justify-end space-x-4 pt-4">
-                <Button variant="outline" onClick={() => navigate(-1)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90 transition-opacity"
-                  disabled={loading}
-                >
-                  {loading ? "Creating..." : "Create City"}
-                </Button>
-              </div>
-            </CardContent>
+              <Formik
+                initialValues={initialValues}
+                validationSchema={toFormikValidationSchema(citySchema)}
+                onSubmit={handleSubmit}
+              >
+                {({ isSubmitting, setFieldValue, values, touched, errors }) => (
+                  <Form className="grid gap-6">
+                    {/* City Name and Zone Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormItem>
+                        <FormLabel>City Name *</FormLabel>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Field
+                            as={Input}
+                            name="name"
+                            placeholder="Enter city name"
+                            className={`pl-10 ${
+                              touched.name && errors.name
+                                ? "border-destructive"
+                                : ""
+                            }`}
+                          />
+                        </div>
+                        <ErrorMessage
+                          name="name"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+
+                      <FormItem>
+                        <FormLabel>Zone *</FormLabel>
+                        <Field name="zone">
+                          {({ field, form }: any) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={(value) =>
+                                form.setFieldValue("zone", value)
+                              }
+                            >
+                              <SelectTrigger
+                                className={`${
+                                  touched.zone && errors.zone
+                                    ? "border-destructive"
+                                    : ""
+                                }`}
+                              >
+                                <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                                <SelectValue placeholder="Select zone" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {zones.map((zone) => (
+                                  <SelectItem key={zone} value={zone}>
+                                    {zone.charAt(0).toUpperCase() +
+                                      zone.slice(1)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </Field>
+                        <ErrorMessage
+                          name="zone"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+                    </div>
+
+                    {/* Description */}
+                    <FormItem>
+                      <FormLabel>City Description *</FormLabel>
+                      <div className="relative">
+                        <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Field
+                          as={Textarea}
+                          name="bio"
+                          placeholder="Enter city description"
+                          className={`min-h-[100px] pl-10 ${
+                            touched.bio && errors.bio
+                              ? "border-destructive"
+                              : ""
+                          }`}
+                        />
+                      </div>
+                      <ErrorMessage
+                        name="bio"
+                        component="p"
+                        className="text-sm text-destructive mt-1"
+                      />
+                    </FormItem>
+
+                    {/* Images */}
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                        City Image
+                      </FormLabel>
+                      <div className="space-y-4">
+                        <input
+                          type="file"
+                          id="file-upload"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setPreviewUrl(URL.createObjectURL(file));
+                              const imageUrl = await uploadImage(file);
+                              setFieldValue("media", [imageUrl]);
+                            }
+                          }}
+                        />
+                        <div className="flex items-center gap-4">
+                          {previewUrl && (
+                            <div className="relative w-40 h-40">
+                              <img
+                                src={previewUrl}
+                                alt="Preview"
+                                className="w-full h-full object-cover rounded-lg shadow-md border border-border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPreviewUrl(null);
+                                  setFieldValue("media", []);
+                                }}
+                                className="absolute top-[-10px] right-[-10px] bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-destructive/90"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <ErrorMessage
+                          name="media"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                        {values.media.length > 0 && !errors.media && (
+                          <p className="text-sm text-muted-foreground">
+                            Image uploaded successfully
+                          </p>
+                        )}
+                      </div>
+                    </FormItem>
+
+                    <div className="flex items-center gap-4">
+                      <label
+                        htmlFor={previewUrl ? undefined : "file-upload"}
+                        className={`${
+                          previewUrl
+                            ? "opacity-50 cursor-not-allowed bg-muted"
+                            : "cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground"
+                        } h-10 w-10 rounded-lg shadow-md inline-flex items-center justify-center transition-colors`}
+                      >
+                        <img
+                          src={upload}
+                          alt="upload"
+                          className={`w-5 h-5 ${
+                            previewUrl ? "opacity-50" : ""
+                          }`}
+                        />
+                      </label>
+                      <Button
+                        type="submit"
+                        className="flex-1 bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? "Creating..." : "Create City"}
+                      </Button>
+                    </div>
+                  </Form>
+                )}
+              </Formik>
+            </div>
           </Card>
         </div>
       </div>

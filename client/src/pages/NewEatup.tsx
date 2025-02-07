@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { uploadImage } from "@/components/shared/UploadPhoto";
 import { api } from "@/api/api";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  CalendarIcon,
+  MapPin,
+  Building2,
+  Type,
+  Languages,
+  Users,
+  UtensilsCrossed,
+  FileText,
+  Image as ImageIcon,
+} from "lucide-react";
+import { format } from "date-fns";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import { toFormikValidationSchema } from "zod-formik-adapter";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectTrigger,
@@ -14,20 +33,12 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { FormItem, FormLabel } from "@/components/ui/form";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/shared/Navbar";
-
-// Constants
-const hostingTypes = ["organization", "donators", "city"] as const;
-const languages = [
-  "Hebrew",
-  "English",
-  "Arabic",
-  "Russian",
-  "Amharic",
-] as const;
+import upload from "@/assets/upload.png";
+import { useState } from "react";
 
 // Define city type to match backend response
 interface City {
@@ -39,30 +50,22 @@ interface City {
   approvalStatus: string;
 }
 
-// Fetch cities query
-const fetchCities = async () => {
-  try {
-    const response = await api.get("/cities");
-    console.log("Cities response:", response.data); // For debugging
-    return response.data as City[];
-  } catch (error) {
-    console.error("Error fetching cities:", error);
-    return [];
-  }
-};
+// Constants
+const hostingTypes = ["organization", "donators", "city"] as const;
+const languages = [
+  "Hebrew",
+  "English",
+  "Arabic",
+  "Russian",
+  "Amharic",
+] as const;
 
-// Zod schema for form validation
-const formSchema = z.object({
+// Zod schema
+const eatupSchema = z.object({
   city: z.string().nullable(),
-  location: z
-    .string()
-    .min(3, "Location must be at least 3 characters")
-    .max(100, "Location cannot exceed 100 characters"),
-  title: z
-    .string()
-    .min(3, "Title must be at least 3 characters")
-    .max(100, "Title cannot exceed 100 characters"),
-  media: z.array(z.string()).max(10, "Cannot exceed 10 media items"),
+  location: z.string().min(3, "Location must be at least 3 characters"),
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  media: z.array(z.string()).default([]),
   date: z
     .string()
     .min(1, "Date and time are required")
@@ -71,36 +74,32 @@ const formSchema = z.object({
       "Date must be in the future"
     ),
   kosher: z.boolean(),
-  description: z
-    .string()
-    .min(10, "Description must be at least 10 characters")
-    .max(1000, "Description cannot exceed 1000 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
   languages: z
     .array(z.enum(languages))
-    .min(1, "At least one language is required")
-    .max(5, "Cannot exceed 5 languages"),
-  hosting: z.enum(hostingTypes, {
-    required_error: "Please select a hosting type",
-  }),
-  limit: z
-    .number()
-    .min(2, "Minimum 2 guests required")
-    .max(100, "Cannot exceed 100 guests"),
+    .min(1, "At least one language is required"),
+  hosting: z.enum(hostingTypes),
+  limit: z.number().min(2, "Minimum 2 guests").max(100, "Maximum 100 guests"),
 });
 
-type FormData = z.infer<typeof formSchema>;
+type EatupFormValues = z.infer<typeof eatupSchema>;
 
-type FormErrors = Partial<Record<keyof FormData, string>>;
-
+// Component
 export default function NewEatup() {
   const navigate = useNavigate();
-  const { data: cities = [], isLoading: isLoadingCities } = useQuery<City[]>({
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const { data: cities = [] } = useQuery<City[]>({
     queryKey: ["cities"],
-    queryFn: fetchCities,
+    queryFn: async () => {
+      const response = await api.get("/cities");
+      return response.data;
+    },
   });
 
-  // Form fields
-  const [formData, setFormData] = useState<FormData>({
+  const initialValues: EatupFormValues = {
     city: null,
     location: "",
     title: "",
@@ -109,59 +108,35 @@ export default function NewEatup() {
     kosher: false,
     description: "",
     languages: ["Hebrew"],
-    hosting: "organization" as const,
+    hosting: "organization",
     limit: 2,
-  });
-
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const validateForm = () => {
-    try {
-      formSchema.parse(formData);
-      setErrors({});
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const newErrors: FormErrors = {};
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            newErrors[err.path[0] as keyof FormData] = err.message;
-          }
-        });
-        setErrors(newErrors);
-      }
-      return false;
-    }
   };
 
-  const handleCreateEatup = async () => {
-    setServerError(null);
-    if (!validateForm()) return;
-
-    setLoading(true);
+  const handleSubmit = async (
+    values: EatupFormValues,
+    { setSubmitting, setStatus }: any
+  ) => {
     try {
       const submitData = {
-        ...formData,
-        date: new Date(formData.date).toISOString(),
-        media: [formData.media[0]],
+        ...values,
+        date: new Date(values.date).toISOString(),
+        media: [values.media[0]],
         authorId: sessionStorage.getItem("id"),
-        title: formData.description,
         owner: sessionStorage.getItem("id"),
-        language: "Hebrew",
-        limit: formData.limit ? formData.limit.toString() : undefined,
+        language: values.languages[0],
+        limit: values.limit.toString(),
       };
 
       await api.post("/eatups", submitData);
       navigate("/my-eatups");
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.error ||
-        "Failed to create EatUp. Please try again.";
-      setServerError(errorMessage);
+        error.response?.data?.error || "Failed to create EatUp";
+      setStatus(errorMessage);
+      setErrorMessage(errorMessage);
+      setShowError(true);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -169,236 +144,424 @@ export default function NewEatup() {
     <div className="flex bg-background text-foreground min-h-screen">
       <Navbar modes="home2" isVertical={true} isAccordion={true} />
 
-      <div className="flex-1 mx-10">
-        <div className="py-6">
-          <Card className="max-w-2xl mx-auto p-6">
-            <h2 className="text-3xl font-bold mb-8 text-center">
-              <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
-                Create New EatUp
+      <div className="flex-1 p-6 pl-[72px] sm:pl-20 md:pl-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex justify-between items-center gap-4 mb-8">
+            <h2 className="text-3xl font-bold">
+              <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text">
+                Create EatUp
               </span>
             </h2>
+            <Button
+              onClick={() => navigate("/my-eatups")}
+              className="bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity h-10 px-4"
+              size="lg"
+            >
+              View My EatUps
+            </Button>
+          </div>
 
-            <div className="space-y-4">
-              <FormItem>
-                <FormLabel>City</FormLabel>
-                <Select
-                  value={formData.city || "none"}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      city: value === "none" ? null : value,
-                    })
-                  }
-                >
-                  <SelectTrigger
-                    className={errors.city ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select city (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None of these</SelectItem>
-                    {cities && cities.length > 0 ? (
-                      cities.map((city) => (
-                        <SelectItem key={city._id} value={city._id}>
-                          {city.name} (
-                          {city.zone.charAt(0).toUpperCase() +
-                            city.zone.slice(1)}
-                          )
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="no-cities" disabled>
-                        {isLoadingCities
-                          ? "Loading cities..."
-                          : "No approved cities available"}
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                {errors.city && <FormMessage>{errors.city}</FormMessage>}
-              </FormItem>
+          <Card className="p-4 sm:p-6">
+            <div className="space-y-6">
+              <p className="text-muted-foreground text-center">
+                Host a meal and connect with fellow soldiers
+              </p>
 
-              <FormItem>
-                <FormLabel>Location *</FormLabel>
-                <Input
-                  placeholder="Enter specific location (e.g., address, venue name)"
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  className={errors.location ? "border-red-500" : ""}
-                />
-                {errors.location && (
-                  <FormMessage>{errors.location}</FormMessage>
-                )}
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Title *</FormLabel>
-                <Input
-                  placeholder="Enter title"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  className={errors.title ? "border-red-500" : ""}
-                />
-                {errors.title && <FormMessage>{errors.title}</FormMessage>}
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Date and Time *</FormLabel>
-                <Input
-                  type="datetime-local"
-                  value={formData.date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, date: e.target.value })
-                  }
-                  className={errors.date ? "border-red-500" : ""}
-                />
-                {errors.date && <FormMessage>{errors.date}</FormMessage>}
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Hosting Type *</FormLabel>
-                <Select
-                  value={formData.hosting}
-                  onValueChange={(value: (typeof hostingTypes)[number]) =>
-                    setFormData({ ...formData, hosting: value })
-                  }
-                >
-                  <SelectTrigger
-                    className={errors.hosting ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select hosting type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {hostingTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.hosting && <FormMessage>{errors.hosting}</FormMessage>}
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Languages *</FormLabel>
-                <Select
-                  value={formData.languages[0]}
-                  onValueChange={(value: (typeof languages)[number]) =>
-                    setFormData({ ...formData, languages: [value] })
-                  }
-                >
-                  <SelectTrigger
-                    className={errors.languages ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang) => (
-                      <SelectItem key={lang} value={lang}>
-                        {lang}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.languages && (
-                  <FormMessage>{errors.languages}</FormMessage>
-                )}
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Kosher</FormLabel>
-                <Select
-                  value={formData.kosher ? "yes" : "no"}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, kosher: value === "yes" })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Is it kosher?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="yes">Yes</SelectItem>
-                    <SelectItem value="no">No</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Guest Limit *</FormLabel>
-                <Input
-                  type="number"
-                  placeholder="Enter guest limit"
-                  value={formData.limit}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      limit: parseInt(e.target.value) || 2,
-                    })
-                  }
-                  min={2}
-                  max={100}
-                />
-                {errors.limit && <FormMessage>{errors.limit}</FormMessage>}
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Description *</FormLabel>
-                <Textarea
-                  placeholder="Enter description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className={errors.description ? "border-red-500" : ""}
-                />
-                {errors.description && (
-                  <FormMessage>{errors.description}</FormMessage>
-                )}
-              </FormItem>
-
-              <FormItem>
-                <FormLabel>Images</FormLabel>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const imageUrl = await uploadImage(file);
-                      setFormData({
-                        ...formData,
-                        media: [imageUrl],
-                      });
-                    }
-                  }}
-                  className={errors.media ? "border-red-500" : ""}
-                />
-                {errors.media && <FormMessage>{errors.media}</FormMessage>}
-                {formData.media.length > 0 && (
-                  <div className="mt-2">
-                    <p>Uploaded images: {formData.media.length}</p>
-                  </div>
-                )}
-              </FormItem>
-
-              {serverError && (
+              {showError && (
                 <Alert variant="destructive">
                   <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{serverError}</AlertDescription>
+                  <AlertDescription>{errorMessage}</AlertDescription>
                 </Alert>
               )}
 
-              <Button
-                onClick={handleCreateEatup}
-                className="w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90 transition-opacity"
-                disabled={loading}
+              <Formik
+                initialValues={initialValues}
+                validationSchema={toFormikValidationSchema(eatupSchema)}
+                onSubmit={handleSubmit}
               >
-                {loading ? "Creating..." : "Create EatUp"}
-              </Button>
+                {({ isSubmitting, touched, errors, setFieldValue, values }) => (
+                  <Form className="grid gap-6">
+                    {/* City and Location Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <Select
+                          value={values.city || "none"}
+                          onValueChange={(value) =>
+                            setFieldValue(
+                              "city",
+                              value === "none" ? null : value
+                            )
+                          }
+                        >
+                          <SelectTrigger
+                            className={
+                              touched.city && errors.city
+                                ? "border-destructive"
+                                : ""
+                            }
+                          >
+                            <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Select city (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None of these</SelectItem>
+                            {cities.map((city) => (
+                              <SelectItem key={city._id} value={city._id}>
+                                {city.name} (
+                                {city.zone.charAt(0).toUpperCase() +
+                                  city.zone.slice(1)}
+                                )
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <ErrorMessage
+                          name="city"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+
+                      <FormItem>
+                        <FormLabel>Location *</FormLabel>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Field
+                            as={Input}
+                            name="location"
+                            placeholder="Enter specific location"
+                            className={`pl-10 ${
+                              touched.location && errors.location
+                                ? "border-destructive"
+                                : ""
+                            }`}
+                          />
+                        </div>
+                        <ErrorMessage
+                          name="location"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+                    </div>
+
+                    {/* Title and Date Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormItem>
+                        <FormLabel>Title *</FormLabel>
+                        <div className="relative">
+                          <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Field
+                            as={Input}
+                            name="title"
+                            placeholder="Enter title"
+                            className={`pl-10 ${
+                              touched.title && errors.title
+                                ? "border-destructive"
+                                : ""
+                            }`}
+                          />
+                        </div>
+                        <ErrorMessage
+                          name="title"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+
+                      <FormItem>
+                        <FormLabel>Date and Time *</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant={"outline"}
+                              className={`w-full justify-start text-left font-normal ${
+                                touched.date && errors.date
+                                  ? "border-destructive"
+                                  : ""
+                              }`}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {values.date ? (
+                                format(new Date(values.date), "PPP HH:mm")
+                              ) : (
+                                <span>Pick a date and time</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={
+                                values.date ? new Date(values.date) : undefined
+                              }
+                              onSelect={(date) => {
+                                if (date) {
+                                  const currentDate = values.date
+                                    ? new Date(values.date)
+                                    : new Date();
+                                  date.setHours(currentDate.getHours());
+                                  date.setMinutes(currentDate.getMinutes());
+                                  setFieldValue("date", date.toISOString());
+                                }
+                              }}
+                              disabled={(date) => date < new Date()}
+                              initialFocus
+                            />
+                            <div className="p-3 border-t">
+                              <Input
+                                type="time"
+                                value={
+                                  values.date
+                                    ? format(new Date(values.date), "HH:mm")
+                                    : ""
+                                }
+                                onChange={(e) => {
+                                  const [hours, minutes] =
+                                    e.target.value.split(":");
+                                  const newDate = values.date
+                                    ? new Date(values.date)
+                                    : new Date();
+                                  newDate.setHours(parseInt(hours));
+                                  newDate.setMinutes(parseInt(minutes));
+                                  setFieldValue("date", newDate.toISOString());
+                                }}
+                              />
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <ErrorMessage
+                          name="date"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+                    </div>
+
+                    {/* Hosting, Language, and Guest Limit Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormItem>
+                        <FormLabel>Hosting Type *</FormLabel>
+                        <Select
+                          value={values.hosting}
+                          onValueChange={(value) =>
+                            setFieldValue("hosting", value)
+                          }
+                        >
+                          <SelectTrigger
+                            className={
+                              touched.hosting && errors.hosting
+                                ? "border-destructive"
+                                : ""
+                            }
+                          >
+                            <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {hostingTypes.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <ErrorMessage
+                          name="hosting"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+
+                      <FormItem>
+                        <FormLabel>Language *</FormLabel>
+                        <Select
+                          value={values.languages[0]}
+                          onValueChange={(value) =>
+                            setFieldValue("languages", [value])
+                          }
+                        >
+                          <SelectTrigger
+                            className={
+                              touched.languages && errors.languages
+                                ? "border-destructive"
+                                : ""
+                            }
+                          >
+                            <Languages className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Select language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {languages.map((lang) => (
+                              <SelectItem key={lang} value={lang}>
+                                {lang}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <ErrorMessage
+                          name="languages"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+
+                      <FormItem>
+                        <FormLabel>Guest Limit *</FormLabel>
+                        <div className="relative">
+                          <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Field
+                            as={Input}
+                            type="number"
+                            name="limit"
+                            placeholder="Max guests"
+                            min={2}
+                            max={100}
+                            className={`pl-10 ${
+                              touched.limit && errors.limit
+                                ? "border-destructive"
+                                : ""
+                            }`}
+                          />
+                        </div>
+                        <ErrorMessage
+                          name="limit"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                      </FormItem>
+                    </div>
+
+                    {/* Kosher Switch */}
+                    <FormItem>
+                      <FormLabel>Kosher</FormLabel>
+                      <Select
+                        value={values.kosher ? "yes" : "no"}
+                        onValueChange={(value) =>
+                          setFieldValue("kosher", value === "yes")
+                        }
+                      >
+                        <SelectTrigger>
+                          <UtensilsCrossed className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <SelectValue placeholder="Is it kosher?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+
+                    {/* Description */}
+                    <FormItem>
+                      <FormLabel>Description *</FormLabel>
+                      <div className="relative">
+                        <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Field
+                          as={Textarea}
+                          name="description"
+                          placeholder="Tell us about your EatUp event..."
+                          className={`pl-10 min-h-[80px] ${
+                            touched.description && errors.description
+                              ? "border-destructive"
+                              : ""
+                          }`}
+                        />
+                      </div>
+                      <ErrorMessage
+                        name="description"
+                        component="p"
+                        className="text-sm text-destructive mt-1"
+                      />
+                    </FormItem>
+
+                    {/* Image Upload */}
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                        Event Image
+                      </FormLabel>
+                      <div className="space-y-4">
+                        <input
+                          type="file"
+                          id="file-upload"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setPreviewUrl(URL.createObjectURL(file));
+                              const imageUrl = await uploadImage(file);
+                              setFieldValue("media", [imageUrl]);
+                            }
+                          }}
+                        />
+
+                        <div className="flex items-center gap-4">
+                          {previewUrl && (
+                            <div className="relative w-40 h-40">
+                              <img
+                                src={previewUrl}
+                                alt="Preview"
+                                className="w-full h-full object-cover rounded-lg shadow-md border border-border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPreviewUrl(null);
+                                  setFieldValue("media", []);
+                                }}
+                                className="absolute top-[-10px] right-[-10px] bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-destructive/90"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <ErrorMessage
+                          name="media"
+                          component="p"
+                          className="text-sm text-destructive mt-1"
+                        />
+                        {values.media.length > 0 && !errors.media && (
+                          <p className="text-sm text-muted-foreground">
+                            Image uploaded successfully
+                          </p>
+                        )}
+                      </div>
+                    </FormItem>
+
+                    <div className="flex items-center gap-4">
+                      <label
+                        htmlFor={previewUrl ? undefined : "file-upload"}
+                        className={`${
+                          previewUrl
+                            ? "opacity-50 cursor-not-allowed bg-muted"
+                            : "cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground"
+                        } h-10 w-10 rounded-lg shadow-md inline-flex items-center justify-center transition-colors`}
+                      >
+                        <img
+                          src={upload}
+                          alt="upload"
+                          className={`w-5 h-5 ${
+                            previewUrl ? "opacity-50" : ""
+                          }`}
+                        />
+                      </label>
+                      <Button
+                        type="submit"
+                        className="flex-1 bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? "Creating..." : "Create EatUp"}
+                      </Button>
+                    </div>
+                  </Form>
+                )}
+              </Formik>
             </div>
           </Card>
         </div>

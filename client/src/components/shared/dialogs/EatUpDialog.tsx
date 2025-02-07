@@ -5,18 +5,30 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { EatUp } from "@/types/EatUps";
 import { useState, useEffect } from "react";
 import { api } from "@/api/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import {
+  MapPin,
+  Calendar,
+  Utensils,
+  Users,
+  User,
+  Building2,
+  ScrollText,
+  Languages,
+} from "lucide-react";
 
 interface EatUpDialogProps {
   eatup: EatUp | null;
+  trigger?: React.ReactNode;
 }
 
-export function EatUpDialog({ eatup }: EatUpDialogProps) {
+export function EatUpDialog({ eatup, trigger }: EatUpDialogProps) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [guestCount, setGuestCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,99 +95,126 @@ export function EatUpDialog({ eatup }: EatUpDialogProps) {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-          <div className="p-4 flex gap-4">
-            <div className="w-[150px] h-[150px]">
-              {eatup?.media && eatup.media.length > 0 ? (
-                <img
-                  src={eatup.media[0]}
-                  alt="EatUp"
-                  className="w-full h-full object-cover rounded-md"
-                />
-              ) : (
-                <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
-                  No Image
-                </div>
-              )}
-            </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-lg md:text-xl">{eatup?.title}</h3>
-              <p className="text-muted-foreground text-sm md:text-base">
-                {eatup?.date && new Date(eatup.date).toLocaleDateString()}
-              </p>
-              <p className="text-muted-foreground leading-relaxed">
-                Kosher: {eatup?.kosher ? "Yes" : "No"}
-              </p>
-              <p className="text-muted-foreground leading-relaxed">
-                Hosting: {eatup?.hosting || "Not specified"}
-              </p>
-              {eatup?.limit && (
-                <p className="text-muted-foreground leading-relaxed">
-                  Guests:{" "}
-                  <span
-                    className={
-                      guestCount >= (eatup.limit || 0)
-                        ? "text-destructive"
-                        : "text-primary"
-                    }
-                  >
-                    {guestCount}/{eatup.limit}
-                  </span>
-                </p>
-              )}
-            </div>
-          </div>
-        </Card>
-      </DialogTrigger>
-      <DialogContent className="max-w-[800px]">
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-w-[800px] w-[95vw] overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>EatUp Details</DialogTitle>
+          <DialogTitle className="text-xl sm:text-2xl">
+            <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text font-bold">
+              {eatup?.title}
+            </span>
+          </DialogTitle>
         </DialogHeader>
         <div className="mt-4 space-y-6">
           {eatup?.media && eatup.media.length > 0 && (
-            <img
-              src={eatup.media[0]}
-              alt="EatUp"
-              className="w-full max-h-[300px] object-cover rounded-lg"
-            />
+            <div className="flex justify-center mx-auto max-w-2xl">
+              <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-muted">
+                <img
+                  src={eatup.media[0]}
+                  alt={`${eatup.title}`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              </div>
+            </div>
           )}
           <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold text-lg">{eatup?.title}</h4>
-              <p className="text-muted-foreground">
-                {eatup?.date && new Date(eatup.date).toLocaleDateString()}
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="h-5 w-5 text-primary" />
+              <p>
+                {eatup?.date && format(new Date(eatup.date), "MMMM d, yyyy")}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h5 className="font-medium">Kosher</h5>
-                <p>{eatup?.kosher ? "Yes" : "No"}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <h5 className="font-medium">Location</h5>
+                </div>
+                <p className="text-muted-foreground pl-7">{eatup?.location}</p>
+                {eatup?.city && (
+                  <div className="pl-7 flex items-center gap-2 mt-1">
+                    <Badge
+                      variant="outline"
+                      className="bg-primary/5 text-primary border-primary/20"
+                    >
+                      {eatup.city.name}
+                    </Badge>
+                    <span className="text-muted-foreground text-sm">
+                      ({eatup.city.zone} zone)
+                    </span>
+                  </div>
+                )}
               </div>
-              <div>
-                <h5 className="font-medium">Hosting</h5>
-                <p>{eatup?.hosting || "Not specified"}</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  <h5 className="font-medium">Hosting</h5>
+                </div>
+                <p className="text-muted-foreground pl-7">
+                  {eatup?.hosting || "Not specified"}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Utensils className="h-5 w-5 text-primary" />
+                  <h5 className="font-medium">Kosher</h5>
+                </div>
+                <p className="text-muted-foreground pl-7">
+                  {eatup?.kosher ? "Yes" : "No"}
+                </p>
               </div>
               {eatup?.limit && (
-                <div>
-                  <h5 className="font-medium">Guest Capacity</h5>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    <h5 className="font-medium">Guest Capacity</h5>
+                  </div>
                   <p
-                    className={
+                    className={`pl-7 ${
                       guestCount >= (eatup.limit || 0)
                         ? "text-destructive"
                         : "text-primary"
-                    }
+                    }`}
                   >
                     {guestCount}/{eatup.limit}
                   </p>
                 </div>
               )}
             </div>
+            {eatup?.description && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <ScrollText className="h-5 w-5 text-primary" />
+                  <h5 className="font-medium">Description</h5>
+                </div>
+                <p className="text-muted-foreground whitespace-pre-wrap pl-7">
+                  {eatup.description}
+                </p>
+              </div>
+            )}
+            {eatup?.languages && eatup.languages.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Languages className="h-5 w-5 text-primary" />
+                  <h5 className="font-medium">Languages</h5>
+                </div>
+                <div className="flex flex-wrap gap-2 pl-7">
+                  {eatup.languages.map((language, index) => (
+                    <span
+                      key={index}
+                      className="bg-primary/10 text-primary text-sm px-2 py-1 rounded-md"
+                    >
+                      {language}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <Button
               onClick={handleSubscribe}
               disabled={isLoading || isLimitReached}
-              className="w-full"
+              className="w-full mt-6"
             >
+              <User className="h-4 w-4 mr-2" />
               {isLoading
                 ? "Processing..."
                 : isSubscribed

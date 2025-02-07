@@ -10,41 +10,44 @@ import { Donation } from "@/types/Donation";
 
 interface DonationDialogProps {
   donation: Donation | null;
+  trigger?: React.ReactNode;
 }
 
-export function DonationDialog({ donation }: DonationDialogProps) {
+export function DonationDialog({ donation, trigger }: DonationDialogProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-          <div className="p-4 flex gap-4">
-            <div className="w-[150px] h-[150px]">
-              {donation?.media && donation.media.length > 0 ? (
-                <img
-                  src={donation.media[0]}
-                  alt="Donation"
-                  className="w-full h-full object-cover rounded-md"
-                />
-              ) : (
-                <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
-                  No Image
-                </div>
-              )}
+        {trigger || (
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <div className="p-4 flex gap-4">
+              <div className="w-[150px] h-[150px]">
+                {donation?.media && donation.media.length > 0 ? (
+                  <img
+                    src={donation.media[0]}
+                    alt="Donation"
+                    className="w-full h-full object-cover rounded-md"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
+                    No Image
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 className="font-bold text-lg md:text-xl">
+                  {donation?.description}
+                </h3>
+                <p className="text-muted-foreground text-sm md:text-base">
+                  {donation?.createdAt &&
+                    new Date(donation.createdAt).toLocaleDateString()}
+                </p>
+                <p className="mb-4 text-muted-foreground leading-relaxed">
+                  {donation?.category}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-lg md:text-xl">
-                {donation?.description}
-              </h3>
-              <p className="text-muted-foreground text-sm md:text-base">
-                {donation?.createdAt &&
-                  new Date(donation.createdAt).toLocaleDateString()}
-              </p>
-              <p className="mb-4 text-muted-foreground leading-relaxed">
-                {donation?.category}
-              </p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-[800px]">
         <DialogHeader>

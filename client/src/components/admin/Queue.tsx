@@ -1,11 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "@/api/api";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
+
 import {
   Table,
   TableBody,
@@ -19,6 +14,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +29,19 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/shared/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Search,
+  SortAsc,
+  User2,
+  Mail,
+  UserCog,
+  ShieldCheck,
+  KeyRound,
+  CreditCard,
+  Phone,
+  Calendar,
+  AlertCircle,
+} from "lucide-react";
 
 interface SignupRequest {
   _id: string;
@@ -53,6 +62,7 @@ interface SignupRequest {
   denialReason?: string;
   createdAt: string;
   updatedAt: string;
+  is2FAEnabled: boolean;
 }
 
 const fetchSignupRequests = async () => {
@@ -114,34 +124,39 @@ const QueueSkeleton = () => (
   </Table>
 );
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "approved":
-      return "bg-green-500";
-    case "denied":
-      return "bg-red-500";
-    case "pending":
-      return "bg-yellow-500";
-    default:
-      return "bg-gray-500";
-  }
+// const getStatusColor = (status: string) => {
+//   switch (status) {
+//     case "approved":
+//       return "bg-green-500";
+//     case "denied":
+//       return "bg-red-500";
+//     case "pending":
+//       return "bg-yellow-500";
+//     default:
+//       return "bg-gray-500";
+//   }
+// };
+
+// Add a helper function for date formatting
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 };
 
-export default function AdminQueue() {
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
+export default function Queue() {
   const queryClient = useQueryClient();
   const [selectedRequest, setSelectedRequest] = useState<SignupRequest | null>(
     null
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"createdAt" | "updatedAt">("createdAt");
+  const [showDenyDialog, setShowDenyDialog] = useState(false);
+  const [denyReason, setDenyReason] = useState("");
+  const [requestToDeny, setRequestToDeny] = useState<string | null>(null);
 
   const {
     data: requests = [],
@@ -179,9 +194,17 @@ export default function AdminQueue() {
   };
 
   const handleDeny = (id: string) => {
-    const reason = window.prompt("Please provide a reason for denial:");
-    if (reason) {
-      denyMutation.mutate({ id, reason });
+    setRequestToDeny(id);
+    setDenyReason("");
+    setShowDenyDialog(true);
+  };
+
+  const submitDenial = () => {
+    if (requestToDeny && denyReason.trim()) {
+      denyMutation.mutate({ id: requestToDeny, reason: denyReason });
+      setShowDenyDialog(false);
+      setRequestToDeny(null);
+      setDenyReason("");
     }
   };
 
@@ -210,197 +233,390 @@ export default function AdminQueue() {
   }
 
   return (
-    <>
-      <Navbar modes={"admin"} />
-      <div className="container mx-auto py-10">
-        <h1 className="text-2xl font-bold mb-6">Pending Users Queue</h1>
-        {error && <div className="text-red-500 mb-4">{error.message}</div>}
+    <div className="space-y-6">
+      {error && <div className="text-red-500 mb-4">{error.message}</div>}
 
-        <div className="flex flex-col gap-4 mb-6">
+      <div className="flex items-center gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name or email..."
+            placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
+            className="w-full pl-9"
           />
-          <div className="flex gap-4">
-            <Select
-              value={sortBy}
-              onValueChange={(value: "createdAt" | "updatedAt") =>
-                setSortBy(value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt">Submitted Date</SelectItem>
-                <SelectItem value="updatedAt">Last Updated</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
+        <Select
+          value={sortBy}
+          onValueChange={(value: "createdAt" | "updatedAt") => setSortBy(value)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SortAsc className="mr-2 h-4 w-4 text-muted-foreground" />
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="createdAt">Submitted Date</SelectItem>
+            <SelectItem value="updatedAt">Last Updated</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        {isMobile ? (
-          <Accordion type="single" collapsible>
+      <div className="hidden md:block rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <User2 className="h-4 w-4 text-muted-foreground" />
+                  Name
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  Email
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <UserCog className="h-4 w-4 text-muted-foreground" />
+                  Type
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                  Status
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <KeyRound className="h-4 w-4 text-muted-foreground" />
+                  2FA
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  Passport
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  Phone
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  Submitted
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center justify-center gap-2">
+                  Actions
+                </div>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {filteredAndSortedRequests.map((request: SignupRequest) => (
-              <AccordionItem
-                key={request._id}
-                value={request._id}
-                className="mb-4"
-              >
-                <AccordionTrigger className="flex justify-between px-4 py-2 text-left bg-gray-800 rounded-lg">
-                  <span>
-                    {request.firstName} {request.lastName}
-                  </span>
-                  <Badge className={getStatusColor(request.approvalStatus)}>
-                    {request.approvalStatus}
-                  </Badge>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="p-4 bg-gray-900 rounded-lg space-y-2">
-                    <p>
-                      <strong>Email:</strong> {request.email}
-                    </p>
-                    <p>
-                      <strong>Type:</strong> {request.type}
-                    </p>
-                    <p>
-                      <strong>Status:</strong>{" "}
-                      <Badge className={getStatusColor(request.approvalStatus)}>
-                        {request.approvalStatus}
-                      </Badge>
-                    </p>
+              <TableRow key={request._id}>
+                <TableCell className="text-center">
+                  {request.firstName} {request.lastName}
+                </TableCell>
+                <TableCell className="text-center">{request.email}</TableCell>
+                <TableCell className="text-center capitalize">
+                  {request.type}
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex justify-center">
+                    <Badge
+                      variant={
+                        request.approvalStatus === "pending"
+                          ? "outline"
+                          : "secondary"
+                      }
+                      className="capitalize"
+                    >
+                      {request.approvalStatus}
+                    </Badge>
+                  </div>
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex justify-center">
+                    <Badge
+                      variant={request.is2FAEnabled ? "default" : "destructive"}
+                      className="capitalize"
+                    >
+                      {request.is2FAEnabled ? "Enabled" : "Disabled"}
+                    </Badge>
+                  </div>
+                </TableCell>
+                <TableCell className="text-center">
+                  {request.passport}
+                </TableCell>
+                <TableCell className="text-center">{request.phone}</TableCell>
+                <TableCell className="text-center">
+                  {formatDate(request.createdAt)}
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex justify-center">
                     <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setSelectedRequest(request)}
-                      className="w-full"
                     >
                       View Details
                     </Button>
                   </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Passport</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead>Updated</TableHead>
-                <TableHead>Action</TableHead>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedRequests.map((request: SignupRequest) => (
-                <TableRow key={request._id}>
-                  <TableCell>
-                    {request.firstName} {request.lastName}
-                  </TableCell>
-                  <TableCell>{request.email}</TableCell>
-                  <TableCell>{request.type}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(request.approvalStatus)}>
-                      {request.approvalStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{request.passport}</TableCell>
-                  <TableCell>{request.phone}</TableCell>
-                  <TableCell>
-                    {new Date(request.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(request.updatedAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      onClick={() => setSelectedRequest(request)}
-                    >
-                      View Details
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="md:hidden space-y-4">
+        {filteredAndSortedRequests.map((request: SignupRequest) => (
+          <div
+            key={request._id}
+            className="border rounded-lg p-4 space-y-4 bg-card"
+          >
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <div className="font-medium">
+                  {request.firstName} {request.lastName}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {request.email}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatDate(request.createdAt)}
+                </div>
+              </div>
+              <Badge
+                variant={
+                  request.approvalStatus === "pending" ? "outline" : "secondary"
+                }
+                className="capitalize"
+              >
+                {request.approvalStatus}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="text-muted-foreground">Type</div>
+                <div className="capitalize">{request.type}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">2FA</div>
+                <Badge
+                  variant={request.is2FAEnabled ? "default" : "destructive"}
+                  className="capitalize"
+                >
+                  {request.is2FAEnabled ? "Enabled" : "Disabled"}
+                </Badge>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Passport</div>
+                <div>{request.passport}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Phone</div>
+                <div>{request.phone}</div>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setSelectedRequest(request)}
+            >
+              View Details
+            </Button>
+          </div>
+        ))}
       </div>
 
       <Dialog
         open={!!selectedRequest}
         onOpenChange={() => setSelectedRequest(null)}
       >
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>User Details</DialogTitle>
+            <DialogTitle className="text-xl sm:text-2xl font-bold">
+              <span className="bg-gradient-to-r from-primary/60 to-primary bg-clip-text text-transparent">
+                User Details
+              </span>
+            </DialogTitle>
           </DialogHeader>
           {selectedRequest && (
-            <div className="space-y-4">
-              <p>
-                <strong>Name:</strong> {selectedRequest.firstName}{" "}
-                {selectedRequest.lastName}
-              </p>
-              <p>
-                <strong>Email:</strong> {selectedRequest.email}
-              </p>
-              <p>
-                <strong>Type:</strong> {selectedRequest.type}
-              </p>
-              <p>
-                <strong>Passport:</strong> {selectedRequest.passport}
-              </p>
-              <p>
-                <strong>Phone:</strong> {selectedRequest.phone}
-              </p>
-              <p>
-                <strong>Status:</strong>{" "}
-                <Badge
-                  className={getStatusColor(selectedRequest.approvalStatus)}
-                >
-                  {selectedRequest.approvalStatus}
-                </Badge>
-              </p>
-              {selectedRequest.denialReason && (
-                <p>
-                  <strong>Denial Reason:</strong> {selectedRequest.denialReason}
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-muted/50 rounded-lg">
+                <User2 className="h-12 w-12 sm:h-16 sm:w-16 text-primary/80 mb-2" />
+                <h2 className="text-lg sm:text-xl font-semibold text-center">
+                  {selectedRequest.firstName} {selectedRequest.lastName}
+                </h2>
+                <p className="text-sm sm:text-base text-muted-foreground capitalize text-center">
+                  {selectedRequest.type} Account
                 </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </div>
+                  <p className="font-medium text-sm sm:text-base break-all">
+                    {selectedRequest.email}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <ShieldCheck className="h-4 w-4" />
+                    Status
+                  </div>
+                  <Badge
+                    variant={
+                      selectedRequest.approvalStatus === "pending"
+                        ? "outline"
+                        : "secondary"
+                    }
+                    className="capitalize"
+                  >
+                    {selectedRequest.approvalStatus}
+                  </Badge>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <KeyRound className="h-4 w-4" />
+                    2FA Status
+                  </div>
+                  <Badge
+                    variant={
+                      selectedRequest.is2FAEnabled ? "default" : "destructive"
+                    }
+                    className="capitalize"
+                  >
+                    {selectedRequest.is2FAEnabled ? "Enabled" : "Disabled"}
+                  </Badge>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CreditCard className="h-4 w-4" />
+                    Passport
+                  </div>
+                  <p className="font-medium text-sm sm:text-base">
+                    {selectedRequest.passport}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    Phone
+                  </div>
+                  <p className="font-medium text-sm sm:text-base">
+                    {selectedRequest.phone}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    Submitted On
+                  </div>
+                  <p className="font-medium text-sm sm:text-base">
+                    {formatDate(selectedRequest.createdAt)}
+                  </p>
+                </div>
+              </div>
+
+              {selectedRequest.denialReason && (
+                <div className="space-y-1 p-2 sm:p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                  <div className="flex items-center gap-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    Denial Reason
+                  </div>
+                  <p className="text-destructive text-sm sm:text-base">
+                    {selectedRequest.denialReason}
+                  </p>
+                </div>
               )}
-              <p>
-                <strong>Submitted On:</strong>{" "}
-                {new Date(selectedRequest.createdAt).toLocaleDateString()}
-              </p>
-              <p>
-                <strong>Last Updated:</strong>{" "}
-                {new Date(selectedRequest.updatedAt).toLocaleDateString()}
-              </p>
+
               {selectedRequest.approvalStatus === "pending" && (
-                <>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
                   <Button
                     onClick={() => handleAccept(selectedRequest._id)}
-                    className="w-full"
+                    className="bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity"
                   >
                     Approve
                   </Button>
                   <Button
                     onClick={() => handleDeny(selectedRequest._id)}
                     variant="destructive"
-                    className="w-full"
                   >
                     Deny
                   </Button>
-                </>
+                </div>
               )}
             </div>
           )}
         </DialogContent>
       </Dialog>
-    </>
+
+      <Dialog
+        open={showDenyDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowDenyDialog(false);
+            setRequestToDeny(null);
+            setDenyReason("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">
+              Provide Denial Reason
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Enter reason for denial"
+              value={denyReason}
+              onChange={(e) => setDenyReason(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDenyDialog(false);
+                setRequestToDeny(null);
+                setDenyReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={submitDenial}
+              disabled={!denyReason.trim()}
+            >
+              Deny Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
