@@ -80,7 +80,7 @@ const Profile: React.FC = () => {
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [bio, setBio] = useState("");
   const [receiveNotifications, setReceiveNotifications] = useState(false);
-  const DEFAULT_PROFILE_IMAGE = "boy_1.svg";
+  const DEFAULT_PROFILE_IMAGE = "/assets/profilePictures/boy_1.svg";
 
   const getStatusColor = (status: Request["status"]) => {
     switch (status) {

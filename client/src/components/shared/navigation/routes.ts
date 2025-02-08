@@ -179,7 +179,7 @@ export const routeListOrganization: RouteProps[] = [
     label: "Home",
   },
   {
-    href: "/home/social",
+    href: "/social",
     label: "Social",
   },
   {
