@@ -2,7 +2,6 @@ import { useState } from "react";
 // import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/api";
-import { Navbar } from "@/components/shared/Navbar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -104,14 +103,12 @@ export default function SoldierJoinCity() {
   });
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navbar isVertical isAccordion modes="home" />
-      <div className="flex-1 p-6 pl-20 md:pl-6 overflow-auto">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">
-              <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
-                Join a City
+    <div className="flex items-center justify-center h-screen bg-background">
+      <div className="w-full max-w-2xl p-6 space-y-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">
+            <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
+              Join a City
               </span>
             </h1>
           </div>
@@ -217,6 +214,5 @@ export default function SoldierJoinCity() {
           )}
         </div>
       </div>
-    </div>
   );
 }

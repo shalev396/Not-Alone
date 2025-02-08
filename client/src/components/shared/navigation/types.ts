@@ -2,6 +2,7 @@ export interface RouteProps {
   href: string;
   label: string;
   requiresCityOrAdmin?: boolean;
+  hideInNavbar?: boolean;
 }
 
 export interface AdminRouteSection {

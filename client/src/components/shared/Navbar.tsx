@@ -67,10 +67,12 @@ export const Navbar = ({
   const filterRoutesByAccess = (
     routes: (RouteProps | AdminRouteSection)[]
   ): (RouteProps | AdminRouteSection)[] => {
+  
     // If user is not Municipality or Admin, filter out routes that require city access
     if (user.type !== "Municipality" && user.type !== "Admin") {
       return routes
-        .map((route) => {
+      .map((route) => {
+          if ("hideInNavbar" in route && route.hideInNavbar) return null; // Excluir rotas com hideInNavbar
           if ("routes" in route && route.routes) {
             const filteredRoutes = route.routes.filter(
               (r) => !r.requiresCityOrAdmin
