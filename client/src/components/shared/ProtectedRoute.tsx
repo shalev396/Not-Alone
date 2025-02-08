@@ -107,7 +107,9 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         currentPath === "/" ||
         currentPath === "/profile" ||
         currentPath === "/logout" ||
-        currentPath.startsWith("/channel/");
+        currentPath.startsWith("/channel/") ||
+        // TODO: verify with Shalev
+        currentPath.startsWith("/business/");
 
       // If the current path is not allowed for the user's role, redirect to home
       if (!isAllowed) {

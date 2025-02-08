@@ -28,7 +28,8 @@ import MyEatUps from "./pages/MyEatUps";
 import ProtectedRoute from "./components/shared/ProtectedRoute";
 import VouchersGrid from "./pages/VouchersGrid";
 import Business from "./pages/SoldierBusiness";
-import BusinessDashboard from "./pages/BussinesDashboard";
+import BusinessesDashboard from "./pages/BusinessesDashboard";
+import BusinessPage from "./pages/BusinessPage";
 
 // Public routes that don't need protection
 // const publicRoutes = [
@@ -207,7 +208,15 @@ function AppRoutes() {
         path="/business-dashboard/*"
         element={
           <ProtectedRoute>
-            <BusinessDashboard />
+            <BusinessesDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/business/:businessId"
+        element={
+          <ProtectedRoute>
+            <BusinessPage />
           </ProtectedRoute>
         }
       />
