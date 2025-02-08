@@ -14,12 +14,6 @@ import {
 import DiscountForm from "@/components/Business/DiscountForm";
 import { useQuery } from "@tanstack/react-query";
 
-interface Business {
-  _id: string;
-  name: string;
-  media: string[];
-}
-
 const BusinessPage = () => {
   const { businessId } = useParams();
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
