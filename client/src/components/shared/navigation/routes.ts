@@ -80,7 +80,7 @@ export const routeListMunicipality: RouteProps[] = [
     label: "Home",
   },
   {
-    href: "/requests",
+    href: "/contribute",
     label: "Answer Requests @",
     requiresCityOrAdmin: true,
   },
