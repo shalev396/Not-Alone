@@ -26,7 +26,7 @@
 
 ### User Management Routes
 
-- [ ] Profile Page (`/profile`)
+- [V] Profile Page (`/profile`)
 - [V] Logout Page (`/logout`)
 - [V] Your Rights Page (`/rights`)
 
@@ -39,8 +39,8 @@
 
 ### Social and Posts
 
-- [ ] Social Page (`/social`)
-- [ ] Create Post Page (`/create-post`)
+- [V] Social Page (`/social`)
+- [V] Create Post Page (`/create-post`)
 - [V] New EatUp Page (`/new-post`)
 
 ### Donations and Contributions
@@ -56,14 +56,14 @@
 - [V] Create City Page (`/create-city`)
 - [V] City Request Queue Page (`/city-request-queue`)
 - [V] City User Approval Queue Page (`/city-user-approval-queue`)
-- [ ] Join City Request Page (`/join-city-request`)
-- [ ] Soldier Join City Page (`/soldier-join-city`)
+- [V] Join City Request Page (`/join-city-request`)
+- [V] Soldier Join City Page (`/soldier-join-city`)
 
 ### EatUps and Requests
 
 - [V] My EatUps Page (`/my-eatups`) notes : did not test with ood size images
-- [ ] Request Form Page (`/RequestForm`)
-- [ ] My Requests Page (`/my-requests`)
+- [V] Request Form Page (`/RequestForm`)
+- [V] My Requests Page (`/my-requests`)
 
 ### Other Features
 
@@ -72,26 +72,16 @@
 ## progress
 
 total 37 pages
-finished 27 pages
+finished 34 pages
 removed 3 pages
 
-7 pages to go
-
 ## progress by navbar
-/profile
-/social
-/create-post
-/join-city-request
-/soldier-join-city
-/RequestForm
-/my-requests
 
 ## discontined
+
 /Vouchers
 /home/donations
 /home/residences
-
-
 
 ##prompt
 

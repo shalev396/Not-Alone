@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Navbar } from "@/components/shared/Navbar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { AlertCircle, Loader2, Building2, MapPin } from "lucide-react";
 
 interface City {
   _id: string;
@@ -106,6 +107,10 @@ export default function JoinCityRequest() {
       await api.post(`/cities/${cityId}/join/municipality`);
       setPendingRequests((prev) => new Set([...prev, cityId]));
       setSuccessMessage("Join request submitted successfully!");
+
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.error ||
@@ -120,6 +125,10 @@ export default function JoinCityRequest() {
       ) {
         setPendingRequests((prev) => new Set([...prev, cityId]));
       }
+
+      setTimeout(() => {
+        setError(null);
+      }, 5000);
     }
   };
 
@@ -129,10 +138,15 @@ export default function JoinCityRequest() {
     return (
       <div className="flex bg-background min-h-screen">
         <Navbar modes="home" isVertical={true} isAccordion={true} />
-        <div className="flex-1 p-6 pl-20 md:pl-6">
-          <Card className="p-6 text-center">
-            <p className="text-muted-foreground">Loading cities...</p>
-          </Card>
+        <div className="flex-1 p-6 pl-[72px] sm:pl-20 md:pl-6">
+          <div className="max-w-4xl mx-auto">
+            <Card className="p-6">
+              <div className="flex items-center justify-center space-x-2">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <p className="text-muted-foreground">Loading cities...</p>
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
     );
@@ -141,88 +155,114 @@ export default function JoinCityRequest() {
   return (
     <div className="flex bg-background min-h-screen">
       <Navbar modes="home" isVertical={true} isAccordion={true} />
-      <div className="flex-1 p-6 pl-20 md:pl-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
+      <div className="flex-1 p-6 pl-[72px] sm:pl-20 md:pl-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="space-y-4">
             <h2 className="text-3xl font-bold">
-              <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
+              <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text">
                 Join a City as Municipality
               </span>
             </h2>
+            <p className="text-muted-foreground">
+              Select a city to join and contribute to your community
+            </p>
           </div>
 
           {error && (
-            <Alert variant="destructive" className="mb-6">
+            <Alert
+              variant="destructive"
+              className="border border-destructive/50"
+            >
+              <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
           {successMessage && (
-            <Alert className="mb-6 border-green-500 text-green-500">
+            <Alert className="border border-primary/50 text-primary">
+              <AlertCircle className="h-4 w-4" />
               <AlertTitle>Success</AlertTitle>
               <AlertDescription>{successMessage}</AlertDescription>
             </Alert>
           )}
 
-          <div className="mb-6">
-            <div className="flex gap-2 mb-4">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedZone(null)}
+              className={`transition-colors ${
+                !selectedZone
+                  ? "bg-primary/10 border-primary/20"
+                  : "hover:bg-primary/5"
+              }`}
+            >
+              All Zones
+            </Button>
+            {zones.map((zone) => (
               <Button
+                key={zone}
                 variant="outline"
-                onClick={() => setSelectedZone(null)}
-                className={!selectedZone ? "bg-primary/10" : ""}
+                onClick={() => setSelectedZone(zone)}
+                className={`transition-colors ${
+                  selectedZone === zone
+                    ? "bg-primary/10 border-primary/20"
+                    : "hover:bg-primary/5"
+                }`}
               >
-                All Zones
+                {zone.charAt(0).toUpperCase() + zone.slice(1)}
               </Button>
-              {zones.map((zone) => (
-                <Button
-                  key={zone}
-                  variant="outline"
-                  onClick={() => setSelectedZone(zone)}
-                  className={selectedZone === zone ? "bg-primary/10" : ""}
-                >
-                  {zone.charAt(0).toUpperCase() + zone.slice(1)}
-                </Button>
-              ))}
-            </div>
+            ))}
           </div>
 
           {filteredCities.length === 0 ? (
-            <Card className="p-6 text-center">
-              <p className="text-muted-foreground">
-                No cities available in this zone
-              </p>
+            <Card className="p-6">
+              <div className="text-center space-y-2">
+                <Building2 className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                <p className="text-muted-foreground">
+                  No cities available in this zone
+                </p>
+              </div>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredCities.map((city) => (
-                <Card key={city._id} className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2">
-                        {city.name}
-                      </h3>
-                      <Badge variant="outline">{city.zone}</Badge>
+                <Card
+                  key={city._id}
+                  className="overflow-hidden transition-all duration-200 hover:shadow-lg border-primary/10 hover:border-primary/20"
+                >
+                  <div className="p-6 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1.5">
+                        <h3 className="text-xl font-semibold">{city.name}</h3>
+                        <Badge
+                          variant="outline"
+                          className="flex items-center w-fit gap-1 text-xs capitalize"
+                        >
+                          <MapPin className="h-3 w-3" />
+                          {city.zone}
+                        </Badge>
+                      </div>
                     </div>
+
+                    <p className="text-sm text-muted-foreground line-clamp-3">
+                      {city.bio}
+                    </p>
+
+                    <Button
+                      onClick={() => handleJoinRequest(city._id)}
+                      className={`w-full transition-all duration-200 ${
+                        pendingRequests.has(city._id)
+                          ? "bg-muted hover:bg-muted cursor-not-allowed"
+                          : "bg-primary/90 hover:bg-primary hover:shadow-md"
+                      }`}
+                      disabled={pendingRequests.has(city._id)}
+                    >
+                      {pendingRequests.has(city._id)
+                        ? "Request Pending"
+                        : "Request to Join"}
+                    </Button>
                   </div>
-
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                    {city.bio}
-                  </p>
-
-                  <Button
-                    onClick={() => handleJoinRequest(city._id)}
-                    className={`w-full ${
-                      pendingRequests.has(city._id)
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90"
-                    }`}
-                    disabled={pendingRequests.has(city._id)}
-                  >
-                    {pendingRequests.has(city._id)
-                      ? "Request Pending"
-                      : "Request to Join"}
-                  </Button>
                 </Card>
               ))}
             </div>

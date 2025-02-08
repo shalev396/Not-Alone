@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Navbar } from "@/components/shared/Navbar";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, AlertCircle, Plus, Trash2 } from "lucide-react";
 
 interface Request {
   _id: string;
@@ -64,11 +65,11 @@ export default function MyRequests() {
   const getStatusColor = (status: Request["status"]) => {
     switch (status) {
       case "approved":
-        return "bg-green-500";
+        return "bg-primary/80 hover:bg-primary/70";
       case "deny":
-        return "bg-red-500";
+        return "bg-destructive/80 hover:bg-destructive/70";
       default:
-        return "bg-yellow-500";
+        return "bg-yellow-500/80 hover:bg-yellow-500/70";
     }
   };
 
@@ -83,47 +84,43 @@ export default function MyRequests() {
   return (
     <div className="flex bg-background min-h-screen">
       <Navbar modes="home" isVertical={true} isAccordion={true} />
-      <div className="flex-1 p-6 pl-20 md:pl-6">
+      <div className="flex-1 p-6 pl-[72px] sm:pl-20 md:pl-6">
         <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold">
-              <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
-                My Requests
-              </span>
-            </h2>
-            <Button
-              onClick={() => navigate("/requestForm")}
-              className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90"
-            >
-              New Request
-            </Button>
-          </div>
-
           {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertTitle>Error</AlertTitle>
+            <Alert
+              variant="destructive"
+              className="mb-6 border border-destructive/50"
+            >
+              <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
           {isLoading ? (
-            <Card className="p-6 text-center">
-              <p className="text-muted-foreground">Loading requests...</p>
-            </Card>
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-muted-foreground">
+                Loading requests...
+              </span>
+            </div>
           ) : requests.length === 0 ? (
-            <Card className="p-6 text-center">
-              <p className="text-muted-foreground mb-4">No requests found</p>
+            <Card className="p-8 text-center border border-primary/10">
+              <p className="text-muted-foreground mb-6">No requests found</p>
               <Button
                 onClick={() => navigate("/requestForm")}
-                className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90"
+                className="gap-2"
               >
+                <Plus className="h-4 w-4" />
                 Create Your First Request
               </Button>
             </Card>
           ) : (
-            <div className="grid gap-6">
+            <div className="space-y-6">
               {requests.map((request) => (
-                <Card key={request._id} className="p-6">
+                <Card
+                  key={request._id}
+                  className="p-6 border border-primary/10 hover:border-primary/20 transition-colors"
+                >
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-xl font-semibold mb-2">
@@ -134,33 +131,45 @@ export default function MyRequests() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Badge variant="outline">{request.service}</Badge>
+                      <Badge variant="outline" className="border-primary/20">
+                        {request.service}
+                      </Badge>
                       <Badge className={getStatusColor(request.status)}>
                         {request.status.charAt(0).toUpperCase() +
                           request.status.slice(1)}
                       </Badge>
                       {request.paid && (
-                        <Badge className="bg-blue-500">Paid</Badge>
+                        <Badge className="bg-blue-500/80 hover:bg-blue-500/70">
+                          Paid
+                        </Badge>
                       )}
                     </div>
                   </div>
 
-                  <div className="space-y-2 mb-4">
+                  <div className="space-y-3 mb-4 text-muted-foreground">
                     <p className="text-sm">
-                      <span className="font-semibold">Description:</span>{" "}
+                      <span className="font-medium text-foreground">
+                        Description:
+                      </span>{" "}
                       {request.itemDescription}
                     </p>
                     <p className="text-sm">
-                      <span className="font-semibold">Quantity:</span>{" "}
+                      <span className="font-medium text-foreground">
+                        Quantity:
+                      </span>{" "}
                       {request.quantity}
                     </p>
                     <p className="text-sm">
-                      <span className="font-semibold">Location:</span>{" "}
+                      <span className="font-medium text-foreground">
+                        Location:
+                      </span>{" "}
                       {request.cityDetails.name} ({request.zone})
                     </p>
                     {request.paid && request.paidBy && (
                       <p className="text-sm">
-                        <span className="font-semibold">Paid by:</span>{" "}
+                        <span className="font-medium text-foreground">
+                          Paid by:
+                        </span>{" "}
                         {request.paidBy.firstName} {request.paidBy.lastName}
                       </p>
                     )}
@@ -171,8 +180,9 @@ export default function MyRequests() {
                       <Button
                         variant="destructive"
                         onClick={() => handleDelete(request._id)}
-                        className="hover:opacity-90"
+                        className="gap-2"
                       >
+                        <Trash2 className="h-4 w-4" />
                         Delete Request
                       </Button>
                     </div>

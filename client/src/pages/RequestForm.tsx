@@ -8,16 +8,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Navbar } from "@/components/shared/Navbar";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, AlertCircle, Package } from "lucide-react";
+import { Formik, Form, Field } from "formik";
 import { z } from "zod";
+import { toFormikValidationSchema } from "zod-formik-adapter";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import Checkbox from "@/components/custom-ui/Checkbox";
 
 interface City {
   _id: string;
   name: string;
   zone: "north" | "center" | "south";
 }
-
-const zones = ["north", "center", "south"] as const;
 
 const requestSchema = z.object({
   service: z.enum(["Regular", "Reserves"]),
@@ -37,23 +46,12 @@ const requestSchema = z.object({
   }),
 });
 
-type RequestFormData = z.infer<typeof requestSchema>;
+type RequestFormValues = z.infer<typeof requestSchema>;
 
 export default function RequestForm() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<RequestFormData>({
-    service: "Regular",
-    item: "",
-    itemDescription: "",
-    quantity: 1,
-    zone: "center",
-    city: "",
-    agreeToShareDetails: false,
-  });
   const [cities, setCities] = useState<City[]>([]);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCities = async () => {
@@ -61,219 +59,264 @@ export default function RequestForm() {
         const response = await api.get("/cities");
         setCities(response.data);
       } catch (error) {
-        setServerError("Failed to fetch cities");
+        setError("Failed to fetch cities");
       }
     };
     fetchCities();
   }, []);
 
-  const handleChange = (
-    field: keyof RequestFormData,
-    value: string | number | boolean
-  ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when field is updated
-    if (errors[field]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
+  const initialValues: RequestFormValues = {
+    service: "Regular",
+    item: "",
+    itemDescription: "",
+    quantity: 1,
+    zone: "center",
+    city: "",
+    agreeToShareDetails: false,
   };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setServerError(null);
-    setErrors({});
-
-    try {
-      // Validate form data
-      requestSchema.parse(formData);
-
-      setIsLoading(true);
-      await api.post("/requests", formData);
-      navigate("/my-requests"); // Assuming you have a my requests page
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const newErrors: Record<string, string> = {};
-        error.errors.forEach((err) => {
-          if (err.path) {
-            newErrors[err.path[0]] = err.message;
-          }
-        });
-        setErrors(newErrors);
-      } else if (error instanceof AxiosError) {
-        setServerError(
-          error.response?.data?.message || "Failed to submit request"
-        );
-      } else {
-        setServerError("An unexpected error occurred");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const filteredCities = cities.filter((city) => city.zone === formData.zone);
 
   return (
-    <div className="flex bg-background text-foreground min-h-screen">
+    <div className="flex bg-background min-h-screen">
       <Navbar modes="home" isVertical={true} isAccordion={true} />
-      <div className="flex-1 flex justify-center">
-        <div className="w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6">
-          <Card className="p-6">
-            <h2 className="text-3xl font-bold mb-8 text-center">
-              <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
-                New Request
-              </span>
-            </h2>
+      <div className="flex-1 p-6 pl-[72px] sm:pl-20 md:pl-6">
+        <div className="max-w-3xl mx-auto">
+          {error && (
+            <Alert
+              variant="destructive"
+              className="mb-6 border border-destructive/50"
+            >
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            {serverError && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{serverError}</AlertDescription>
-              </Alert>
-            )}
+          <Card className="p-6 border-primary/10">
+            <div className="space-y-4 mb-6">
+              <h1 className="text-3xl font-bold text-center">
+                <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text">
+                  New Support Request
+                </span>
+              </h1>
+              <p className="text-center text-muted-foreground">
+                Fill out the form below to request support from our community
+              </p>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Service Type */}
-              <div className="space-y-2">
-                <Label>Service Type</Label>
-                <div className="flex gap-4">
-                  {["Regular", "Reserves"].map((type) => (
-                    <label key={type} className="flex items-center space-x-2">
-                      <Input
-                        type="radio"
-                        checked={formData.service === type}
-                        onChange={() => handleChange("service", type)}
-                        className="w-4 h-4"
+            <Formik
+              initialValues={initialValues}
+              validationSchema={toFormikValidationSchema(requestSchema)}
+              onSubmit={async (values, { setSubmitting, setStatus }) => {
+                try {
+                  await api.post("/requests", values);
+                  navigate("/profile");
+                } catch (error) {
+                  if (error instanceof AxiosError) {
+                    setStatus(
+                      error.response?.data?.message ||
+                        "Failed to submit request"
+                    );
+                  } else {
+                    setStatus("An unexpected error occurred");
+                  }
+                  setSubmitting(false);
+                }
+              }}
+            >
+              {({
+                values,
+                errors,
+                touched,
+                isSubmitting,
+                setFieldValue,
+                status,
+              }) => (
+                <Form className="space-y-6">
+                  {status && (
+                    <Alert
+                      variant="destructive"
+                      className="border border-destructive/50"
+                    >
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{status}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Service Type */}
+                  <div className="space-y-2">
+                    <Label className="text-base">Service Type</Label>
+                    <div className="flex gap-4">
+                      {["Regular", "Reserves"].map((type) => (
+                        <label
+                          key={type}
+                          className="flex items-center space-x-2"
+                        >
+                          <Field
+                            type="radio"
+                            name="service"
+                            value={type}
+                            className="w-4 h-4 border-primary/20 text-primary"
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {type}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {touched.service && errors.service && (
+                      <p className="text-sm text-destructive">
+                        {errors.service}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Zone Selection */}
+                  <div className="space-y-2">
+                    <Label className="text-base">Zone</Label>
+                    <Select
+                      name="zone"
+                      value={values.zone}
+                      onValueChange={(value) => {
+                        setFieldValue("zone", value);
+                        setFieldValue("city", "");
+                      }}
+                    >
+                      <SelectTrigger className="w-full border-primary/20">
+                        <SelectValue placeholder="Select zone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["north", "center", "south"].map((zone) => (
+                          <SelectItem key={zone} value={zone}>
+                            {zone.charAt(0).toUpperCase() + zone.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {touched.zone && errors.zone && (
+                      <p className="text-sm text-destructive">{errors.zone}</p>
+                    )}
+                  </div>
+
+                  {/* City Selection */}
+                  <div className="space-y-2">
+                    <Label className="text-base">City</Label>
+                    <Select
+                      name="city"
+                      value={values.city}
+                      onValueChange={(value) => setFieldValue("city", value)}
+                    >
+                      <SelectTrigger className="w-full border-primary/20">
+                        <SelectValue placeholder="Select city" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cities
+                          .filter((city) => city.zone === values.zone)
+                          .map((city) => (
+                            <SelectItem key={city._id} value={city._id}>
+                              {city.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    {touched.city && errors.city && (
+                      <p className="text-sm text-destructive">{errors.city}</p>
+                    )}
+                  </div>
+
+                  {/* Item */}
+                  <div className="space-y-2">
+                    <Label className="text-base">Item</Label>
+                    <Field
+                      as={Input}
+                      name="item"
+                      placeholder="Enter item name"
+                      className="border-primary/20"
+                    />
+                    {touched.item && errors.item && (
+                      <p className="text-sm text-destructive">{errors.item}</p>
+                    )}
+                  </div>
+
+                  {/* Item Description */}
+                  <div className="space-y-2">
+                    <Label className="text-base">Item Description</Label>
+                    <Field
+                      as={Textarea}
+                      name="itemDescription"
+                      placeholder="Provide detailed description (size, color, condition, etc.)"
+                      className="min-h-[100px] border-primary/20"
+                    />
+                    {touched.itemDescription && errors.itemDescription && (
+                      <p className="text-sm text-destructive">
+                        {errors.itemDescription}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Quantity */}
+                  <div className="space-y-2">
+                    <Label className="text-base">Quantity</Label>
+                    <Field
+                      as={Input}
+                      type="number"
+                      name="quantity"
+                      min="1"
+                      className="border-primary/20"
+                    />
+                    {touched.quantity && errors.quantity && (
+                      <p className="text-sm text-destructive">
+                        {errors.quantity}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Agreement */}
+                  <div className="flex items-start gap-2 p-3 bg-background/50 rounded-lg border border-primary/10">
+                    <div className="flex h-4 items-center">
+                      <Checkbox
+                        checked={values.agreeToShareDetails}
+                        onCheckedChange={(checked: boolean) =>
+                          setFieldValue("agreeToShareDetails", checked)
+                        }
                       />
-                      <span>{type}</span>
-                    </label>
-                  ))}
-                </div>
-                {errors.service && (
-                  <p className="text-sm text-red-500">{errors.service}</p>
-                )}
-              </div>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-foreground">
+                        Share Contact Information
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        I agree to share my contact details with verified donors
+                        who express interest in fulfilling my request
+                      </p>
+                    </div>
+                  </div>
+                  {touched.agreeToShareDetails &&
+                    errors.agreeToShareDetails && (
+                      <p className="text-sm text-destructive mt-2">
+                        {errors.agreeToShareDetails}
+                      </p>
+                    )}
 
-              {/* Zone Selection */}
-              <div className="space-y-2">
-                <Label>Zone</Label>
-                <select
-                  value={formData.zone}
-                  onChange={(e) => {
-                    handleChange("zone", e.target.value);
-                    handleChange("city", ""); // Reset city when zone changes
-                  }}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-[#F596D3]"
-                >
-                  {zones.map((zone) => (
-                    <option key={zone} value={zone}>
-                      {zone.charAt(0).toUpperCase() + zone.slice(1)}
-                    </option>
-                  ))}
-                </select>
-                {errors.zone && (
-                  <p className="text-sm text-red-500">{errors.zone}</p>
-                )}
-              </div>
-
-              {/* City Selection */}
-              <div className="space-y-2">
-                <Label>City</Label>
-                <select
-                  value={formData.city}
-                  onChange={(e) => handleChange("city", e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-[#F596D3]"
-                >
-                  <option value="">Select a city</option>
-                  {filteredCities.map((city) => (
-                    <option key={city._id} value={city._id}>
-                      {city.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.city && (
-                  <p className="text-sm text-red-500">{errors.city}</p>
-                )}
-              </div>
-
-              {/* Item */}
-              <div className="space-y-2">
-                <Label>Item</Label>
-                <Input
-                  value={formData.item}
-                  onChange={(e) => handleChange("item", e.target.value)}
-                  placeholder="Enter item name"
-                />
-                {errors.item && (
-                  <p className="text-sm text-red-500">{errors.item}</p>
-                )}
-              </div>
-
-              {/* Item Description */}
-              <div className="space-y-2">
-                <Label>Item Description</Label>
-                <Textarea
-                  value={formData.itemDescription}
-                  onChange={(e) =>
-                    handleChange("itemDescription", e.target.value)
-                  }
-                  placeholder="Provide detailed description (size, color, condition, etc.)"
-                  className="min-h-[100px]"
-                />
-                {errors.itemDescription && (
-                  <p className="text-sm text-red-500">
-                    {errors.itemDescription}
-                  </p>
-                )}
-              </div>
-
-              {/* Quantity */}
-              <div className="space-y-2">
-                <Label>Quantity</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={formData.quantity}
-                  onChange={(e) =>
-                    handleChange("quantity", parseInt(e.target.value) || 1)
-                  }
-                />
-                {errors.quantity && (
-                  <p className="text-sm text-red-500">{errors.quantity}</p>
-                )}
-              </div>
-
-              {/* Agreement */}
-              <div className="flex items-center space-x-2">
-                <Input
-                  type="checkbox"
-                  checked={formData.agreeToShareDetails}
-                  onChange={(e) =>
-                    handleChange("agreeToShareDetails", e.target.checked)
-                  }
-                  className="w-4 h-4"
-                />
-                <Label>I agree to share my details with potential donors</Label>
-              </div>
-              {errors.agreeToShareDetails && (
-                <p className="text-sm text-red-500">
-                  {errors.agreeToShareDetails}
-                </p>
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Package className="h-4 w-4" />
+                        Submit Request
+                      </>
+                    )}
+                  </Button>
+                </Form>
               )}
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90 transition-opacity"
-              >
-                {isLoading ? "Submitting..." : "Submit Request"}
-              </Button>
-            </form>
+            </Formik>
           </Card>
         </div>
       </div>

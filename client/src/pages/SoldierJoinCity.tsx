@@ -5,9 +5,9 @@ import { api } from "@/api/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin } from "lucide-react";
+import { Search, MapPin, Loader2, AlertCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -26,9 +26,14 @@ interface City {
   soldiers: string[];
 }
 
+interface JoinError {
+  error: string;
+  cityName?: string;
+}
+
 export default function SoldierJoinCity() {
   //   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<JoinError | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [zoneFilter, setZoneFilter] = useState<string>("all");
@@ -76,15 +81,31 @@ export default function SoldierJoinCity() {
   console.log("Pending requests:", pendingJoinRequests);
   const handleJoinRequest = async (cityId: string) => {
     try {
+      setError(null);
       await api.post(`/cities/${cityId}/join/soldier`);
       setPendingRequests((prev) => new Set([...prev, cityId]));
       setSuccessMessage("Join request submitted successfully!");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error: any) {
-      setError(
-        error.response?.data?.message || "Failed to submit join request"
-      );
-      setTimeout(() => setError(null), 3000);
+      const errorData = error.response?.data;
+      if (
+        errorData?.error ===
+        "Already assigned to city or have a pending request"
+      ) {
+        setError({
+          error: "You already have a pending request or are assigned to a city",
+          cityName: errorData.cityName,
+        });
+        // Update pending requests to reflect the current state
+        if (errorData.cityName) {
+          setPendingRequests((prev) => new Set([...prev, cityId]));
+        }
+      } else {
+        setError({
+          error: errorData?.message || "Failed to submit join request",
+        });
+      }
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -103,116 +124,123 @@ export default function SoldierJoinCity() {
   });
 
   return (
-    <div className="flex items-center justify-center h-screen bg-background">
-      <div className="w-full max-w-2xl p-6 space-y-6">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">
-            <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
-              Join a City
-              </span>
-            </h1>
-          </div>
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {successMessage && (
-            <Alert
-              variant="default"
-              className="bg-green-50 text-green-800 border-green-200"
-            >
-              <AlertDescription>{successMessage}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Filters */}
-          <Card className="p-6">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex-1 min-w-[200px]">
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search cities..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-              </div>
-              <Select value={zoneFilter} onValueChange={setZoneFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Zone" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Zones</SelectItem>
-                  <SelectItem value="north">North</SelectItem>
-                  <SelectItem value="center">Center</SelectItem>
-                  <SelectItem value="south">South</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </Card>
-
-          {/* Cities Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCities.map((city) => (
-              <Card key={city._id} className="overflow-hidden">
-                {city.media && city.media[0] && (
-                  <div className="relative h-48">
-                    <img
-                      src={city.media[0]}
-                      alt={city.name}
-                      className="w-full h-full object-cover"
-                    />
-                    <Badge
-                      variant="outline"
-                      className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm"
-                    >
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {city.zone}
-                    </Badge>
-                  </div>
+    <div className="space-y-6">
+      {error && (
+        <Alert variant="destructive" className="border border-destructive/50">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription className="mt-1">
+            {error.cityName ? (
+              <>
+                {error.error}
+                {error.cityName && (
+                  <span className="font-medium"> in {error.cityName}</span>
                 )}
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold mb-2">{city.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {city.bio}
-                  </p>
-                  <Button
-                    className={`w-full ${
-                      pendingRequests.has(city._id) ||
-                      city.soldiers?.includes(userId || "")
-                        ? "bg-gray-400 hover:bg-gray-400 cursor-not-allowed"
-                        : "bg-gradient-to-r from-[#F596D3] to-[#D247BF] hover:opacity-90"
-                    }`}
-                    onClick={() => handleJoinRequest(city._id)}
-                    disabled={
-                      pendingRequests.has(city._id) ||
-                      city.soldiers?.includes(userId || "")
-                    }
-                  >
-                    {pendingRequests.has(city._id)
-                      ? "Request Pending"
-                      : city.soldiers?.includes(userId || "")
-                      ? "Already a Member"
-                      : "Request to Join"}
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
+              </>
+            ) : (
+              error.error
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
-          {filteredCities.length === 0 && !isLoading && (
-            <Card className="p-6 text-center">
-              <p className="text-muted-foreground">
-                No cities found matching your search criteria
-              </p>
-            </Card>
-          )}
+      {successMessage && (
+        <Alert className="border border-primary/50 bg-primary/10 text-primary">
+          <AlertDescription>{successMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Filters */}
+      <Card className="p-4">
+        <div className="flex flex-wrap gap-4">
+          <div className="flex-1 min-w-[200px]">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search cities..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 border-primary/20"
+              />
+            </div>
+          </div>
+          <Select value={zoneFilter} onValueChange={setZoneFilter}>
+            <SelectTrigger className="w-[180px] border-primary/20">
+              <SelectValue placeholder="Zone" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Zones</SelectItem>
+              <SelectItem value="north">North</SelectItem>
+              <SelectItem value="center">Center</SelectItem>
+              <SelectItem value="south">South</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      </div>
+      </Card>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading cities...</span>
+        </div>
+      ) : filteredCities.length === 0 ? (
+        <Card className="p-6 text-center">
+          <p className="text-muted-foreground">
+            No cities found matching your search criteria
+          </p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredCities.map((city) => (
+            <Card
+              key={city._id}
+              className="overflow-hidden border-primary/10 hover:border-primary/20 transition-colors"
+            >
+              {city.media && city.media[0] && (
+                <div className="relative h-48">
+                  <img
+                    src={city.media[0]}
+                    alt={city.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <Badge
+                    variant="outline"
+                    className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm"
+                  >
+                    <MapPin className="w-4 h-4 mr-1 text-primary" />
+                    {city.zone}
+                  </Badge>
+                </div>
+              )}
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2">{city.name}</h3>
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  {city.bio}
+                </p>
+                <Button
+                  className={`w-full shadow-lg hover:shadow-xl transition-all duration-200 gap-2 ${
+                    pendingRequests.has(city._id) ||
+                    city.soldiers?.includes(userId || "")
+                      ? "bg-muted hover:bg-muted cursor-not-allowed"
+                      : "bg-primary/90 hover:bg-primary"
+                  }`}
+                  onClick={() => handleJoinRequest(city._id)}
+                  disabled={
+                    pendingRequests.has(city._id) ||
+                    city.soldiers?.includes(userId || "")
+                  }
+                >
+                  {pendingRequests.has(city._id)
+                    ? "Request Pending"
+                    : city.soldiers?.includes(userId || "")
+                    ? "Already a Member"
+                    : "Request to Join"}
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

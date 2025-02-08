@@ -6,21 +6,16 @@ import { Post } from "@/components/social/PostCard";
 import { PostSkeleton } from "@/components/social/PostSkeleton";
 
 export function PostFeed() {
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-  } = useInfiniteQuery({
-    queryKey: ["posts"],
-    queryFn: fetchPosts,
-    getNextPageParam: (lastPage) =>
-      lastPage.pagination.page < lastPage.pagination.pages
-        ? lastPage.pagination.page + 1
-        : undefined,
-    initialPageParam: 1,
-  });
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ["posts"],
+      queryFn: fetchPosts,
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination.page < lastPage.pagination.pages
+          ? lastPage.pagination.page + 1
+          : undefined,
+      initialPageParam: 1,
+    });
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
@@ -30,7 +25,7 @@ export function PostFeed() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          fetchNextPage(); // Trigger next page load
+          fetchNextPage();
         }
       },
       { threshold: 1.0 }
@@ -45,30 +40,47 @@ export function PostFeed() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (isLoading) {
-    return <PostSkeleton />;
+    return (
+      <div className="space-y-8">
+        <PostSkeleton />
+        <PostSkeleton />
+        <PostSkeleton />
+      </div>
+    );
   }
 
   if (!data?.pages?.[0]?.posts?.length) {
-    return <div className="text-center py-4">No posts found</div>;
+    return (
+      <div className="text-center py-12 bg-card rounded-lg border shadow-sm">
+        <h3 className="text-xl font-semibold mb-2">No Posts Yet</h3>
+        <p className="text-muted-foreground">
+          Be the first to share something with the community!
+        </p>
+      </div>
+    );
   }
 
-
   return (
-    <div className="space-y-16 mb-4">
-      <h3 className="text-4xl font-bold mb-10 mt-20 ml-20">
-        Your <span className="text-green-500">Social</span>
-      </h3>
-
+    <div className="space-y-6">
       {/* Render all loaded posts */}
-      {data.pages.map((page) =>
-        page.posts.map((post: Post) => <PostCard key={post._id} post={post} />)
+      {data.pages.map((page, i) => (
+        <div key={i} className="space-y-6">
+          {page.posts.map((post: Post) => (
+            <PostCard key={post._id} post={post} />
+          ))}
+        </div>
+      ))}
+
+      {/* Loading indicator */}
+      {isFetchingNextPage && (
+        <div className="flex justify-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+        </div>
       )}
 
-      {/* Observed element */}
+      {/* Intersection observer target */}
       {hasNextPage && (
-        <div ref={observerRef} className="flex justify-center mt-6">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-green-500"></div>
-        </div>
+        <div ref={observerRef} className="h-4" aria-hidden="true" />
       )}
     </div>
   );
