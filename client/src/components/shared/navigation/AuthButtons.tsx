@@ -20,7 +20,7 @@ export const AuthButtons = ({ user, navigate }: AuthButtonsProps) => {
       case "organization":
         return "/events/create";
       case "business":
-        return "/discounts";
+        return "/business-dashboard";
       default:
         return "/login";
     }

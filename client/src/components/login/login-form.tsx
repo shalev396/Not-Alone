@@ -98,7 +98,7 @@ export function LoginForm({
             navigate("/social");
             break;
           case "business":
-            navigate("/profile");
+            navigate("/business-dashboard");
             break;
           default:
             navigate("/home");

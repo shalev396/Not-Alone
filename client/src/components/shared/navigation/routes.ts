@@ -149,8 +149,8 @@ export const routeListBusiness: RouteProps[] = [
     label: "Home",
   },
   {
-    href: "/discounts",
-    label: "Add Discount @",
+    href: "/business-dashboard",
+    label: "Bussines dashboard",
   },
   {
     href: "/verify-soldier",
