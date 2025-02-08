@@ -62,6 +62,7 @@ export const routeListSoldier: RouteProps[] = [
   {
     href: "/soldier-join-city",
     label: "Join City #",
+    hideInNavbar: true,
   },
   {
     href: "/profile",
