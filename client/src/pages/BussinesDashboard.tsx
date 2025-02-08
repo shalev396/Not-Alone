@@ -96,9 +96,9 @@ const BusinessDashboard = () => {
                       Fill in the details to create a new business.
                     </DialogDescription>
                   </DialogHeader>
+
                   <BusinessForm
-                    onSubmit={(business) => {
-                      console.log(business);
+                    onFinish={() => {
                       setBusinessDialogOpen(false); // Close the dialog after submission
                     }}
                   />
@@ -124,8 +124,7 @@ const BusinessDashboard = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <DiscountForm
-                    onSubmit={(discount) => {
-                      console.log(discount);
+                    onSubmit={() => {
                       setDiscountDialogOpen(false); // Close the dialog after submission
                     }}
                   />

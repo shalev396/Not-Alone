@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-
-
 export const uploadImage = async (imageFile: File) => {
   const formData = new FormData();
   formData.append("file", imageFile);
@@ -14,7 +12,7 @@ export const uploadImage = async (imageFile: File) => {
       "https://api.cloudinary.com/v1_1/dnnifnoyf/image/upload",
       formData
     );
-    return response.data.secure_url; 
+    return response.data.secure_url;
   } catch (error) {
     console.error("Error uploading image:", error);
     throw error;
@@ -46,7 +44,7 @@ const ImageUpload = () => {
 
     try {
       const response = await axios.post(
-        'https://api.cloudinary.com/v1_1/dnnifnoyf/image/upload',
+        "https://api.cloudinary.com/v1_1/dnnifnoyf/image/upload",
         formData
       );
 
