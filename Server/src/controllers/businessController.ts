@@ -76,15 +76,13 @@ export const getBusinessById = async (req: Request, res: Response) => {
     if (!mongoose.Types.ObjectId.isValid(businessId)) {
       return res.status(400).json({ message: "Invalid business ID format" });
     }
-    let hasAccess;
-    if (!(process.env.NODE_ENV === "test")) {
-      const hasAccess = await canAccessBusiness(
+    let hasAccess = true;
+    if (process.env.NODE_ENV !== "test") {
+      hasAccess = await canAccessBusiness(
         userInfo.userId,
         userInfo.type,
         businessId
       );
-    } else {
-      hasAccess = true;
     }
     if (!hasAccess) {
       return res
@@ -103,6 +101,7 @@ export const getBusinessById = async (req: Request, res: Response) => {
 
     return res.json(business);
   } catch (error) {
+    console.log({ error }, "yair");
     console.error("Get business error:", error);
     return res.status(500).json({ message: "Error fetching business" });
   }
