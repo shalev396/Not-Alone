@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
 import { PostSkeleton } from "@/components/social/PostSkeleton";
-import { useNavigate } from "react-router-dom";
 import Skeleton from "react-loading-skeleton";
 import { FilteredPostFeed } from "@/components/shared/feeds/FilteredPostFeed";
 import SoldierJoinCity from "./SoldierJoinCity";
@@ -79,7 +78,6 @@ const Profile: React.FC = () => {
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [bio, setBio] = useState("");
   const [receiveNotifications, setReceiveNotifications] = useState(false);
-  const navigate = useNavigate();
   const DEFAULT_PROFILE_IMAGE =
   "boy_1.svg";
   
