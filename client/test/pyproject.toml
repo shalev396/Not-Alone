@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "examples.allure-pytest"
+version = "0.0.0"
+description = "Getting started with Allure Pytest!"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12"
+]
+dependencies = [
+    # Put the project's production dependencies here:
+
+]
+
+[project.optional-dependencies]
+dev = [
+    # Put the project's dev dependencies here:
+    "allure-pytest",
+    "flake8",
+    "flake8-builtins",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
