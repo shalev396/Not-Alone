@@ -59,9 +59,28 @@ const BusinessesDashboard = () => {
     <div>
       <Navbar isVertical isAccordion modes="home" />
       <div className="p-6">
-        <h1 className="text-3xl font-bold text-center mb-6 ">
-          Business Dashboard
-        </h1>
+        <div className="flex items-center justify-between mx-auto max-w-5xl w-full px-2 mb-8">
+          <h1 className="text-3xl font-bold ">Business Dashboard</h1>
+          <Dialog
+            open={isBusinessDialogOpen}
+            onOpenChange={setBusinessDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <button className="bg-green-500 text-white px-4 py-2 rounded ml-2">
+                Create Your First Business
+              </button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Business</DialogTitle>
+                <DialogDescription>
+                  Fill in the details to create a new business.
+                </DialogDescription>
+              </DialogHeader>
+              <BusinessForm onFinish={() => setBusinessDialogOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        </div>
         {isLoading ? (
           <p>Loading...</p>
         ) : (
