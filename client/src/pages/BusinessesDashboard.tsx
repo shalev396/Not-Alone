@@ -12,6 +12,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
+import { Briefcase } from "lucide-react";
 
 interface Business {
   _id: string;
@@ -33,11 +35,8 @@ const BusinessesDashboard = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  // States to handle opening/closing of the dialogs
   const [isBusinessDialogOpen, setBusinessDialogOpen] = useState(false);
 
-  // Fetch businesses and discounts from the server
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -53,68 +52,59 @@ const BusinessesDashboard = () => {
         setIsLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
   return (
     <div>
       <Navbar isVertical isAccordion modes="home" />
-
       <div className="p-6">
-        <h1 className="text-3xl font-bold text-center mb-6">
+        <h1 className="text-3xl font-bold text-center mb-6 ">
           Business Dashboard
         </h1>
-
-        {/* Display a message if there are no businesses or discounts */}
         {isLoading ? (
           <p>Loading...</p>
         ) : (
           <>
             {businesses.length === 0 && (
-              <p className="text-center text-red-500">
-                No businesses found! Please add a business to get started.
-              </p>
+              <Card className="p-6 text-center mx-auto max-w-5xl">
+                <div className="rounded-xl bg-card text-card-foreground p-6 text-center">
+                  <Briefcase className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                  <p className="text-muted-foreground text-lg">
+                    You haven't created any Business yet.
+                  </p>
+                  <Dialog
+                    open={isBusinessDialogOpen}
+                    onOpenChange={setBusinessDialogOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <button className="bg-green-500 text-white px-4 py-2 rounded ml-2">
+                        Create Your First Business
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create Business</DialogTitle>
+                        <DialogDescription>
+                          Fill in the details to create a new business.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <BusinessForm
+                        onFinish={() => setBusinessDialogOpen(false)}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </Card>
             )}
             {discounts.length === 0 && (
               <p className="text-center text-red-500">
                 No discounts found! You can add a discount for your business.
               </p>
             )}
-
-            <nav className="mb-4">
-              {/* DialogTrigger for opening business form */}
-              <Dialog
-                open={isBusinessDialogOpen}
-                onOpenChange={setBusinessDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <button className="bg-green-500 text-white px-4 py-2 rounded ml-2">
-                    Add Business
-                  </button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create Business</DialogTitle>
-                    <DialogDescription>
-                      Fill in the details to create a new business.
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <BusinessForm
-                    onFinish={() => {
-                      setBusinessDialogOpen(false); // Close the dialog after submission
-                    }}
-                  />
-                </DialogContent>
-              </Dialog>
-            </nav>
-
-            {/* Display the list of businesses */}
-            <div className="business-list">
-              <h2 className="text-2xl font-semibold mb-4"> Your Businesses</h2>
-              {businesses.length > 0 ? (
-                <ul className="flex flex-wrap gap-4">
+            {businesses.length > 0 && (
+              <div className="business-list">
+                <ul className="flex flex-wrap gap-4 justify-center">
                   {businesses.map((business) => (
                     <Link key={business._id} to={`/business/${business._id}`}>
                       <li
@@ -137,10 +127,8 @@ const BusinessesDashboard = () => {
                     </Link>
                   ))}
                 </ul>
-              ) : (
-                <p>No businesses to display.</p>
-              )}
-            </div>
+              </div>
+            )}
           </>
         )}
       </div>
