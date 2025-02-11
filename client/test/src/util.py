@@ -7,15 +7,21 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from typing import Dict, List, Tuple, Optional
+import allure
+from typing import List, Tuple
+from selenium.webdriver.support.ui import Select
+
 # important do not delete
 from src.pages.landing.locators import LOCATORS
+
 
 @allure.step("skip disclaimer")
 def pass_disclaimer(driver):
     wait_for_element(driver, "landing", "Button_disclaimer_just_looking_around").click()
 
 
-def wait_for_element(driver, page, element_name, timeout=5):
+@allure.step("Check if {element_name} exists")
+def wait_for_element(driver, page, element_name, timeout=2):
     """
     Dynamically imports the locators from pages/<page>/locators.py,
     finds the specified element by name, and waits up to `timeout` seconds
@@ -50,6 +56,7 @@ def wait_for_element(driver, page, element_name, timeout=5):
         element=WebDriverWait(driver, timeout).until(
             EC.visibility_of_element_located((By.XPATH, path))
         )
+
         assert element, "❌ failed to find element"
         return element
     except TimeoutException:
@@ -136,11 +143,13 @@ VALIDATION_TEST_CASES: Dict[str, List[Tuple[str, Optional[str]]]] = {
     ]
 }
 
+
+@allure.step("Test validation for {input_element}")
 def validate_input(driver, page: str, input_element: str, error_element: str, mode: str) -> List[Tuple[bool, str]]:
     """
     Validates an input field using predefined test cases based on the validation mode.
     Handles both text inputs and select elements.
-    
+
     :param driver: Selenium WebDriver instance
     :param page: The page name (e.g., 'landing')
     :param input_element: The name of the input element in locators
@@ -150,56 +159,61 @@ def validate_input(driver, page: str, input_element: str, error_element: str, mo
     """
     if mode not in VALIDATION_TEST_CASES:
         return [(False, f"Unknown validation mode: {mode}")]
-    
-    results = []
-    for test_value, expected_error in VALIDATION_TEST_CASES[mode]:
-        # Find and verify input field
-        input_field = wait_for_element(driver, page, input_element)
-        if not input_field:
-            results.append((False, f"Input field not found for test value: {test_value}"))
-            continue
-            
-        try:
-            # Check if element is a select or input
-            tag_name = input_field.tag_name.lower()
-            
-            if tag_name == 'select':
-                # Handle select element
-                from selenium.webdriver.support.ui import Select
-                select = Select(input_field)
-                select.select_by_value(test_value)
-            else:
-                # Handle regular input
-                driver.execute_script("arguments[0].value = '';", input_field)
-                input_field.clear()
-                input_field.send_keys(test_value)
-            
-            # Trigger validation by unfocusing
-            driver.execute_script("arguments[0].blur();", input_field)
-            # sleep(0.5)  # Wait for validation to complete
-            
-        except Exception as e:
-            results.append((False, f"Failed to interact with input for {test_value}: {str(e)}"))
-            continue
-        
-        # Check for error message if expected
-        if expected_error:
-            error_element_obj = wait_for_element(driver, page, error_element)
-            if not error_element_obj:
-                results.append((False, f"Error message element not found for test value: {test_value}"))
-                continue
-            actual_error = error_element_obj.text
-            if actual_error != expected_error:
-                results.append((False, f"Input: {test_value}, Expected error: '{expected_error}' but got: '{actual_error}'"))
-                continue
-        else:
-            # For valid inputs, verify no error message is shown
-            error_element_obj = wait_for_element(driver, page, error_element)
-            if error_element_obj and error_element_obj.is_displayed():
-                results.append((False, f"Unexpected error message for valid input {test_value}: {error_element_obj.text}"))
-                continue
-        
-        results.append((True, None))
-    
-    return results
 
+    results = []
+
+    for test_value, expected_error in VALIDATION_TEST_CASES[mode]:
+        with allure.step(f"Validating input '{test_value}' for mode '{mode}'"):
+            # Find and verify input field
+            input_field = wait_for_element(driver, page, input_element)
+            if not input_field:
+                results.append((False, f"Input field not found for test value: {test_value}"))
+                continue
+
+            try:
+                # Check if element is a select or input
+                tag_name = input_field.tag_name.lower()
+
+                if tag_name == 'select':
+                    # Handle select element
+                    select = Select(input_field)
+                    select.select_by_value(test_value)
+                else:
+                    # Handle regular input
+                    driver.execute_script("arguments[0].value = '';", input_field)
+                    input_field.clear()
+                    input_field.send_keys(test_value)
+
+                # Trigger validation by unfocusing
+                driver.execute_script("arguments[0].blur();", input_field)
+
+            except Exception as e:
+                results.append((False, f"Failed to interact with input for {test_value}: {str(e)}"))
+                continue
+
+            # Check for error message if expected
+            error_element_obj = wait_for_element(driver, page, error_element)
+
+            with allure.step(f"Checking error message for input '{test_value}'"):
+                if expected_error:
+                    if not error_element_obj:
+                        results.append((False, f"Error message element not found for test value: {test_value}"))
+                        continue
+
+                    actual_error = error_element_obj.text
+
+                    with allure.step(f"Comparing expected '{expected_error}' with actual '{actual_error}'"):
+                        if actual_error != expected_error:
+                            results.append((False,
+                                            f"Input: {test_value}, Expected error: '{expected_error}' but got: '{actual_error}'"))
+                            continue
+                else:
+                    # For valid inputs, verify no error message is shown
+                    if error_element_obj and error_element_obj.is_displayed():
+                        results.append(
+                            (False, f"Unexpected error message for valid input {test_value}: {error_element_obj.text}"))
+                        continue
+
+            results.append((True, None))
+
+    return results

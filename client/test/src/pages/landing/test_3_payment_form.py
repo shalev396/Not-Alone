@@ -8,7 +8,7 @@ def open_payment_dialog(driver):
     """Helper function to open the payment dialog"""
     driver.get("https://notalonesoldier.com/")
     pass_disclaimer(driver)
-    donate_button = wait_for_element(driver, "landing", "button_donate_dialog")
+    donate_button = wait_for_element(driver, "landing", "button_donate_dialog_1")
     assert donate_button is not None, "❌ Donate button not found"
     donate_button.click()
     dialog = wait_for_element(driver, "landing", "div_donate_dialog")
@@ -81,7 +81,7 @@ class TestPaymentForm:
         )
         for success, error in results:
             assert success, error
-    @allure.story("Card Form Validation")
+    @allure.story("Form Card Successful Validation")
     def test_card(self,driver):
         open_payment_dialog(driver)
         wait_for_element(driver,"landing","input_name_donate_dialog").send_keys("Jone Due")
@@ -90,4 +90,4 @@ class TestPaymentForm:
         wait_for_element(driver, "landing", "select_expiry_year_donate_dialog").send_keys("2026")
         wait_for_element(driver, "landing", "input_cvc_donate_dialog").send_keys("123")
         wait_for_element(driver, "landing", "button_submit_donate_dialog").submit()
-        sleep(5)
+        wait_for_element(driver,"landing","div_payment_submitted")

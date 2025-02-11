@@ -13,13 +13,13 @@ def test_1_title(driver):
     pass_disclaimer(driver)
     assert "Not Alone" in driver.title, "❌ Page title does not contain 'Not Alone'"
 
-@allure.story("dialog appear Validation")
+@allure.story("dialog appear from button 1 Validation")
 def test_2_donate_dialog(driver):
     driver.get("https://notalonesoldier.com/")
     pass_disclaimer(driver)
     
     # Click donate button and verify it exists
-    donate_button = wait_for_element(driver, "landing", "button_donate_dialog")
+    donate_button = wait_for_element(driver, "landing", "button_donate_dialog_1")
     assert donate_button is not None, "❌ Donate button not found"
     donate_button.click()
     
@@ -27,4 +27,18 @@ def test_2_donate_dialog(driver):
     dialog = wait_for_element(driver, "landing", "div_donate_dialog")
     assert dialog is not None, "❌ Donate dialog did not appear"
 
+
+@allure.story("dialog appear from button 2 Validation")
+def test_2_donate_dialog(driver):
+    driver.get("https://notalonesoldier.com/")
+    pass_disclaimer(driver)
+
+    # Click donate button and verify it exists
+    donate_button = wait_for_element(driver, "landing", "button_donate_dialog_2")
+    assert donate_button is not None, "❌ Donate button not found"
+    donate_button.click()
+
+    # Verify dialog appears
+    dialog = wait_for_element(driver, "landing", "div_donate_dialog")
+    assert dialog is not None, "❌ Donate dialog did not appear"
 

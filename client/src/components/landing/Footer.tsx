@@ -120,7 +120,6 @@ export const Footer = () => {
               <a
                 className="text-primary hover:underline"
                 href="https://github.com/leoMirandaa"
-                target="_blank"
                 rel="noopener noreferrer"
               >
                 Leopoldo Miranda
