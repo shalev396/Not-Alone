@@ -9,4 +9,3 @@ pytest --alluredir=allure-results
 
  echo Opening Allure report...
 allure serve allure-results
-
