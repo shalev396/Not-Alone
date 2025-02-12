@@ -20,8 +20,22 @@ import { ModeToggle } from "@/components/custom-ui/mode-toggle";
 // Zod schema for signup validation
 const signupSchema = z
   .object({
-    firstName: z.string().min(2, "First name must be at least 2 characters"),
-    lastName: z.string().min(2, "Last name must be at least 2 characters"),
+    firstName: z
+      .string()
+      .min(2, "First name must be at least 2 characters")
+      .max(50, "Name must be less than 50 characters")
+      .regex(
+        /^[a-zA-Z\s'-]+$/,
+        "Name can only contain letters, spaces, hyphens, and apostrophes"
+      ),
+    lastName: z
+      .string()
+      .min(2, "Last name must be at least 2 characters")
+      .max(50, "Name must be less than 50 characters")
+      .regex(
+        /^[a-zA-Z\s'-]+$/,
+        "Name can only contain letters, spaces, hyphens, and apostrophes"
+      ),
     email: z.string().min(1, "Email is required").email("Invalid email format"),
     password: z
       .string()

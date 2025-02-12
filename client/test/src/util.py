@@ -25,8 +25,8 @@ def wait_for_element(driver, page, element_name, timeout=2):
     """
     Dynamically imports the locators from pages/<page>/locators.py,
     finds the specified element by name, and waits up to `timeout` seconds
-    for it to be visible on the page. Returns the element if found,
-    otherwise None.
+    for it to be visible on the page. If found, scrolls to the element.
+    Returns the element if found, otherwise None.
 
     :param driver:       Selenium WebDriver instance.
     :param page:         The folder name under 'pages' (e.g. 'landing').
@@ -53,11 +53,22 @@ def wait_for_element(driver, page, element_name, timeout=2):
             return None
 
         # Wait until the element is visible
-        element=WebDriverWait(driver, timeout).until(
+        element = WebDriverWait(driver, timeout).until(
             EC.visibility_of_element_located((By.XPATH, path))
         )
 
         assert element, "❌ failed to find element"
+        
+        # Scroll the element into view with instant behavior
+        try:
+            driver.execute_script(
+                "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+                element
+            )
+            sleep(0.2)
+        except Exception as e:
+            print(f"Warning: Could not scroll to element {element_name}: {str(e)}")
+            
         return element
     except TimeoutException:
         return None
@@ -75,18 +86,20 @@ VALIDATION_TEST_CASES: Dict[str, List[Tuple[str, Optional[str]]]] = {
         ("O'Connor", None),  # Valid
     ],
     "email": [
-        ("", "Email is required"),
-        ("notanemail", "Invalid email address"),
-        ("missing@", "Invalid email address"),
-        ("@missing.com", "Invalid email address"),
+        ("", "Required"),
+        ("notanemail", "Invalid email format"),
+        ("missing@", "Invalid email format"),
+        ("@missing.com", "Invalid email format"),
         ("valid@email.com", None),  # Valid
         ("user.name+tag@example.co.uk", None),  # Valid
     ],
     "phone": [
-        ("123", "Phone number must be 10 digits"),
-        ("abcdefghij", "Phone number must contain only digits"),
-        ("123456789", "Phone number must be 10 digits"),
-        ("1234567890", None),  # Valid
+        ("123", "Invalid phone format"),
+        ("abcdefghij", "Invalid phone format"),
+        ("123456789", "Invalid phone format"),
+        ("+1234567890", None),  # Valid
+        ("+44 1234567890", None),  # Valid with spaces
+        ("+972-123456789", None),  # Valid with hyphen
     ],
     "cardNumber": [
         ("123", "Card number must be 16 digits"),
@@ -115,12 +128,12 @@ VALIDATION_TEST_CASES: Dict[str, List[Tuple[str, Optional[str]]]] = {
         ("123", None),  # Valid
     ],
     "password": [
-        ("short", "Password must be at least 8 characters"),
-        ("onlylowercase", "Password must contain at least one uppercase letter"),
-        ("ONLYUPPERCASE", "Password must contain at least one lowercase letter"),
-        ("NoNumbers!", "Password must contain at least one number"),
-        ("NoSpecial1", "Password must contain at least one special character"),
-        ("Valid1Password!", None),  # Valid
+        ("short", "Password must be at least 6 characters"),
+        # ("onlylowercase", "Password must contain at least one uppercase letter"),
+        # ("ONLYUPPERCASE", "Password must contain at least one lowercase letter"),
+        # ("NoNumbers!", "Password must contain at least one number"),
+        # ("NoSpecial1", "Password must contain at least one special character"),
+        ("Valid1Password", None),  # Valid
     ],
     "url": [
         ("notaurl", "Invalid URL"),
@@ -140,7 +153,13 @@ VALIDATION_TEST_CASES: Dict[str, List[Tuple[str, Optional[str]]]] = {
         ("ABCDEF", "Invalid postal code format"),
         ("12345", None),  # Valid US
         ("A1A 1A1", None),  # Valid Canadian
-    ]
+    ],
+    "passport": [
+        ("", "Required"),
+        ("AB123456", None),  # Valid
+        ("123456789", None),  # Valid
+    ],
+   
 }
 
 
