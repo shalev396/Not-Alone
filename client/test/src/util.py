@@ -1,5 +1,6 @@
 import importlib
 from time import sleep
+import requests
 
 import allure
 from selenium.webdriver.common.by import By
@@ -236,3 +237,68 @@ def validate_input(driver, page: str, input_element: str, error_element: str, mo
             results.append((True, None))
 
     return results
+
+
+def get_admin_login_token():
+    # Prepare the login payload
+    payload = {
+        "email": "shalev396@admin.com",
+        "password": "12345678"
+    }
+
+    # Send a POST request to the login endpoint
+    url = "https://notalonesoldier.com/api/auth/login"
+    response = requests.post(url, json=payload)
+    # Raise an exception if the request returned an error status
+    response.raise_for_status()
+    # Parse the response JSON
+    data = response.json()
+    # Extract the 'token' field from the response
+    # Assuming the returned JSON looks like:
+    # {
+    #   "token": "...",
+    #   "user": { ... }
+    # }
+    token = data["token"]
+    # Return the token
+    return token
+
+
+def delete_user(token, user_id):
+    """
+    Sends a DELETE request to delete a user by user_id.
+
+    Args:
+        token (str): The JWT or auth token to place in the header.
+        user_id (str): The ID of the user to delete.
+
+    Returns:
+        dict: The JSON response from the server (if any).
+    """
+
+    url = f"https://notalonesoldier.com/api/users/{user_id}"
+
+    # If your API literally expects "Burner <token>" in the header,
+    # change 'Bearer' to 'Burner'.
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+
+    response = requests.delete(url, headers=headers)
+
+    # Raise an exception if an error (4xx or 5xx) occurs
+    response.raise_for_status()
+
+    # Return whatever JSON the endpoint might provide upon deletion
+    # If there's no body, this line may cause an error; handle as needed.
+    return response.json()
+def get_session_storage_value(driver, key):
+    """
+    Retrieves the value for a given key from the browser's sessionStorage.
+
+    :param driver: WebDriver instance
+    :param key: Session storage key to look up
+    :return: The value (string) associated with that key, or None if not found
+    """
+    value = driver.execute_script("return sessionStorage.getItem(arguments[0]);", key)
+    return value

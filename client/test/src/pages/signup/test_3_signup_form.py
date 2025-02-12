@@ -2,7 +2,8 @@ from time import sleep
 
 import pytest
 import allure
-from src.util import wait_for_element, validate_input,pass_disclaimer
+from src.util import wait_for_element, validate_input, pass_disclaimer, get_admin_login_token, \
+    get_session_storage_value, delete_user
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -117,8 +118,9 @@ class TestSignupForm:
         
         # Wait for redirect to 2FA setup
         wait = WebDriverWait(driver, 5)
-        wait.until(EC.url_contains("/2fa"))
+        wait.until(EC.url_to_be("https://notalonesoldier.com/2fa"))
         
         assert driver.current_url=="https://notalonesoldier.com/2fa", "❌ Failed to redirect to 2FA setup"
-        # r = requests.get('https://notalonesoldier.com/api/auth/login', json={"email": "shalev396@admin.com","password": "12345678"})
-        # response=r.request.body
+        admin_token=get_admin_login_token()
+        uid=get_session_storage_value(driver,"id")
+        delete_user(admin_token,uid)
