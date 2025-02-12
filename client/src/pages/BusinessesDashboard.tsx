@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
-import { Briefcase } from "lucide-react";
+import { Briefcase, Plus } from "lucide-react";
 
 interface Business {
   _id: string;
@@ -33,6 +33,8 @@ const defaultImage =
 
 const BusinessesDashboard = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
+  console.log(businesses);
+
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isBusinessDialogOpen, setBusinessDialogOpen] = useState(false);
@@ -67,7 +69,7 @@ const BusinessesDashboard = () => {
           >
             <DialogTrigger asChild>
               <button className="bg-green-500 text-white px-4 py-2 rounded ml-2">
-                Create Your First Business
+                <Plus />
               </button>
             </DialogTrigger>
             <DialogContent>

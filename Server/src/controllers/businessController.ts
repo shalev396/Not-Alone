@@ -45,6 +45,8 @@ export const getAllBusinesses = async (req: Request, res: Response) => {
       .populate("ownerDetails", "-password")
       .populate("workerDetails", "-password")
       .lean();
+      console.log({businesses});
+      
     res.json(businesses);
   } catch (error) {
     console.error("Get businesses error:", error);
