@@ -48,7 +48,7 @@ class TestLoginForm:
     def test_login_success(self,driver):
         open_login_dialog(driver)
         wait_for_element(driver,"login","input_email_login_form").send_keys("shalev396@admin.com")
-        wait_for_element(driver,"login","input_password_login_form").send_keys("12345678")
+        wait_for_element(driver,"login","input_password_login_form").send_keys("12345678a")
         wait_for_element(driver,"login","button_sign_in_form").click()
         wait = WebDriverWait(driver, 5)
         wait.until(EC.url_to_be("https://notalonesoldier.com/admin/queue"))

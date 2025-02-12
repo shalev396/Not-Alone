@@ -1,3 +1,4 @@
+import json
 from time import sleep
 
 import pytest
@@ -121,6 +122,8 @@ class TestSignupForm:
         wait.until(EC.url_to_be("https://notalonesoldier.com/2fa"))
         
         assert driver.current_url=="https://notalonesoldier.com/2fa", "❌ Failed to redirect to 2FA setup"
+        user = get_session_storage_value(driver, "user")
+        uid=json.loads(user)["_id"]
+        print(user,uid)
         admin_token=get_admin_login_token()
-        uid=get_session_storage_value(driver,"id")
         delete_user(admin_token,uid)

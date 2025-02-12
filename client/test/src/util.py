@@ -243,7 +243,7 @@ def get_admin_login_token():
     # Prepare the login payload
     payload = {
         "email": "shalev396@admin.com",
-        "password": "12345678"
+        "password": "12345678a"
     }
 
     # Send a POST request to the login endpoint
