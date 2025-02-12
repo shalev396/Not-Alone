@@ -22,7 +22,7 @@ const signupSchema = z
   .object({
     firstName: z
       .string()
-      .min(2, "First name must be at least 2 characters")
+      .min(2, "Name must be at least 2 characters")
       .max(50, "Name must be less than 50 characters")
       .regex(
         /^[a-zA-Z\s'-]+$/,
@@ -30,7 +30,7 @@ const signupSchema = z
       ),
     lastName: z
       .string()
-      .min(2, "Last name must be at least 2 characters")
+      .min(2, "Name must be at least 2 characters")
       .max(50, "Name must be less than 50 characters")
       .regex(
         /^[a-zA-Z\s'-]+$/,

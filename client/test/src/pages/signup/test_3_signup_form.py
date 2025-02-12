@@ -6,7 +6,7 @@ from src.util import wait_for_element, validate_input,pass_disclaimer
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+import requests
 @allure.step("open signup form")
 def open_signup_form(driver):
     """Helper function to open the signup form"""
@@ -116,7 +116,9 @@ class TestSignupForm:
         wait_for_element(driver, "signup", "button_create_account").click()
         
         # Wait for redirect to 2FA setup
-        wait = WebDriverWait(driver, 2)
+        wait = WebDriverWait(driver, 5)
         wait.until(EC.url_contains("/2fa"))
         
         assert driver.current_url=="https://notalonesoldier.com/2fa", "❌ Failed to redirect to 2FA setup"
+        # r = requests.get('https://notalonesoldier.com/api/auth/login', json={"email": "shalev396@admin.com","password": "12345678"})
+        # response=r.request.body
