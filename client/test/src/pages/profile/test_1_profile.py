@@ -9,7 +9,6 @@ driver = webdriver.Chrome()
 try:
     # 1️⃣ Access the website and log in
     driver.get("http://localhost:5173/")
-    time.sleep(2)
 
     # Close Development Notice popup (if present)
     try:
@@ -20,7 +19,6 @@ try:
 
     # Click on the Login button
     driver.find_element(By.XPATH, "//button[normalize-space()='Login']").click()
-    time.sleep(2)
 
     # Enter credentials
     driver.find_element(By.XPATH, "//input[@id='email']").send_keys("nathan@soldier.com")
@@ -28,13 +26,10 @@ try:
 
     # Click the Sign-in button
     driver.find_element(By.XPATH, "//button[normalize-space()='Sign in']").click()
-    time.sleep(2)
 
     # Open sidebar menu and click "Profile"
     driver.find_element(By.XPATH, "//button[contains(@class, 'top-3 left-4')]").click()
-    time.sleep(2)
     driver.find_element(By.XPATH, "//a[normalize-space()='Profile']").click()
-    time.sleep(2)
 
     # 2️⃣ Check if the Profile page loaded correctly
     try:
@@ -48,5 +43,4 @@ except Exception as e:
     print(f"❌ UNEXPECTED ERROR: {str(e)}")
 
 finally:
-    time.sleep(3)
     driver.quit()  # Close the browser
