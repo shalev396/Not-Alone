@@ -8,7 +8,7 @@ driver = webdriver.Chrome()
 
 try:
     # 1️⃣ Login and navigate to Profile Page
-    driver.get("http://localhost:5173/")
+    driver.get("https://notalonesoldier.com/")
     time.sleep(2)
 
     # Close Development Notice popup

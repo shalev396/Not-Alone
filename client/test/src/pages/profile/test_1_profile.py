@@ -8,7 +8,7 @@ driver = webdriver.Chrome()
 
 try:
     # 1️⃣ Access the website and log in
-    driver.get("http://localhost:5173/")
+    driver.get("https://notalonesoldier.com/")
 
     # Close Development Notice popup (if present)
     try:

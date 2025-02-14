@@ -14,7 +14,7 @@ wait = WebDriverWait(driver, 10)  # Explicit wait up to 10 seconds
 
 try:
     # 1️⃣ Log in and navigate to Profile Page
-    driver.get("http://localhost:5173/")
+    driver.get("https://notalonesoldier.com/")
     time.sleep(2)
 
     # Close Development Notice popup (if present)
