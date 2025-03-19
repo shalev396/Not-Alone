@@ -423,7 +423,7 @@ const Profile: React.FC = () => {
                     Posts
                   </TabsTrigger>
                   <TabsTrigger value="requests" className="flex-1">
-                    {isSoldier ? "Donation Requests" : "Donations"}
+                    {isSoldier ? "My Requests" : "Donations"}
                   </TabsTrigger>
                   <TabsTrigger value="joinCity" className="flex-1">
                     Join City

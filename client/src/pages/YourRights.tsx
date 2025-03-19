@@ -48,8 +48,8 @@ const RightsPage: React.FC = () => {
                       className="border rounded-lg overflow-hidden"
                     >
                       <AccordionTrigger className="bg-card px-4 py-3 hover:bg-accent/50 transition-colors">
-                        <span className="font-semibold text-lg bg-gradient-to-r from-primary/80 to-primary text-transparent bg-clip-text">
-                          {category}
+                      <span className="font-semibold text-lg text-base">
+                      {category}
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="bg-background px-4 py-3 space-y-4">
