@@ -47,25 +47,12 @@ const userSlice = createSlice({
     },
 
     updateUser: (state, action) => {
-      console.log(
-        "[Redux - old State]:",
-        state._id
-      );
-      
-      console.log("[Redux - updateUser Payload]:", action.payload); 
-
-      Object.keys(action.payload).forEach((key) => {
-        if (key in state && action.payload[key] !== undefined) {
-          (state as any)[key as keyof typeof state] = action.payload[key];
-        }
-      });
-      console.log("[Redux - Updated State]:", state); 
-      console.log(
-        "[Redux - new State]:",
-        state._id
-      );
-
+      console.log("[Redux - old State]:", JSON.stringify(state, null, 2));
+      console.log("[Redux - updateUser Payload]:", JSON.stringify(action.payload, null, 2));
+    
+      return { ...state, ...action.payload };
     },
+    
     resetUser: () => initialState,
   },
   extraReducers: (builder) => {

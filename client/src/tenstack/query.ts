@@ -94,11 +94,12 @@ export const fetchResidences = async (): Promise<Residence[]> => {
 
 
 export const fetchPosts = async ({
-  pageParam = 1, // Valor padrão
+  pageParam = 1, 
 }: {
   pageParam: any;
 }): Promise<PaginationResponse<Post>> => {
-  const res = await api.get(`/posts?page=${pageParam}&limit=2`); // Configuração do limite
+  const res = await api.get(`/posts?page=${pageParam}&limit=2`);
+  
   return {
     posts: res.data.posts.map((post: any) => ({
       ...post,
@@ -106,14 +107,15 @@ export const fetchPosts = async ({
         _id: post.author._id,
         firstName: post.author.firstName,
         lastName: post.author.lastName,
-        profileImage: post.author.profileImage || "/assets/profilePictures/default.svg",
-        nickname: post.author.nickname || "",
+        profileImage: post.author.profileImage || "/assets/profilePictures/default.svg", // Corrigindo imagem
+        nickname: post.author.nickname || post.author.firstName || "Anonymous", // Ajustando o nickname
       },
       comments: post.comments || [],
     })),
     pagination: res.data.pagination,
   };
 };
+
 
 export const fetchUserPosts = async ({
   userId,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/Redux/store";
-import { updateUser } from "@/Redux/userSlice";
+import { updateUser, fetchUserData } from "@/Redux/userSlice";
 import ProfileImageDialog from "@/components/profile/ProfileImageDialog";
 
 import { Navbar } from "@/components/shared/Navbar";
@@ -253,14 +253,14 @@ const Profile: React.FC = () => {
       setError("Nickname cannot be empty.");
       return;
     }
-
+  
     if (error) {
       alert("Please fix the errors before saving!");
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
       const profileUpdate = {
         nickname,
@@ -270,20 +270,20 @@ const Profile: React.FC = () => {
         receiveNotifications,
       };
 
+      console.log("🚀 Sending update to API:", profileUpdate);
+  
       const profileResponse = await api.put("/profiles/me", profileUpdate);
-      delete profileResponse.data._id;
-      delete profileResponse.data.userId;
-      const phoneUpdate = { phone };
-      const phoneResponse = phone
-        ? await api.put("/users/me", phoneUpdate)
-        : null;
-      dispatch(
-        updateUser({
-          ...profileResponse.data,
-          ...(phoneResponse ? { phone: phoneResponse.data.phone } : {}),
-        })
-      );
+      
+      console.log("✅ API Response:", profileResponse.data);
 
+
+      dispatch(updateUser({
+        nickname: profileResponse.data.nickname,
+        profileImage: profileResponse.data.profileImage,
+        bio: profileResponse.data.bio,
+        receiveNotifications: profileResponse.data.receiveNotifications
+      }));
+  
       alert("Profile updated successfully!");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -292,6 +292,7 @@ const Profile: React.FC = () => {
       setLoading(false);
     }
   };
+  
 
   const navigate = useNavigate();
 
