@@ -260,15 +260,21 @@ export default function MyDonations() {
                           </p>
                         )}
                       </div>
-                    </div>
+                    </div> 
                     <div className="flex flex-row sm:flex-col justify-start items-stretch sm:items-start gap-2 sm:gap-3 shrink-0 sm:min-w-[140px]">
-                      <Badge
-                        className={`${
-                          statusConfig[donation.status].color
-                        } px-2 sm:px-2.5 py-0.5 text-xs sm:text-sm text-center flex-1 sm:flex-none`}
-                      >
-                        {statusConfig[donation.status].text}
-                      </Badge>
+                    {(() => {
+                        const statusInfo = statusConfig[donation.status] ?? {
+                          color: "bg-gray-100 text-gray-800",
+                          text: "Unknown",
+                        };
+                        return (
+                          <Badge
+                            className={`${statusInfo.color} px-2 sm:px-2.5 py-0.5 text-xs sm:text-sm text-center flex-1 sm:flex-none`}
+                          >
+                            {statusInfo.text}
+                          </Badge>
+                        );
+                      })()}
                       <Button
                         variant="outline"
                         size="sm"
