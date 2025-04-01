@@ -133,6 +133,12 @@ export const routeListMunicipality: RouteProps[] = [
     href: "/logout",
     label: "Logout",
   },
+  {
+    href: "/create-post",
+    label: "Create Post",
+    hideInNavbar: true,
+    requiresCityOrAdmin: false, 
+  },
 ];
 
 export const routeListDonor: RouteProps[] = [
