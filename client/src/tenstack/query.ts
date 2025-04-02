@@ -185,3 +185,25 @@ export const fetchEatUps = async (): Promise<EatUp[]> => {
     return [];
   }
 };
+
+// Get deals for the logged-in business user
+export const fetchMyDeals = async () => {
+  try {
+    const res = await api.get("/discounts/my");
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching my deals:", error);
+    return [];
+  }
+};
+
+// Get all deals (for soldiers)
+export const fetchAllDeals = async () => {
+  try {
+    const res = await api.get("/discounts");
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching all deals:", error);
+    return [];
+  }
+};
