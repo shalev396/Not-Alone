@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { api } from "@/api/api";
-import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 import { uploadImage } from "@/components/shared/UploadPhoto";
@@ -23,7 +22,6 @@ import {
   AlertCircle,
   X,
   Upload,
-  MapPin,
   Package2,
   FileText,
   ImageIcon,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/Redux/store";
-import { updateUser, fetchUserData } from "@/Redux/userSlice";
+import { updateUser } from "@/Redux/userSlice";
 import ProfileImageDialog from "@/components/profile/ProfileImageDialog";
 import { uploadImage } from "@/components/shared/UploadPhoto";
 import { Navbar } from "@/components/shared/Navbar";
