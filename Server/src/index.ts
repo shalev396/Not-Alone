@@ -198,8 +198,8 @@ if (require.main === module) {
           console.log(`HTTPS Server is running on https://localhost:${PORT}`);
         });
       } else {
-        // Start HTTP server for other environments
-        server = app.listen(PORT, () => {
+        // Use the existing httpServer where Socket.IO was initialized
+        server = httpServer.listen(PORT, () => {
           console.log(`HTTP Server is running on http://localhost:${PORT}`);
         });
       }
