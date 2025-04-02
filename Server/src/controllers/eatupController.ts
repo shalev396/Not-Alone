@@ -317,6 +317,22 @@ export const subscribeToEatup = async (req: Request, res: Response) => {
       .populate("city", "name zone")
       .populate("guestDetails", "firstName lastName email phone");
 
+    // Find and update the associated channel to add the user as a member
+    const channel = await ChannelModel.findOne({ eatupId });
+    if (channel) {
+      // Only add user if they're not already a member
+      if (!channel.members.includes(userInfo.userId as any)) {
+        await ChannelModel.findByIdAndUpdate(
+          channel._id,
+          { $push: { members: userInfo.userId } },
+          { new: true }
+        );
+        console.log(`User ${userInfo.userId} added to channel ${channel._id} for eatup ${eatupId}`);
+      }
+    } else {
+      console.log(`No channel found for eatup ${eatupId}`);
+    }
+
     return res.json(updatedEatup);
   } catch (error) {
     console.error("Subscribe error:", error);
@@ -362,6 +378,24 @@ export const unsubscribeFromEatup = async (req: Request, res: Response) => {
       .populate("author", "firstName lastName email phone")
       .populate("city", "name zone")
       .populate("guestDetails", "firstName lastName email phone");
+
+    // Find and update the associated channel to remove the user as a member
+    // Don't remove the author of the eatup from the channel
+    if (eatup.authorId.toString() !== userInfo.userId) {
+      const channel = await ChannelModel.findOne({ eatupId });
+      if (channel) {
+        await ChannelModel.findByIdAndUpdate(
+          channel._id,
+          { $pull: { members: userInfo.userId } },
+          { new: true }
+        );
+        console.log(`User ${userInfo.userId} removed from channel ${channel._id} for eatup ${eatupId}`);
+      } else {
+        console.log(`No channel found for eatup ${eatupId}`);
+      }
+    } else {
+      console.log(`User ${userInfo.userId} is the author, not removing from channel`);
+    }
 
     return res.json(updatedEatup);
   } catch (error) {
