@@ -259,25 +259,29 @@ export default function DonationControlPanel() {
               <p className="text-sm font-medium text-muted-foreground">Total</p>
               <p className="text-2xl font-bold">{stats.total}</p>
             </Card>
-            {Object.entries(statusConfig).map(([status, config]) => {
+
+            {(Object.entries(statusConfig) as [
+              keyof typeof statusConfig,
+              {
+                icon: React.ElementType;
+                color: string;
+                text: string;
+              }
+            ][]).map(([status, config]) => {
+              const count = stats[status] ?? 0;
               const Icon = config.icon;
+
               return (
-                <Card
-                  key={status}
-                  className={`p-4 flex flex-col items-center text-center`}
-                >
+                <Card key={status} className="p-4 flex flex-col items-center text-center">
                   <Icon className={`h-8 w-8 ${config.color} mb-2`} />
                   <p className="text-sm font-medium text-muted-foreground line-clamp-1">
                     {config.text}
                   </p>
-                  <p className="text-2xl font-bold">
-                    {stats[status as keyof typeof stats]}
-                  </p>
+                  <p className="text-2xl font-bold">{count}</p>
                 </Card>
               );
             })}
           </div>
-
           {/* Filters */}
           <Card className="p-4">
             <div className="space-y-4">
@@ -379,13 +383,13 @@ export default function DonationControlPanel() {
                         <h3 className="font-semibold text-lg truncate">
                           {donation.title}
                         </h3>
-                        <Badge
-                          className={`${
-                            statusConfig[donation.status].color
-                          } w-fit`}
-                        >
+                        {statusConfig[donation.status] ? (
+                        <Badge className={`${statusConfig[donation.status].color} w-fit`}>
                           {statusConfig[donation.status].text}
                         </Badge>
+                      ) : (
+                        <Badge className="bg-gray-300 text-gray-700 w-fit">Unknown</Badge>
+                      )}
                       </div>
                       <p className="text-muted-foreground text-sm line-clamp-2 mb-2">
                         {donation.description}

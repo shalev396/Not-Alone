@@ -159,13 +159,13 @@ export default function MyEatUps() {
                 >
                   <div className="flex flex-col md:flex-row h-full">
                     {/* Image Section */}
-                    <div className="w-full md:w-1/3 relative bg-muted h-[250px] md:h-full">
-                      {eatup.media && eatup.media.length > 0 ? (
+                    <div className="w-full md:w-1/3 flex items-center justify-center p-4 bg-muted h-[250px] md:h-auto">
+                    {eatup.media && eatup.media.length > 0 ? (
                         <>
                           <img
                             src={eatup.media[0]}
                             alt={`${eatup.title} - EatUp event`}
-                            className="object-fill inset-0 w-full h-full "
+                            className="object-cover rounded-sm max-h-[200px] w-full"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.style.display = "none";

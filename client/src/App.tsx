@@ -4,6 +4,7 @@ import Profile from "./pages/Profile";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
+import NewDeal from "./pages/NewDeal";
 import NewPost from "./pages/NewEatup";
 import SignUp from "./pages/Signup";
 import Tos from "./pages/Tos";
@@ -115,6 +116,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <NewPost />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create-deal"
+        element={
+          <ProtectedRoute>
+            <NewDeal />
           </ProtectedRoute>
         }
       />

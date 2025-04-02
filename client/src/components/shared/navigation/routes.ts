@@ -208,20 +208,22 @@ export const routeListOrganization: RouteProps[] = [
 
 export const routeListBusiness: RouteProps[] = [
   {
+    href: "/create-deal",
+    label: "Create Deal",
+  },
+  {
     href: "/",
     label: "Home",
   },
   {
     href: "/discounts",
     label: "Add Discount @",
+    hideInNavbar: true,
   },
   {
     href: "/verify-soldier",
     label: "Verify Soldier @",
-  },
-  {
-    href: "/vouchers/create",
-    label: "Create Vouchers @",
+    hideInNavbar: true,
   },
   {
     href: "/profile",
@@ -230,7 +232,8 @@ export const routeListBusiness: RouteProps[] = [
   {
     href: "/logout",
     label: "Logout",
-  },
+  }
+  
 ];
 
 export const routeListAdmin: AdminRouteSection[] = [
