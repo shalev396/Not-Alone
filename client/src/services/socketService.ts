@@ -12,18 +12,27 @@ class SocketService {
 
   connect(channelId: string): Socket {
     if (this.socket && this.currentChannel === channelId) {
+      console.log("Socket already connected to channel:", channelId);
       return this.socket;
     }
 
     if (this.socket) {
+      console.log("Disconnecting from previous channel:", this.currentChannel);
       this.socket.emit("leave channel", this.currentChannel);
       this.socket.disconnect();
       this.socket = null;
     }
 
     const token = sessionStorage.getItem("token");
+    console.log("Connecting with token:", token ? "Token exists" : "No token");
 
-    this.socket = io("http://localhost:5000", {
+    // Make sure we have the token
+    if (!token) {
+      console.error("No authentication token available");
+      throw new Error("Authentication required");
+    }
+
+    this.socket = io("http://localhost:3000", {
       auth: { token },
       query: { channelId },
       transports: ["polling", "websocket"],
@@ -32,12 +41,26 @@ class SocketService {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       withCredentials: true,
+      extraHeaders: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     this.currentChannel = channelId;
 
     this.socket.on("connect", () => {
       console.log(`Socket connected to channel: ${channelId}`);
+      // Explicitly join the channel after connection
+      this.socket?.emit("join channel", channelId);
+      console.log("Sent 'join channel' event for:", channelId);
+    });
+
+    this.socket.on("authenticated", () => {
+      console.log("Socket authenticated successfully");
+    });
+
+    this.socket.on("auth_error", (error) => {
+      console.error("Socket authentication error:", error);
     });
 
     this.socket.on("connect_error", (error) => {
@@ -53,6 +76,7 @@ class SocketService {
 
   disconnect(): void {
     if (this.socket) {
+      console.log("Disconnecting socket from channel:", this.currentChannel);
       this.socket.emit("leave channel", this.currentChannel);
       this.socket.disconnect();
       this.socket = null;
@@ -62,7 +86,15 @@ class SocketService {
 
   emitMessage(message: SocketMessage): void {
     if (this.socket && this.currentChannel === message.channelId) {
+      console.log("Emitting message:", message);
       this.socket.emit("new message", message);
+    } else {
+      console.error(
+        "Cannot send message - socket not connected to correct channel"
+      );
+      console.log("Current channel:", this.currentChannel);
+      console.log("Message channel:", message.channelId);
+      console.log("Socket connected:", !!this.socket);
     }
   }
 }

@@ -52,7 +52,12 @@ export default function ChannelPage() {
       if (!channelId) return [];
       try {
         const response = await api.get(`/messages/channel/${channelId}`);
-        return Array.isArray(response.data) ? response.data : [];
+        debugLog("Initial messages loaded:", response.data);
+        return Array.isArray(response.data)
+          ? response.data
+          : response.data?.messages
+          ? response.data.messages
+          : [];
       } catch (error: any) {
         if (error.response?.status === 401) {
           navigate("/login");
@@ -85,6 +90,8 @@ export default function ChannelPage() {
   useEffect(() => {
     if (!channelId || !user._id) return;
 
+    debugLog(`Setting up socket connection for channel: ${channelId}`);
+
     // Connect to socket
     const socket = socketService.connect(channelId);
     setIsConnected(true);
@@ -98,17 +105,28 @@ export default function ChannelPage() {
 
     socket.on("message received", (newMessage: Message) => {
       debugLog(`📩 Received message:`, newMessage);
+
       // Update messages in cache
       queryClient.setQueryData(
         ["messages", channelId],
         (oldMessages: any[] = []) => {
+          // If oldMessages is not an array, handle it
+          if (!Array.isArray(oldMessages)) {
+            debugLog("oldMessages is not an array:", oldMessages);
+            oldMessages = [];
+          }
+
           // Avoid duplicate messages
           if (oldMessages.some((msg) => msg._id === newMessage._id)) {
+            debugLog("Duplicate message detected, not adding to cache");
             return oldMessages;
           }
+
+          debugLog("Adding new message to cache");
           return [...oldMessages, newMessage];
         }
       );
+
       // Scroll to bottom on new message
       scrollToBottom();
     });
@@ -134,6 +152,11 @@ export default function ChannelPage() {
       setIsConnected(false);
     };
   }, [channelId, user._id, queryClient]);
+
+  // Add some additional debugging for messages state
+  useEffect(() => {
+    debugLog(`Messages state updated, count: ${messages?.length || 0}`);
+  }, [messages]);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
