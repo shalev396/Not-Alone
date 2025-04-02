@@ -34,8 +34,8 @@ export default function Social() {
           <PostFeed />
 
           {/* Fixed Create Post Button */}
-          <div className="fixed bottom-6 left-auto right-6 px-6 z-50">
-            <div className="max-w-4xl mx-auto">
+          <div className="fixed bottom-6 left-auto right-6 px-6 z-20">
+          <div className="max-w-4xl mx-auto">
               <Button
                 onClick={handleCreatePost}
                 className="w-40 shadow-lg hover:shadow-xl transition-all duration-200 gap-2 bg-primary hover:bg-primary"
