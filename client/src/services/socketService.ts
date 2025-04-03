@@ -35,6 +35,7 @@ class SocketService {
       process.env.NODE_ENV === "production" ? "/" : "http://localhost:3000";
 
     this.socket = io(baseURL, {
+      path: "/api/socket.io",
       auth: { token },
       query: { channelId },
       transports: ["polling", "websocket"],

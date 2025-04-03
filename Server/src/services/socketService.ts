@@ -17,6 +17,7 @@ class SocketService {
 
   constructor(server: HttpServer) {
     this.io = new SocketServer(server, {
+      path: "/api/socket.io",
       cors: {
         origin: [
           process.env.CLIENT_URL || "http://localhost:3000",
@@ -26,6 +27,7 @@ class SocketService {
           "http://127.0.0.1:5173",
           "https://not-alone.onrender.com",
           "http://localhost:5000",
+          "https://notalonesoldier.com",
         ],
         methods: ["GET", "POST"],
         credentials: true,
