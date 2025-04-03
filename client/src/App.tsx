@@ -43,6 +43,8 @@ import TwoFactorAuth from "./pages/TwoFactorAuth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPasswordVerify from "./pages/ResetPasswordVerify";
 import Licenses from "./pages/Licenses";
+import Deals from "./pages/Deals";
+import MyDeals from "./pages/MyDeals";
 
 // Public routes that don't need protection
 // const publicRoutes = [
@@ -199,6 +201,22 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/deals"
+        element={
+          <ProtectedRoute>
+            <Deals />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+          path="/my-deals"
+          element={
+            <ProtectedRoute>
+              <MyDeals />
+            </ProtectedRoute>
+          }
+        />
       <Route
         path="/channel/:channelId"
         element={

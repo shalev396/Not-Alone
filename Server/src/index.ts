@@ -19,7 +19,6 @@ import cityRoutes from "./routes/cityRoutes";
 import requestRoutes from "./routes/requestRoutes";
 import donationRoutes from "./routes/donationRoutes";
 import businessRoutes from "./routes/businessRoutes";
-import discountRoutes from "./routes/discountRoutes";
 import profileRoutes from "./routes/profileRoutes";
 import eatupRoutes from "./routes/eatupRoutes";
 import postRoutes from "./routes/postRoutes";
@@ -32,6 +31,8 @@ import { validateEnv } from "./utils/validateEnv";
 import channelRoutes from "./routes/channelRoutes";
 import messageRoutes from "./routes/messageRoutes";
 import verify2FARoutes from "./routes/verify2FARoutes";
+import discountRoutes from "./routes/discountRoutes";
+
 
 // Load and validate environment variables
 dotenv.config();

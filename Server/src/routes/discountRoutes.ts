@@ -1,35 +1,19 @@
-// routes/discountRoutes.ts
 import express from "express";
-import { auth } from "../middleware/auth";
-import { checkUserType } from "../middleware/checkUserType";
 import {
   createDiscount,
-  getAllDeals,
+  getMyDiscounts,
   getDiscountById,
   deleteDiscount,
-  getMyDiscounts,
+  getAllDeals,
 } from "../controllers/discountController";
+import { auth } from "../middleware/auth";
 
 const router = express.Router();
 
-// Public route - soldiers can view all active deals
-router.get("/", auth, getAllDeals);
-
-// Get all discounts for current logged-in business
-router.get("/my", auth, checkUserType(["Business", "Admin"]), getMyDiscounts);
-
-// Create new discount (deal)
-router.post("/", auth, checkUserType(["Business", "Admin"]), createDiscount);
-
-// Get specific discount
+router.get("/", auth, getAllDeals); // GET /api/deals
+router.post("/", auth, createDiscount); // POST /api/deals
+router.get("/my", auth, getMyDiscounts);
 router.get("/:discountId", auth, getDiscountById);
-
-// Delete a discount
-router.delete(
-  "/:discountId",
-  auth,
-  checkUserType(["Business", "Admin"]),
-  deleteDiscount
-);
+router.delete("/:discountId", auth, deleteDiscount);
 
 export default router;

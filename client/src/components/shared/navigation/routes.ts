@@ -54,6 +54,11 @@ export const routeListSoldier: RouteProps[] = [
   {
     href: "/vouchers",
     label: "Vouchers@",
+    hideInNavbar: true,
+  },
+  {
+    label: "Deals", 
+    href: "/deals",
   },
   {
     href: "/rights",
@@ -81,12 +86,19 @@ export const routeListMunicipality: RouteProps[] = [
   },
   {
     href: "/contribute",
-    label: "Answer Requests @",
+    label: "Answer Requests",
     requiresCityOrAdmin: true,
+    hideInNavbar: true,
   },
   {
     href: "/social",
     label: "Social",
+  },
+  {
+    href: "/create-post",
+    label: "Create Post",
+    hideInNavbar: true,
+    requiresCityOrAdmin: false, 
   },
   {
     href: "/donation-assignment",
@@ -123,7 +135,7 @@ export const routeListMunicipality: RouteProps[] = [
   },
   {
     href: "/join-city",
-    label: "Join City #",
+    label: "Join City",
   },
   {
     href: "/profile",
@@ -132,12 +144,6 @@ export const routeListMunicipality: RouteProps[] = [
   {
     href: "/logout",
     label: "Logout",
-  },
-  {
-    href: "/create-post",
-    label: "Create Post",
-    hideInNavbar: true,
-    requiresCityOrAdmin: false, 
   },
 ];
 
@@ -210,6 +216,10 @@ export const routeListBusiness: RouteProps[] = [
   {
     href: "/create-deal",
     label: "Create Deal",
+  },
+  {
+    label: "My Deals",
+    href: "/my-deals",
   },
   {
     href: "/",

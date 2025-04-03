@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { DiscountModel } from "../models/discountModel";
-import { BusinessModel } from "../models/businessModel";
 
 interface UserInfo {
   userId: string;
@@ -23,6 +22,7 @@ export const getMyDiscounts = async (req: Request, res: Response) => {
 
   try {
     const discounts = await DiscountModel.find({ owner: userInfo.userId })
+      .populate("owner", "firstName lastName profileImage")
       .sort({ createdAt: -1 })
       .lean();
     return res.json(discounts);
@@ -41,7 +41,9 @@ export const getDiscountById = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid discount ID format" });
     }
 
-    const discount = await DiscountModel.findById(discountId).lean();
+    const discount = await DiscountModel.findById(discountId)
+      .populate("owner", "firstName lastName profileImage")
+      .lean();
     if (!discount) {
       return res.status(404).json({ message: "Discount not found" });
     }
@@ -111,14 +113,17 @@ export const deleteDiscount = async (req: Request, res: Response) => {
   }
 };
 
+// Get all deals for soldiers (with populated owner incl. profileImage)
 export const getAllDeals = async (_req: Request, res: Response) => {
   try {
     const deals = await DiscountModel.find()
-      .sort({ createdAt: -1 })
-      .lean();
+      .populate("owner", "firstName lastName profileImage") 
+      .sort({ createdAt: -1 });
+
     return res.json(deals);
   } catch (error) {
     console.error("Error fetching all deals:", error);
     return res.status(500).json({ message: "Failed to fetch deals" });
   }
 };
+

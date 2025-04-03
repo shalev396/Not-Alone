@@ -13,7 +13,7 @@ import { Discount } from "@/types/Discount";
 export default function MyDeals() {
   const [deals, setDeals] = useState<Discount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const navigate = useNavigate();
@@ -51,7 +51,7 @@ export default function MyDeals() {
                 My Deals
               </span>
             </h2>
-            <Button onClick={() => navigate("/new-deal")} className="bg-gradient-to-r from-primary/80 to-primary h-10 px-4">
+            <Button onClick={() => navigate("/create-deal")} className="bg-gradient-to-r from-primary/80 to-primary h-10 px-4">
               Create Deal
             </Button>
           </div>
@@ -93,7 +93,7 @@ export default function MyDeals() {
           ) : filteredDeals.length === 0 ? (
             <Card className="p-8 text-center border border-primary/10">
               <p className="text-muted-foreground mb-4">No deals found</p>
-              <Button onClick={() => navigate("/new-deal")} variant="outline">
+              <Button onClick={() => navigate("/create-deal")} variant="outline">
                 Create Your First Deal
               </Button>
             </Card>
