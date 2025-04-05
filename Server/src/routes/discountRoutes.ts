@@ -1,38 +1,19 @@
 import express from "express";
-import { auth } from "../middleware/auth";
-import { checkUserType } from "../middleware/checkUserType";
 import {
-  getBusinessDiscounts,
-  getDiscountById,
   createDiscount,
-  updateDiscount,
+  getMyDiscounts,
+  getDiscountById,
   deleteDiscount,
+  getAllDeals,
 } from "../controllers/discountController";
+import { auth } from "../middleware/auth";
 
 const router = express.Router();
 
-// Public routes (still need authentication)
-router.get("/business/:businessId", auth, getBusinessDiscounts);
+router.get("/", auth, getAllDeals); // GET /api/deals
+router.post("/", auth, createDiscount); // POST /api/deals
+router.get("/my", auth, getMyDiscounts);
 router.get("/:discountId", auth, getDiscountById);
-
-// Business owner and admin routes
-router.post(
-  "/business/:businessId",
-  auth,
-  checkUserType(["Business", "Admin"]),
-  createDiscount
-);
-router.put(
-  "/business/:businessId/:discountId",
-  auth,
-  checkUserType(["Business", "Admin"]),
-  updateDiscount
-);
-router.delete(
-  "/business/:businessId/:discountId",
-  auth,
-  checkUserType(["Business", "Admin"]),
-  deleteDiscount
-);
+router.delete("/:discountId", auth, deleteDiscount);
 
 export default router;

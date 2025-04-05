@@ -4,6 +4,7 @@ import Profile from "./pages/Profile";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
+import NewDeal from "./pages/NewDeal";
 import NewPost from "./pages/NewEatup";
 import SignUp from "./pages/Signup";
 import Tos from "./pages/Tos";
@@ -42,6 +43,8 @@ import TwoFactorAuth from "./pages/TwoFactorAuth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPasswordVerify from "./pages/ResetPasswordVerify";
 import Licenses from "./pages/Licenses";
+import Deals from "./pages/Deals";
+import MyDeals from "./pages/MyDeals";
 
 // Public routes that don't need protection
 // const publicRoutes = [
@@ -119,6 +122,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/create-deal"
+        element={
+          <ProtectedRoute>
+            <NewDeal />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/rights"
         element={
           <ProtectedRoute>
@@ -190,6 +201,22 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/deals"
+        element={
+          <ProtectedRoute>
+            <Deals />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+          path="/my-deals"
+          element={
+            <ProtectedRoute>
+              <MyDeals />
+            </ProtectedRoute>
+          }
+        />
       <Route
         path="/channel/:channelId"
         element={

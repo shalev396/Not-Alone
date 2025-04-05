@@ -116,7 +116,7 @@ export const updateMyProfile = async (req: Request, res: Response) => {
     let profile = await ProfileModel.findOne({ userId: userInfo.userId });
 
     if (!profile) {
-      const newProfile = ProfileModel.create({
+      const newProfile = await ProfileModel.create({
         userId: userInfo.userId,
         nickname: req.body.nickname || "", 
         bio: req.body.bio || "", 
@@ -124,10 +124,17 @@ export const updateMyProfile = async (req: Request, res: Response) => {
         visibility: "public", 
         receiveNotifications: req.body.receiveNotifications || false,
       });
-      return res.json(newProfile);
+      
+      console.log("✅ new profile created:", newProfile); 
+      return res.json(
+        await ProfileModel.findById(newProfile._id)
+          .populate("user", "-password")
+          .lean()
+      );
+      
     } else{
 
-      
+      console.log("🔄 Updating profile... Data received:", req.body); // 👀 LOG IMPORTANT
       if (req.body.nickname) profile.nickname = req.body.nickname;
       if (req.body.bio) profile.bio = req.body.bio;
       if (req.body.profileImage) profile.profileImage = req.body.profileImage;
@@ -135,12 +142,22 @@ export const updateMyProfile = async (req: Request, res: Response) => {
         profile.receiveNotifications = req.body.receiveNotifications;
       }
       
-      await profile.save();
-      
+      profile = await profile.save();
+      console.log("✅ Profile updated in DB:", profile);
+
+      await UserModel.findByIdAndUpdate(userInfo.userId, {
+        nickname: profile.nickname,
+        bio: profile.bio,
+        profileImage: profile.profileImage,
+      });
+      console.log("✅ User model updated to reflect profile changes");
+
+            
       const updatedProfile = await ProfileModel.findById(profile._id)
       .populate("user", "-password")
       .lean();
       
+      console.log("✅ Updated profile on MongoDB:", updatedProfile); // 👀 LOG IMPORTANT
       return res.json(updatedProfile);
     }
     } catch (error) {
@@ -155,11 +172,6 @@ export const updateMyProfile = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Error updating profile" });
   }
 };
-
-
-
-
-
 
 // Update user's profile (admin only)
 export const updateUserProfile = async (req: Request, res: Response) => {

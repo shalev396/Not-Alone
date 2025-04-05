@@ -1,38 +1,53 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IDiscount extends Document {
-  name: string;
-  discount: string;
-  expireDate: Date;
+  title: string;
+  category: "Health & Wellness" | "Clothes" | "Gear & Equipment" | "Electronics" | "Entertainment" | "Home";
+  description?: string;
+  media: string[];
+  owner: Schema.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const discountSchema = new Schema<IDiscount>(
   {
-    name: {
+    title: {
       type: String,
-      required: [true, "Name is required"],
+      required: [true, "Title is required"],
       trim: true,
-      minlength: [2, "Name must be at least 2 characters long"],
-      maxlength: [100, "Name cannot exceed 100 characters"],
+      minlength: [3, "Title must be at least 3 characters long"],
+      maxlength: [100, "Title cannot exceed 100 characters"],
     },
-    discount: {
+    category: {
       type: String,
-      required: [true, "Discount is required"],
-      trim: true,
-      minlength: [1, "Discount must be at least 1 character long"],
-      maxlength: [50, "Discount cannot exceed 50 characters"],
+      required: [true, "Category is required"],
+      enum: [
+        "Health & Wellness",
+        "Clothes",
+        "Gear & Equipment",
+        "Electronics",
+        "Entertainment",
+        "Home",
+      ],
     },
-    expireDate: {
-      type: Date,
-      required: [true, "Expiration date is required"],
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [1000, "Description cannot exceed 1000 characters"],
+    },
+    media: {
+      type: [String],
+      default: [],
       validate: {
-        validator: function (v: Date) {
-          return v > new Date(); // Expiration date must be in the future
-        },
-        message: "Expiration date must be in the future",
+        validator: (v: string[]) => v.length <= 10,
+        message: "Cannot exceed 10 media items",
       },
+    },
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
   },
   {
@@ -40,19 +55,8 @@ const discountSchema = new Schema<IDiscount>(
   }
 );
 
-// Index for querying active discounts
-discountSchema.index({ expireDate: 1 });
-
-// Virtual for checking if discount is expired
-discountSchema.virtual("isExpired").get(function () {
-  return this.expireDate < new Date();
-});
-
-// Ensure virtuals are included in JSON output
+discountSchema.index({ owner: 1 });
 discountSchema.set("toJSON", { virtuals: true });
 discountSchema.set("toObject", { virtuals: true });
 
-export const DiscountModel = mongoose.model<IDiscount>(
-  "Discount",
-  discountSchema
-);
+export const DiscountModel = mongoose.model<IDiscount>("Discount", discountSchema);

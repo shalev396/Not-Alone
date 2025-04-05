@@ -300,28 +300,28 @@ const setupTestUsers = async () => {
     };
     setBusinessesArray([businessToSave]);
 
-    // Create a test discount for the business
-    const discountData = {
-      name: "Test Discount",
-      discount: "50% off",
-      expireDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-    };
+    // // Create a test discount for the business
+    // const discountData = {
+    //   name: "Test Discount",
+    //   discount: "50% off",
+    //   expireDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    // };
 
-    const createDiscountResponse: any = await request(app)
-      .post(`/api/discounts/business/${businessId}`)
-      .set("Authorization", `Bearer ${businessUser.token}`)
-      .send(discountData);
+    // const createDiscountResponse: any = await request(app)
+    //   .post(`/api/discounts/business/${businessId}`)
+    //   .set("Authorization", `Bearer ${businessUser.token}`)
+    //   .send(discountData);
 
-    if (createDiscountResponse.status !== 201) {
-      throw new Error("Failed to create test discount");
-    }
+    // if (createDiscountResponse.status !== 201) {
+    //   throw new Error("Failed to create test discount");
+    // }
 
-    // Store discount in discounts.json
-    const discountToSave = {
-      ...createDiscountResponse.body,
-      businessId: businessId,
-    };
-    setDiscountsArray([discountToSave]);
+    // // Store discount in discounts.json
+    // const discountToSave = {
+    //   ...createDiscountResponse.body,
+    //   businessId: businessId,
+    // };
+    // setDiscountsArray([discountToSave]);
 
     // Create a test donation using Donor user
     const donorUser = getUsersArray().find((u: users) => u.type === "Donor");

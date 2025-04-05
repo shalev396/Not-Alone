@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/Redux/store";
 import { updateUser } from "@/Redux/userSlice";
 import ProfileImageDialog from "@/components/profile/ProfileImageDialog";
-
+import { uploadImage } from "@/components/shared/UploadPhoto";
 import { Navbar } from "@/components/shared/Navbar";
 import { Filter } from "bad-words";
 import { api } from "@/api/api";
@@ -23,6 +23,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Upload } from "lucide-react";
 
 interface Request {
   _id: string;
@@ -74,7 +75,8 @@ export interface Post {
 const Profile: React.FC = () => {
   const dispatch = useDispatch();
   const [loadingProfile, setLoadingProfile] = useState(true);
-
+  const user = useSelector((state: RootState) => state.user);
+  const isUploadUser = ["Municipality", "Organization", "Business"].includes(user.type);
   const [nickname, setNickname] = useState("");
   const [profileImage, setProfileImage] = useState("");
   const [isImageLoading, setIsImageLoading] = useState(true);
@@ -126,7 +128,6 @@ const Profile: React.FC = () => {
     fetchProfile();
   }, [dispatch]);
 
-  const user = useSelector((state: RootState) => state.user);
   const NICKNAME_OPTIONS = [
     "May",
     "Lily",
@@ -253,14 +254,14 @@ const Profile: React.FC = () => {
       setError("Nickname cannot be empty.");
       return;
     }
-
+  
     if (error) {
       alert("Please fix the errors before saving!");
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
       const profileUpdate = {
         nickname,
@@ -270,20 +271,20 @@ const Profile: React.FC = () => {
         receiveNotifications,
       };
 
+      console.log("🚀 Sending update to API:", profileUpdate);
+  
       const profileResponse = await api.put("/profiles/me", profileUpdate);
-      delete profileResponse.data._id;
-      delete profileResponse.data.userId;
-      const phoneUpdate = { phone };
-      const phoneResponse = phone
-        ? await api.put("/users/me", phoneUpdate)
-        : null;
-      dispatch(
-        updateUser({
-          ...profileResponse.data,
-          ...(phoneResponse ? { phone: phoneResponse.data.phone } : {}),
-        })
-      );
+      
+      console.log("✅ API Response:", profileResponse.data);
 
+
+      dispatch(updateUser({
+        nickname: profileResponse.data.nickname,
+        profileImage: profileResponse.data.profileImage,
+        bio: profileResponse.data.bio,
+        receiveNotifications: profileResponse.data.receiveNotifications
+      }));
+  
       alert("Profile updated successfully!");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -292,6 +293,7 @@ const Profile: React.FC = () => {
       setLoading(false);
     }
   };
+  
 
   const navigate = useNavigate();
 
@@ -316,8 +318,8 @@ const Profile: React.FC = () => {
           ) : (
             <div className="space-y-8">
               <Card className="p-6">
-                <div className="flex items-start space-x-6">
-                  <div className="flex-1 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-start">
+              <div className="flex-1 space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="nickname">Nickname</Label>
                       <Input
@@ -371,7 +373,7 @@ const Profile: React.FC = () => {
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
                         placeholder="Write a short bio"
-                        className="min-h-[100px] border-primary/20"
+                        className="min-h-[100px] border-primary/20 w-full"
                       />
                     </div>
 
@@ -387,21 +389,55 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex-shrink-0">
-                    {isImageLoading && (
+                  <div className="flex-shrink-0 px-4 md:px-8 pt-6 md:pt-10">
+                  {isImageLoading && (
                       <Skeleton circle={true} height={160} width={160} />
                     )}
-                    <img
-                      src={profileImage || DEFAULT_PROFILE_IMAGE}
-                      alt="Profile"
-                      onClick={() => setIsDialogOpen(true)}
-                      onLoad={() => setIsImageLoading(false)}
-                      onError={() => {
-                        setIsImageLoading(false);
-                        setProfileImage(DEFAULT_PROFILE_IMAGE);
-                      }}
-                      className="rounded-full cursor-pointer w-40 h-40 border border-primary/20 hover:border-primary transition-colors"
-                    />
+                  <img
+                    src={profileImage || DEFAULT_PROFILE_IMAGE}
+                    alt="Profile"
+                    onClick={() => {
+                      if (!isUploadUser) setIsDialogOpen(true);
+                    }}
+                    onLoad={() => setIsImageLoading(false)}
+                    onError={() => {
+                      setIsImageLoading(false);
+                      setProfileImage(DEFAULT_PROFILE_IMAGE);
+                    }}
+                    className={`rounded-full w-40 h-40 border border-primary/20 transition-colors ${
+                      isUploadUser ? "cursor-default" : "cursor-pointer hover:border-primary"
+                    }`}
+                  />
+
+{isUploadUser && (
+  <div className="mt-4">
+    <label htmlFor="upload-image">
+      <Button variant="outline" className="w-full">
+        <Upload className="w-4 h-4 mr-2" />
+        Upload Image
+      </Button>
+    </label>
+    <input
+      id="upload-image"
+      type="file"
+      accept="image/*"
+      className="hidden"
+      onChange={async (e) => {
+        if (e.target.files?.[0]) {
+          try {
+            const url = await uploadImage(e.target.files[0]);
+            setProfileImage(url);
+            alert("Image uploaded successfully!");
+          } catch {
+            alert("Failed to upload image.");
+          }
+        }
+      }}
+    />
+  </div>
+)}
+
+
                   </div>
                 </div>
 
@@ -423,7 +459,7 @@ const Profile: React.FC = () => {
                     Posts
                   </TabsTrigger>
                   <TabsTrigger value="requests" className="flex-1">
-                    {isSoldier ? "Donation Requests" : "Donations"}
+                    {isSoldier ? "My Requests" : "Donations"}
                   </TabsTrigger>
                   <TabsTrigger value="joinCity" className="flex-1">
                     Join City
