@@ -148,7 +148,7 @@ export default function NewDeal() {
                   setServerError(null);
                   setShowError(false);
                   try {
-                    await api.post("/deals", values);
+                    await api.post("/discounts", values);
                     navigate("/my-deals");
                   } catch (error: any) {
                     const errorMessage =

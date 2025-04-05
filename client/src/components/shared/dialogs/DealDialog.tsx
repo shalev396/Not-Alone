@@ -19,11 +19,15 @@ import {
     deal: Discount;
     trigger?: React.ReactNode;
   }
-  
   export function DealDialog({ deal, trigger }: DealDialogProps) {
+    console.log("Rendering deal:", deal.title);
     return (
-      <Dialog>
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
+<Dialog>
+<DialogTrigger asChild>
+  {trigger || (
+    <button className="p-4 border rounded hover:shadow">View Deal</button>
+  )}
+</DialogTrigger>
         <DialogContent className="max-w-[600px] w-[95vw] overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-xl sm:text-2xl">
