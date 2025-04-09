@@ -114,7 +114,7 @@ jobs:
   build-and-deploy:
     # Runs only for push events to main
     if: github.event_name == 'push'
-
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
