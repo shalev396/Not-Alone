@@ -1,33 +1,20 @@
-# Use latest secure Node.js LTS image
-FROM node:20-alpine3.21
+# Use Node 16 (LTS) as base
+FROM node:20
 
-# Set working directory
-WORKDIR /server
+# Set the working directory in the container
+WORKDIR /Server
 
-# Copy package files first to leverage Docker caching
+# Copy package JSON files first (for better Docker caching)
 COPY package*.json ./
 
-# Upgrade Alpine packages to fix vulnerabilities
-RUN apk update && apk upgrade --available
+# Install dependencies
+RUN npm install 
 
-# Remove old dependencies before installing new ones
-RUN rm -rf node_modules package-lock.json 
-
-# Force npm to use cross-spawn@7.0.6
-RUN npm install --global cross-spawn@7.0.6
-
-# Install dependencies with deduplication
-RUN npm install --omit=dev && npm dedupe
-
-# Copy the rest of the app files
+# Copy the rest of your application code
 COPY . .
 
-# Security: Run as non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
-
-# Expose the application port
+# Expose port 3000
 EXPOSE 3000
 
-# Start the application
+# Command to run your app
 CMD ["npm", "start"]

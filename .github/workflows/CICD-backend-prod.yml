@@ -1,0 +1,152 @@
+name: Build and Deploy to ECS
+
+on:
+  # Trigger on push to main (for deploy)
+  push:
+    branches:
+      - main
+    paths:
+      - "Server/**"
+  # Trigger on pull request to main (for test)
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "Server/**"
+
+jobs:
+  # -----------------------------
+  # 1) TEST job (runs on PR only)
+  # -----------------------------
+  test:
+    # Runs only for PR events to main
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3 # Get the latest code from the repo
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18" # Ensure we're using Node.js 18
+
+      - name: Install MongoDB CLI (Ubuntu 22.04)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnupg curl
+
+          # Correctly Add MongoDB's Updated GPG Key
+          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-keyring.gpg
+
+          # Add MongoDB APT Repository (Official MongoDB Source)
+          echo "deb [signed-by=/usr/share/keyrings/mongodb-server-keyring.gpg] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+
+          sudo apt-get update
+          sudo apt-get install -y mongodb-org-shell mongodb-mongosh
+
+      - name: Verify MongoDB Installation
+        run: |
+          mongosh --version
+          mongo --version || echo "❌ Warning: Legacy MongoDB shell is not installed."
+
+      # 🚫 No frontend tests, but keeping the structure for future use
+      # - name: Install Frontend Dependencies
+      #   run: |
+      #     cd client
+      #     npm install  # Install frontend dependencies
+
+      # - name: Run Frontend Tests
+      #   run: |
+      #     cd client
+      #     npm test  # Run frontend tests (disabled)
+
+      - name: Install Backend Dependencies # Install backend dependencies
+        run: |
+          cd Server
+          npm install
+
+      - name: Check & Log Environment Variables
+        run: |
+          echo "Checking required secrets..."
+          if [ -z "${{ secrets.JWT_SECRET }}" ]; then echo "❌ MISSING: JWT_SECRET"; fi
+          if [ -z "${{ secrets.PASSWORD_KEY }}" ]; then echo "❌ MISSING: PASSWORD_KEY"; fi
+          if [ -z "${{ secrets.MONGODB_URI_TEST }}" ]; then echo "❌ MISSING: MONGODB_URI_TEST"; fi
+          if [ -z "${{ secrets.SMTP_HOST }}" ]; then echo "❌ MISSING: SMTP_HOST"; fi
+          if [ -z "${{ secrets.SMTP_PORT }}" ]; then echo "❌ MISSING: SMTP_PORT"; fi
+          if [ -z "${{ secrets.SMTP_USER }}" ]; then echo "❌ MISSING: SMTP_USER"; fi
+          if [ -z "${{ secrets.SMTP_PASS }}" ]; then echo "❌ MISSING: SMTP_PASS"; fi
+          if [ -z "${{ secrets.DEVICE_TOKEN_SECRET }}" ]; then echo "❌ MISSING: DEVICE_TOKEN_SECRET"; fi
+          if [ -z "${{ secrets.ENCRYPTION_KEY }}" ]; then echo "❌ MISSING: ENCRYPTION_KEY"; fi
+
+      - name: Set Environment Variables
+        run: |
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
+          echo "PASSWORD_KEY=${{ secrets.PASSWORD_KEY }}" >> $GITHUB_ENV
+          echo "MONGODB_URI_TEST=${{ secrets.MONGODB_URI_TEST }}" >> $GITHUB_ENV
+          echo "SMTP_HOST='${{ secrets.SMTP_HOST }}'" >> $GITHUB_ENV
+          echo "SMTP_PORT='${{ secrets.SMTP_PORT }}'" >> $GITHUB_ENV
+          echo "SMTP_USER='${{ secrets.SMTP_USER }}'" >> $GITHUB_ENV
+          echo "SMTP_PASS='${{ secrets.SMTP_PASS }}'" >> $GITHUB_ENV
+          echo "DEVICE_TOKEN_SECRET='${{ secrets.DEVICE_TOKEN_SECRET }}'" >> $GITHUB_ENV
+          echo "ENCRYPTION_KEY='${{ secrets.ENCRYPTION_KEY }}'" >> $GITHUB_ENV
+
+      - name: Debug MongoDB URI
+        run: |
+          echo "MongoDB URI: ${MONGODB_URI_TEST:0:20}********"  # Mask for security
+
+      - name: Test MongoDB Connection
+        run: |
+          echo "Testing MongoDB connection..."
+          echo "MongoDB URI: ${MONGODB_URI_TEST:0:20}********"  # Mask for security
+          mongosh "$MONGODB_URI_TEST" --eval "db.runCommand({ connectionStatus: 1 })"
+
+      - name: Run Backend Tests # Run backend tests
+        run: |
+          cd Server
+          npm test
+
+  #------------------------------------------
+  # -----------------------------------------
+  # 2) BUILD AND DEPLOY job (runs on push only)
+  # -----------------------------------------
+  build-and-deploy:
+    # Runs only for push events to main
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build Docker Image
+        run: |
+          # Build the image from the Dockerfile in /server
+          docker build -t not-alone-backend:latest ./server
+
+      - name: Tag Docker Image
+        run: |
+          # Replace 'my-node-app' and registry with your actual ECR repository name and registry ID
+          docker tag not-alone-backend:latest ${{ steps.login-ecr.outputs.registry }}/not-alone-backend:latest
+
+      - name: Push Docker Image
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/not-alone-backend:latest
+
+      - name: Update ECS Service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
+            --service ${{ secrets.ECS_SERVICE_NAME }} \
+            --force-new-deployment

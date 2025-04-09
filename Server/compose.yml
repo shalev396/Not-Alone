@@ -1,18 +1,17 @@
+version: "3"
+
 services:
-  server:
+  node-app:
+    # Build from the Dockerfile in the current directory (server)
     build:
       context: .
       dockerfile: Dockerfile
+    image: not-alone-backend:latest
+    container_name: not-alone-backend
+    # Map host port 3000 to container port 3000
     ports:
       - "3000:3000"
+    # Inject environment variables from .env in /server (if present)
     env_file:
       - .env
-    restart: always # Ensures the container restarts on failure
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    volumes:
-      - .:/server
-      - /server/node_modules
+    restart: always
