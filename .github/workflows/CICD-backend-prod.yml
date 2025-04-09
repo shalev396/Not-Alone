@@ -132,8 +132,8 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          # Build the image from the Dockerfile in /server
-          docker build -t not-alone-backend:latest ./server
+          # Build the image from the Dockerfile in /Server
+          docker build -t not-alone-backend:latest ./Server
 
       - name: Tag Docker Image
         run: |

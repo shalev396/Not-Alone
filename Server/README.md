@@ -1,4 +1,4 @@
-# Not Alone Backend !!
+# Not Alone Backend !
 
 A Node.js backend application built with TypeScript, Express, and MongoDB.
 
