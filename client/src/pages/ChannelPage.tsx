@@ -251,8 +251,8 @@ export default function ChannelPage() {
 
       <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {/* Channel Header */}
-        <div className="h-14 md:h-20 border-b border-border flex items-center justify-between px-6 bg-background/50 shrink-0">
-          <div className="flex items-center gap-4">
+        <div className="h-14 md:h-20 border-b border-border flex items-center justify-center px-6 bg-background/50 shrink-0">
+          <div className="flex flex-col items-center gap-2">
             <h1 className="text-xl md:text-3xl font-bold">
               <span className="bg-gradient-to-r from-primary/60 to-primary text-transparent bg-clip-text">
                 {currentChannel?.name || "Channel"}
