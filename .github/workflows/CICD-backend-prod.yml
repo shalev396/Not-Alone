@@ -119,34 +119,18 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build Docker Image
+      - name: Set up SSH
         run: |
-          # Build the image from the Dockerfile in /Server
-          docker build -t not-alone-backend:latest ./Server
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
 
-      - name: Tag Docker Image
+      - name: Deploy to EC2
         run: |
-          # Replace 'my-node-app' and registry with your actual ECR repository name and registry ID
-          docker tag not-alone-backend:latest ${{ steps.login-ecr.outputs.registry }}/not-alone-backend:latest
-
-      - name: Push Docker Image
-        run: |
-          docker push ${{ steps.login-ecr.outputs.registry }}/not-alone-backend:latest
-
-      - name: Update ECS Service
-        run: |
-          aws ecs update-service \
-            --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
-            --service ${{ secrets.ECS_SERVICE_NAME }} \
-            --force-new-deployment
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/ec2-user/Not-Alone/server
+            git pull origin main
+            docker build -t not-alone-backend -f dockerfile .
+            docker stop not-alone-backend || true
+            docker rm not-alone-backend || true
+            docker run -d --name not-alone-backend -p 80:80 not-alone-backend
+          EOF
