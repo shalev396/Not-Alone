@@ -13,7 +13,7 @@ export const loginUser = async (
     // Basic validation
     if (!email || !password) {
       return res.status(403).json({
-        errors: [{ msg: "Email and password are required!" }],
+        errors: [{ msg: "Email and password are required!!" }],
       });
     }
 
