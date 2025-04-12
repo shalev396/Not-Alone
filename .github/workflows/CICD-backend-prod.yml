@@ -130,6 +130,8 @@ jobs:
             pwd
             cd Not-Alone
             pwd
+            git remote set-url origin git@github.com:shalev396/Not-Alone.git
+            git remote -v
             git pull origin main
             cd Server
             pwd
