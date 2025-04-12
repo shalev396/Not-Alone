@@ -20,7 +20,7 @@ async function logFailedAttempt(userId: string, reason: string) {
     console.error("Failed to log 2FA attempt:", error);
   }
 }
-
+//
 export const generate2FA = async (req: Request, res: Response) => {
   try {
     const { userId, isPasswordReset } = req.body;
