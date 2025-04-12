@@ -138,5 +138,21 @@ jobs:
             docker build -t not-alone-backend -f dockerfile .
             docker stop not-alone-backend || true
             docker rm not-alone-backend || true
-            docker run -d --name not-alone-backend -p 80:80 not-alone-backend
+            docker run -d \
+              --name not-alone-backend \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e PORT="${{ secrets.PORT }}" \
+              -e MONGO_URI="${{ secrets.MONGO_URI }}" \
+              -e NODE_ENV="${{ secrets.NODE_ENV }}" \
+              -e PASSWORD_KEY="${{ secrets.PASSWORD_KEY }}" \
+              -e MONGODB_URI_TEST="${{ secrets.MONGODB_URI_TEST }}" \
+              -e SMTP_HOST="${{ secrets.SMTP_HOST }}" \
+              -e SMTP_PORT="${{ secrets.SMTP_PORT }}" \
+              -e SMTP_USER="${{ secrets.SMTP_USER }}" \
+              -e SMTP_PASS="${{ secrets.SMTP_PASS }}" \
+              -e DEVICE_TOKEN_SECRET="${{ secrets.DEVICE_TOKEN_SECRET }}" \
+              -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
+              not-alone-backend:latest
           EOF
