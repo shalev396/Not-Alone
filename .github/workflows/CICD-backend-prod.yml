@@ -129,8 +129,10 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             pwd
             cd Not-Alone
+            pwd
             git pull origin main
             cd Server
+            pwd
             docker build -t not-alone-backend -f dockerfile .
             docker stop not-alone-backend || true
             docker rm not-alone-backend || true
