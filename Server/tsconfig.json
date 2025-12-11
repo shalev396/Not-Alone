@@ -3,7 +3,7 @@
     "target": "es2018",
     "module": "commonjs",
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "./",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -15,6 +15,14 @@
       "*": ["node_modules/*"]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "tests", "dist"]
+  "include": ["src/**/*", "apis/**/*"],
+  "exclude": [
+    "node_modules",
+    "tests",
+    "dist",
+    "public",
+    "docs",
+    "https",
+    "coverage"
+  ]
 }
