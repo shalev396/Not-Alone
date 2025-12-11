@@ -33,7 +33,6 @@ import messageRoutes from "./routes/messageRoutes";
 import verify2FARoutes from "./routes/verify2FARoutes";
 import discountRoutes from "./routes/discountRoutes";
 
-
 // Load and validate environment variables
 dotenv.config();
 validateEnv();
@@ -46,10 +45,13 @@ const httpServer = createServer(app);
 const socketService = new SocketService(httpServer);
 let server: Server | null = null;
 //https config
-const httpsOptions = {
-  key: fs.readFileSync("./https/key.pem"), // Path to private key
-  cert: fs.readFileSync("./https/cert.pem"), // Path to certificate
-};
+const httpsOptions =
+  fs.existsSync("./https/key.pem") && fs.existsSync("./https/cert.pem")
+    ? {
+        key: fs.readFileSync("./https/key.pem"), // Path to private key
+        cert: fs.readFileSync("./https/cert.pem"), // Path to certificate
+      }
+    : null;
 
 // Security middleware
 app.use(
@@ -192,7 +194,7 @@ if (require.main === module) {
   connectDB()
     .then(() => {
       // Start Express server and store reference for cleanup
-      if (process.env.NODE_ENV === "secure-development") {
+      if (process.env.NODE_ENV === "secure-development" && httpsOptions) {
         // Start HTTPS server in test environment
         const httpsServer = https.createServer(httpsOptions, app);
         server = httpsServer.listen(PORT, () => {

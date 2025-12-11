@@ -1,2 +1,13 @@
 node_modules
 .git
+.env
+.env.example
+npm-debug.log
+coverage
+tests
+*.test.ts
+*.md
+.dockerignore
+dockerfile
+compose.yml
+dist
