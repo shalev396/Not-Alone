@@ -1,5 +1,5 @@
 # PR to main: build, backend tests, frontend tests.
-# Required secret: APP_ENV_TEST (multiline — same idea as server/.env.test; written to Server/.env in test workflows).
+# Secrets: APP_ENV_TEST (Server/.env in backend + frontend E2E API), APP_ENV_PROD (client production env for frontend E2E, same as deploy).
 name: PR to Main
 
 on:
