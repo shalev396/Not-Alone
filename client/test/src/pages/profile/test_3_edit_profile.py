@@ -3,12 +3,14 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, UnexpectedAlertPresentException
 import time
 
+from src.base_url import site
+
 # Setup WebDriver
 driver = webdriver.Chrome()
 
 try:
     # 1️⃣ Login and navigate to Profile Page
-    driver.get("https://notalonesoldier.com/")
+    driver.get(site("/"))
     time.sleep(2)
 
     # Close Development Notice popup

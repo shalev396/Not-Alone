@@ -8,11 +8,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from typing import Dict, List, Tuple, Optional
-import allure
-from typing import List, Tuple
 from selenium.webdriver.support.ui import Select
 
 # important do not delete
+from src.base_url import api_url
 from src.pages.landing.locators import LOCATORS
 
 
@@ -204,8 +203,18 @@ def validate_input(driver, page: str, input_element: str, error_element: str, mo
                     input_field.clear()
                     input_field.send_keys(test_value)
 
-                # Trigger validation by unfocusing
+                # Formik validates on blur; native blur() alone is unreliable with React
                 driver.execute_script("arguments[0].blur();", input_field)
+                sleep(0.15)
+                try:
+                    headings = driver.find_elements(
+                        By.XPATH, "//h3[contains(., 'Payment Method')]"
+                    )
+                    if headings:
+                        headings[0].click()
+                except Exception:
+                    pass
+                sleep(0.25)
 
             except Exception as e:
                 results.append((False, f"Failed to interact with input for {test_value}: {str(e)}"))
@@ -247,7 +256,7 @@ def get_admin_login_token():
     }
 
     # Send a POST request to the login endpoint
-    url = "https://notalonesoldier.com/api/auth/login"
+    url = api_url("/auth/login")
     response = requests.post(url, json=payload)
     # Raise an exception if the request returned an error status
     response.raise_for_status()
@@ -276,7 +285,7 @@ def delete_user(token, user_id):
         dict: The JSON response from the server (if any).
     """
 
-    url = f"https://notalonesoldier.com/api/users/{user_id}"
+    url = api_url(f"/users/{user_id}")
 
     # If your API literally expects "Burner <token>" in the header,
     # change 'Bearer' to 'Burner'.

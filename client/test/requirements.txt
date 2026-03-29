@@ -1,3 +1,4 @@
+# E2E / pytest + Selenium — install: cd client && npx tsx test/scripts/run-e2e.ts install
 allure-pytest==2.13.2
 allure-python-commons==2.13.2
 attrs==23.2.0
@@ -11,6 +12,7 @@ pluggy==1.3.0
 pycodestyle==2.11.1
 pyflakes==3.2.0
 pytest==7.4.4
+python-dotenv==1.0.1
 tomli==2.0.1
 selenium==4.28.1
 webdriver_manager==4.0.2

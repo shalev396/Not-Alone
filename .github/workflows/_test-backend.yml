@@ -1,0 +1,65 @@
+# Backend: secret APP_ENV_TEST (multiline) → Server/.env — same shape as local server/.env.test (JWT, MONGODB_URI_TEST, NODE_ENV=test, etc.).
+# Then npm run dev + Jest. Job forces PORT=3000 for curl wait (matches getApiUrl() on localhost).
+# Git path: Server/
+name: Test Backend
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test-backend:
+    name: Backend Tests (Jest)
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      PORT: "3000"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Write Server/.env from APP_ENV_TEST
+        env:
+          APP_ENV_TEST: ${{ secrets.APP_ENV_TEST }}
+        run: |
+          if [ -z "$APP_ENV_TEST" ]; then
+            echo "::error::Add repository secret APP_ENV_TEST (full multiline env for tests)"
+            exit 1
+          fi
+          python3 -c "import os, pathlib; pathlib.Path('Server/.env').write_text(os.environ.get('APP_ENV_TEST',''), encoding='utf-8')"
+      - name: Install Server dependencies
+        run: npm ci
+        working-directory: Server
+      - name: Start API (npm run dev) and run Jest
+        working-directory: Server
+        run: |
+          npm run dev &
+          echo $! > /tmp/not-alone-api.pid
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "http://localhost:${PORT}/api/cities" 2>/dev/null || echo "000")
+            if [ "$code" != "000" ] && [ -n "$code" ]; then
+              echo "API responded on port ${PORT} (HTTP ${code})"
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "::error::API did not become ready in time"
+              kill "$(cat /tmp/not-alone-api.pid)" 2>/dev/null || true
+              exit 1
+            fi
+            sleep 2
+          done
+          npm test
+          test_exit=$?
+          kill "$(cat /tmp/not-alone-api.pid)" 2>/dev/null || true
+          wait "$(cat /tmp/not-alone-api.pid)" 2>/dev/null || true
+          exit $test_exit
+      - name: Upload Jest HTML report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: jest-report
+          path: Server/test-report.html
+          retention-days: 7

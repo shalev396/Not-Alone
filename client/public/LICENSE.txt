@@ -5,7 +5,7 @@ Copyright © 2024 Not Alone
 All rights reserved.
 
 1.1 Purpose and Scope
-This software (the “Software”), excluding the LandingPage folder, is provided solely for the purpose of accessing and using the official Not Alone website at https://notalonesoldier.com. No other use, reproduction, modification, distribution, or creation of derivative works is permitted without express written permission from Not Alone.
+This software (the “Software”), excluding the LandingPage folder, is provided solely for the purpose of accessing and using the official Not Alone website at https://notalonesoldier.shalev396.com. No other use, reproduction, modification, distribution, or creation of derivative works is permitted without express written permission from Not Alone.
 
 
 1.2 Restricted Use

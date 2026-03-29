@@ -79,7 +79,7 @@ export const Footer = () => {
                 className="text-primary hover:underline"
                 property="dct:title"
                 rel="cc:attributionURL"
-                href="https://notalonesoldier.com"
+                href="https://notalonesoldier.shalev396.com"
               >
                 Not Alone
               </a>

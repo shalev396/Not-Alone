@@ -2,11 +2,12 @@ from time import sleep
 
 import pytest
 import allure
+from src.base_url import site
 from src.util import wait_for_element, validate_input,pass_disclaimer
 @allure.step("open payment dialog")
 def open_payment_dialog(driver):
     """Helper function to open the payment dialog"""
-    driver.get("https://notalonesoldier.com/")
+    driver.get(site("/"))
     pass_disclaimer(driver)
     donate_button = wait_for_element(driver, "landing", "button_donate_dialog_1")
     assert donate_button is not None, "❌ Donate button not found"

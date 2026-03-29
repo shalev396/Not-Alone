@@ -3,12 +3,14 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 import time
 
+from src.base_url import site
+
 # Set up WebDriver
 driver = webdriver.Chrome()
 
 try:
     # 1️⃣ Access the website and log in
-    driver.get("https://notalonesoldier.com/")
+    driver.get(site("/"))
 
     # Close Development Notice popup (if present)
     try:

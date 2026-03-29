@@ -1,6 +1,7 @@
 import axios from "axios";
 import store from "@/Redux/store";
 import { resetUser } from "@/Redux/userSlice";
+import { getApiUrl } from "@/utils/publicApiConfig";
 
 const token = sessionStorage.getItem("token");
 
@@ -11,8 +12,7 @@ const EXCLUDED_ENDPOINTS = [
   "/signup",
   // "/users/me",
 ];
-export const baseURL =
-  process.env.NODE_ENV === "production" ? "/api" : "http://localhost:3000/api";
+export const baseURL = getApiUrl();
 
 export const api = axios.create({
   baseURL: baseURL,
@@ -30,9 +30,7 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
-  
 });
-
 
 api.interceptors.response.use(
   (response) => response,
@@ -40,7 +38,7 @@ api.interceptors.response.use(
     // Check if the request URL is in the excluded list
     const requestUrl = error.config?.url;
     const isExcluded = EXCLUDED_ENDPOINTS.some((endpoint) =>
-      requestUrl?.includes(endpoint)
+      requestUrl?.includes(endpoint),
     );
 
     if (
@@ -57,9 +55,5 @@ api.interceptors.response.use(
       window.location.href = "/";
     }
     return Promise.reject(error);
-  }
+  },
 );
-
-
-
-

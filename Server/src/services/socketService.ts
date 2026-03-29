@@ -20,14 +20,9 @@ class SocketService {
       path: "/api/socket.io",
       cors: {
         origin: [
-          process.env.CLIENT_URL || "http://localhost:3000",
           "http://localhost:5173",
           "http://127.0.0.1:5173",
-          "http://localhost:5173",
-          "http://127.0.0.1:5173",
-          "https://not-alone.onrender.com",
-          "http://localhost:5000",
-          "https://notalonesoldier.com",
+          "https://notalonesoldier.shalev396.com",
         ],
         methods: ["GET", "POST"],
         credentials: true,

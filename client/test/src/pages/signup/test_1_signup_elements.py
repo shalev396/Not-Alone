@@ -4,17 +4,18 @@ import allure
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+from src.base_url import site
 from src.util import wait_for_element, pass_disclaimer
 
 
 @allure.story("title Validation")
 def test_1_title(driver):
-    driver.get("https://notalonesoldier.com/signup")
+    driver.get(site("/signup"))
     assert "Not Alone" in driver.title, "❌ Page title does not contain 'Not Alone'"
 
 @allure.story("all elements appear Validation")
 def test_2_sign_up_form(driver):
-    driver.get("https://notalonesoldier.com/signup")
+    driver.get(site("/signup"))
     # Click donate button and verify it exists
     input_first_name = wait_for_element(driver, "signup", "input_first_name_sign_up_form")
     assert input_first_name is not None, "❌ Donate button not found"

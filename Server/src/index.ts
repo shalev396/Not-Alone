@@ -37,7 +37,7 @@ import discountRoutes from "./routes/discountRoutes";
 dotenv.config();
 validateEnv();
 //server setup
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 const app = express();
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
@@ -62,26 +62,14 @@ app.use(
         imgSrc: ["*", "data:"],
       },
     },
-  })
+  }),
 );
 app.use(
   cors({
     origin: [
-      //local
       "http://localhost:5173",
-      "http://localhost:5174",
       "http://127.0.0.1:5173",
-      "http://127.0.0.1:5174",
-      "http://localhost:5000",
-      "http://localhost:3000",
-      //https
-      "https://localhost:3000",
-      //render
-      "https://not-alone.onrender.com",
-      //shalev PC
-      "http://shalevpc.servehttp.com:5173",
-      "http://shalevpc.servehttp.com",
-      "http://shalevpc.servehttp.com:3000",
+      "https://notalonesoldier.shalev396.com",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: [
@@ -90,7 +78,7 @@ app.use(
       "Access-Control-Allow-Methods", // Add this
     ],
     credentials: true,
-  })
+  }),
 );
 app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -157,7 +145,7 @@ export const connectDB = async (retries = 5): Promise<void> => {
   } catch (error) {
     if (retries > 0) {
       console.log(
-        `MongoDB connection failed. Retrying... (${retries} attempts left)`
+        `MongoDB connection failed. Retrying... (${retries} attempts left)`,
       );
       await new Promise((resolve) => setTimeout(resolve, 5000));
       return connectDB(retries - 1);

@@ -5,11 +5,13 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, UnexpectedAlertPresentException
 import time
 
+from src.base_url import site
+
 # Start WebDriver
 driver = webdriver.Chrome()
 
 # 1️⃣ Access the website and log in
-driver.get("https://notalonesoldier.com/")
+driver.get(site("/"))
 time.sleep(2)
 
 # Close Development Notice popup (if present)

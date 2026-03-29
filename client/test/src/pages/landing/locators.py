@@ -37,7 +37,7 @@ LOCATORS = [
     },
     {
         "name": "error_message_card_number",
-        "xpath": "//div[@id='radix-:rs:-content-card']//div[2]//p[1]"
+        "xpath": "//input[@id='cardNumber']/following-sibling::p[contains(@class, 'text-destructive')]",
     },
     {
         "name": "select_expiry_month_donate_dialog",
@@ -101,7 +101,7 @@ LOCATORS = [
     },
     {
         "name": "button_donate_dialog_2",
-        "xpath": "//button[normalize-space()='Donate']"
+        "xpath": "(//button[normalize-space()='Donate'])[1]",
     },
 
 

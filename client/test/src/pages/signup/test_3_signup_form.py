@@ -3,6 +3,7 @@ from time import sleep
 
 import pytest
 import allure
+from src.base_url import site, urls_match
 from src.util import wait_for_element, validate_input, pass_disclaimer, get_admin_login_token, \
     get_session_storage_value, delete_user
 from selenium import webdriver
@@ -12,8 +13,8 @@ import requests
 @allure.step("open signup form")
 def open_signup_form(driver):
     """Helper function to open the signup form"""
-    driver.get("https://notalonesoldier.com/signup")
-    assert driver.current_url == "https://notalonesoldier.com/signup", "❌ Wrong URL"
+    driver.get(site("/signup"))
+    assert urls_match(driver.current_url, "/signup"), "❌ Wrong URL"
 
 @allure.feature("Signup Form Validation")
 class TestSignupForm:
@@ -119,9 +120,9 @@ class TestSignupForm:
         
         # Wait for redirect to 2FA setup
         wait = WebDriverWait(driver, 5)
-        wait.until(EC.url_to_be("https://notalonesoldier.com/2fa"))
+        wait.until(EC.url_to_be(site("/2fa")))
         
-        assert driver.current_url=="https://notalonesoldier.com/2fa", "❌ Failed to redirect to 2FA setup"
+        assert urls_match(driver.current_url, "/2fa"), "❌ Failed to redirect to 2FA setup"
         user = get_session_storage_value(driver, "user")
         uid=json.loads(user)["_id"]
         print(user,uid)

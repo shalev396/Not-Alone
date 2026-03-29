@@ -1,0 +1,21 @@
+# Push to main: deploy frontend to S3 / CloudFront (OIDC).
+# Secrets: APP_ENV_PROD, AWS_ACCOUNT_ID. Variables: AWS_REGION, AWS_S3_BUCKET, CLOUDFRONT_DISTRIBUTION_ID.
+name: Push Main
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "client/**"
+      - "Server/**"
+      - ".github/workflows/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-frontend:
+    name: Deploy Frontend
+    uses: ./.github/workflows/_deploy-frontend.yml
+    secrets: inherit

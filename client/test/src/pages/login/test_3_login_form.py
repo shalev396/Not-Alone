@@ -2,6 +2,7 @@ from time import sleep
 
 import pytest
 import allure
+from src.base_url import site, urls_match
 from src.util import wait_for_element, validate_input,pass_disclaimer
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -9,8 +10,8 @@ from selenium.webdriver.support import expected_conditions as EC
 @allure.step("open login form")
 def open_login_dialog(driver):
     """Helper function to open the payment dialog"""
-    driver.get("https://notalonesoldier.com/login")
-    assert driver.current_url=="https://notalonesoldier.com/login","❌ Wrong URL"
+    driver.get(site("/login"))
+    assert urls_match(driver.current_url, "/login"), "❌ Wrong URL"
 @allure.feature("Login Form Validation")
 class TestLoginForm:
     @allure.story("email Validation")
@@ -51,7 +52,7 @@ class TestLoginForm:
         wait_for_element(driver,"login","input_password_login_form").send_keys("12345678a")
         wait_for_element(driver,"login","button_sign_in_form").click()
         wait = WebDriverWait(driver, 5)
-        wait.until(EC.url_to_be("https://notalonesoldier.com/admin/queue"))
-        assert driver.current_url == "https://notalonesoldier.com/admin/queue", "❌ Wrong URL"
-        driver.get("https://notalonesoldier.com/logout")
+        wait.until(EC.url_to_be(site("/admin/queue")))
+        assert urls_match(driver.current_url, "/admin/queue"), "❌ Wrong URL"
+        driver.get(site("/logout"))
 

@@ -71,7 +71,7 @@ export const Tos = () => {
     {
       title: "Legal Agreement",
       content:
-        "These terms and conditions ('Agreement') set forth the general terms and conditions of your use of the notalonesoldier.com website ('Website' or 'Service') and any of its related products and services (collectively, 'Services'). This Agreement is legally binding between you ('User', 'you' or 'your') and this Website operator ('Operator', 'we', 'us' or 'our'). If you are entering into this Agreement on behalf of a business or other legal entity, you represent that you have the authority to bind such entity to this Agreement. If you do not have such authority, or if you do not agree with the terms of this Agreement, you must not accept this Agreement and may not access and use the Website and Services.",
+        "These terms and conditions ('Agreement') set forth the general terms and conditions of your use of the notalonesoldier.shalev396.com website ('Website' or 'Service') and any of its related products and services (collectively, 'Services'). This Agreement is legally binding between you ('User', 'you' or 'your') and this Website operator ('Operator', 'we', 'us' or 'our'). If you are entering into this Agreement on behalf of a business or other legal entity, you represent that you have the authority to bind such entity to this Agreement. If you do not have such authority, or if you do not agree with the terms of this Agreement, you must not accept this Agreement and may not access and use the Website and Services.",
     },
     {
       title: "Overview of the Not Alone Platform",

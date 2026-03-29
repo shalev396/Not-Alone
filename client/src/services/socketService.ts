@@ -1,4 +1,5 @@
 import { io, Socket } from "socket.io-client";
+import { getSocketUrl, SOCKET_IO_PATH } from "@/utils/publicApiConfig";
 
 interface SocketMessage {
   channelId: string;
@@ -31,11 +32,8 @@ class SocketService {
       console.error("No authentication token available");
       throw new Error("Authentication required");
     }
-    const baseURL =
-      process.env.NODE_ENV === "production" ? "/" : "http://localhost:3000";
-
-    this.socket = io(baseURL, {
-      path: "/api/socket.io",
+    this.socket = io(getSocketUrl(), {
+      path: SOCKET_IO_PATH,
       auth: { token },
       query: { channelId },
       transports: ["polling", "websocket"],

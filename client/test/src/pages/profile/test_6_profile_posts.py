@@ -5,13 +5,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 
+from src.base_url import site
+
 # Set up WebDriver
 driver = webdriver.Chrome()
 wait = WebDriverWait(driver, 10)  # Explicit wait up to 10 seconds
 
 try:
     # 1️⃣ Log in and navigate to Profile Page
-    driver.get("https://notalonesoldier.com/")
+    driver.get(site("/"))
     time.sleep(2)
 
     # Close Development Notice popup (if present)

@@ -1,0 +1,31 @@
+# PR to main: lint, build, backend tests, frontend tests.
+# Required secret: APP_ENV_TEST (multiline — same idea as server/.env.test; written to Server/.env in test workflows).
+name: PR to Main
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "client/**"
+      - "Server/**"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+jobs:
+  lint-build:
+    name: Lint & Build
+    uses: ./.github/workflows/_lint-build.yml
+
+  test-backend:
+    name: Test Backend
+    needs: lint-build
+    uses: ./.github/workflows/_test-backend.yml
+    secrets: inherit
+
+  test-frontend:
+    name: Test Frontend
+    needs: lint-build
+    uses: ./.github/workflows/_test-frontend.yml
+    secrets: inherit

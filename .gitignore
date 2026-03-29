@@ -11,5 +11,8 @@ Server/tests/posts.json
 Server/tests/profiles.json
 Server/tests/requests.json
 Server/tests/users.json
+Server/tests/comments.json
+Server/tests/posts.json
+Server/test-report.html
 *credentials.text
 *dist

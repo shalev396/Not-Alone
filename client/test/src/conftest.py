@@ -1,6 +1,14 @@
 import pytest
 import allure
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+_env_ci = Path(__file__).resolve().parent.parent / ".env.ci"
+if _env_ci.is_file():
+    load_dotenv(_env_ci, override=False)
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -11,15 +19,30 @@ from datetime import datetime
 if not os.path.exists("screenshots"):
     os.makedirs("screenshots")
 
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--headed",
+        action="store_true",
+        default=False,
+        help="Run Chrome with a visible window (default is headless).",
+    )
+
+
 # this is the setup for all tests
 @pytest.fixture(scope="session")
-def driver():
+def driver(request):
     options = Options()
 
-    # Uncomment if you want headless mode
-    # options.add_argument("--headless")
-    # options.add_argument("--disable-gpu")
-    # options.add_argument("--window-size=1920,1080")
+    headed = request.config.getoption("--headed")
+    if not headed:
+        options.add_argument("--headless=new")
+        options.add_argument("--window-size=1920,1080")
+    # GitHub Actions / Linux runners need these regardless of headless vs headed
+    if os.environ.get("CI") == "true":
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
 
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
     driver.maximize_window()  # Maximize window for consistent screenshots
