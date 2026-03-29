@@ -66,11 +66,7 @@ app.use(
 );
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://127.0.0.1:5173",
-      "https://notalonesoldier.shalev396.com",
-    ],
+    origin: ["http://localhost:5173", "https://notalonesoldier.shalev396.com"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
@@ -109,7 +105,9 @@ app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/channels", channelRoutes);
 app.use("/api/messages", messageRoutes);
-app.use("/api/email", emailRoutes);
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api/email", emailRoutes);
+}
 app.use("/api/verify-2fa", verify2FARoutes);
 // app.get("*", (req, res) => {
 //   res.sendFile(path.join(__dirname, "../public/index.html"));

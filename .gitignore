@@ -16,3 +16,6 @@ Server/tests/posts.json
 Server/test-report.html
 *credentials.text
 *dist
+Server/serverless/.serverless
+Server/serverless/node_modules
+Server/serverless/.env

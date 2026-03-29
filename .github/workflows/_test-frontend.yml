@@ -1,5 +1,5 @@
-# Frontend E2E: APP_ENV_TEST (multiline) → Server/.env and client/test/.env.ci (same blob; dotenv loads keys pytest needs).
-# Local Vite + local API + pytest. Selenium/API URLs: client/test/src/e2e_targets.py (local only).
+# Frontend E2E: after client npm ci, write Server/.env from secret APP_ENV_PROD (same multiline blob as local server/.env).
+# Client has no separate env file in CI (localhost API + client/test/src/e2e_targets.py). Runs after test-backend (pr-main.yml).
 name: Test Frontend
 
 on:
@@ -27,21 +27,23 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: client/test/requirements.txt
-      - name: Write Server/.env and client/test/.env.ci from APP_ENV_TEST
-        env:
-          APP_ENV_TEST: ${{ secrets.APP_ENV_TEST }}
-        run: |
-          if [ -z "$APP_ENV_TEST" ]; then
-            echo "::error::Add repository secret APP_ENV_TEST (full multiline env for tests)"
-            exit 1
-          fi
-          python3 -c "import os, pathlib; t=os.environ.get('APP_ENV_TEST',''); pathlib.Path('Server/.env').write_text(t, encoding='utf-8'); pathlib.Path('client/test').mkdir(parents=True, exist_ok=True); pathlib.Path('client/test/.env.ci').write_text(t, encoding='utf-8')"
       - name: Install Server dependencies
         run: npm ci
         working-directory: Server
       - name: Install client dependencies
         run: npm ci
         working-directory: client
+      - name: Load environment variables from APP_ENV_PROD
+        run: |
+          echo '${{ secrets.APP_ENV_PROD }}' > .env
+        working-directory: Server
+      - name: Export .env variables
+        uses: falti/dotenv-action@v1.1.4
+        with:
+          path: Server/.env
+          export-variables: true
+          keys-case: bypass
+          mask-variables: true
       - name: Install Chrome
         run: |
           wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -56,7 +58,7 @@ jobs:
           cd Server
           npm run dev &
           cd ../client
-          npm run dev -- --host localhost --port 5173 &
+          npm run dev -- --host localhost --port 5173 --mode production &
           cd ..
           sleep 30
           cd client

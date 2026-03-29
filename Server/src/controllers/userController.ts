@@ -14,7 +14,7 @@ const ensureUser = (req: Request, res: Response): Response | undefined => {
 
 export const getUsers = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response> => {
   try {
     const { type, approvalStatus, search } = req.query as UserFilter;
@@ -56,7 +56,7 @@ export const getUsers = async (
 
 export const getProfile = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response> => {
   const userError = ensureUser(req, res);
   if (userError) return userError;
@@ -101,7 +101,7 @@ export const getProfile = async (
 
 export const registerUser = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response> => {
   try {
     const { email } = req.body;
@@ -152,7 +152,7 @@ export const registerUser = async (
 
 export const updateProfile = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response> => {
   const userError = ensureUser(req, res);
   if (userError) return userError;
@@ -181,7 +181,7 @@ export const updateProfile = async (
     const user = await UserModel.findByIdAndUpdate(
       req.user!.userId,
       { $set: updates },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     )
       .select("-password")
       .lean();
@@ -214,7 +214,7 @@ export const updateProfile = async (
 
 export const updateUser = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response> => {
   const userError = ensureUser(req, res);
   if (userError) return userError;
@@ -230,7 +230,7 @@ export const updateUser = async (
     const user = await UserModel.findByIdAndUpdate(
       userId,
       { $set: updates },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     )
       .select("-password")
       .lean();
@@ -263,7 +263,7 @@ export const updateUser = async (
 
 export const approveUser = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response> => {
   const userError = ensureUser(req, res);
   if (userError) return userError;
@@ -287,7 +287,7 @@ export const approveUser = async (
           denialReason: undefined,
         },
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     )
       .select("-password")
       .lean();
@@ -319,7 +319,7 @@ export const approveUser = async (
 
 export const denyUser = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response> => {
   const userError = ensureUser(req, res);
   if (userError) return userError;
@@ -348,7 +348,7 @@ export const denyUser = async (
           denialReason: reason,
         },
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     )
       .select("-password")
       .lean();
@@ -381,7 +381,7 @@ export const denyUser = async (
 
 export const deleteUser = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response> => {
   const userError = ensureUser(req, res);
   if (userError) return userError;
@@ -423,7 +423,7 @@ export const deleteUser = async (
 
 export const getPendingUser = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response> => {
   try {
     const { userId } = req.params;

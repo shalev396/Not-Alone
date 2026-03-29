@@ -9,13 +9,15 @@ export function validateEnv(): void {
       "MONGO_URI",
       "DEVICE_TOKEN_SECRET",
       "ENCRYPTION_KEY",
+      "EMAIL_SENDER_URL",
+      "EMAIL_SENDER_SECRET",
     ];
   }
   const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
     throw new Error(
-      `Missing required environment variables: ${missing.join(", ")}`
+      `Missing required environment variables: ${missing.join(", ")}`,
     );
   }
 }

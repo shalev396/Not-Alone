@@ -1,4 +1,4 @@
-# Backend: secret APP_ENV_TEST (multiline) → Server/.env — same shape as local server/.env.test (JWT, MONGODB_URI_TEST, NODE_ENV=test, etc.).
+# Backend: APP_ENV_TEST (multiline) → Server/.env — server test stack only. Frontend E2E overwrites Server/.env from APP_ENV_PROD on its own runner.
 # Then npm run dev + Jest. Job forces PORT=3000 for curl wait (matches getApiUrl() on localhost).
 # Git path: Server/
 name: Test Backend
@@ -21,15 +21,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Write Server/.env from APP_ENV_TEST
-        env:
-          APP_ENV_TEST: ${{ secrets.APP_ENV_TEST }}
+      - name: Load environment variables from APP_ENV_TEST
         run: |
-          if [ -z "$APP_ENV_TEST" ]; then
-            echo "::error::Add repository secret APP_ENV_TEST (full multiline env for tests)"
-            exit 1
-          fi
-          python3 -c "import os, pathlib; pathlib.Path('Server/.env').write_text(os.environ.get('APP_ENV_TEST',''), encoding='utf-8')"
+          echo '${{ secrets.APP_ENV_TEST }}' > .env
+        working-directory: Server
+      - name: Export .env variables
+        uses: falti/dotenv-action@v1.1.4
+        with:
+          path: Server/.env
+          export-variables: true
+          keys-case: bypass
+          mask-variables: true
       - name: Install Server dependencies
         run: npm ci
         working-directory: Server

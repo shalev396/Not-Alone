@@ -27,19 +27,17 @@ jobs:
       CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
     steps:
       - uses: actions/checkout@v4
-      - name: Require APP_ENV_PROD
-        env:
-          APP_ENV_PROD: ${{ secrets.APP_ENV_PROD }}
+      - name: Load environment variables from APP_ENV_PROD
         run: |
-          if [ -z "$APP_ENV_PROD" ]; then
-            echo "::error::Add repository secret APP_ENV_PROD (full multiline production env)"
-            exit 1
-          fi
-      - name: Write client/.env.production from APP_ENV_PROD
-        env:
-          APP_ENV_PROD: ${{ secrets.APP_ENV_PROD }}
-        run: |
-          python3 -c "import os, pathlib; pathlib.Path('client/.env.production').write_text(os.environ.get('APP_ENV_PROD',''), encoding='utf-8')"
+          echo '${{ secrets.APP_ENV_PROD }}' > .env.production
+        working-directory: client
+      - name: Export .env variables
+        uses: falti/dotenv-action@v1.1.4
+        with:
+          path: client/.env.production
+          export-variables: true
+          keys-case: bypass
+          mask-variables: true
       - uses: actions/setup-node@v4
         with:
           node-version: 24
