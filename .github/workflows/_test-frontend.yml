@@ -33,16 +33,17 @@ jobs:
       - name: Install client dependencies
         run: npm ci
         working-directory: client
-      - name: Write Server/.env from APP_ENV_PROD
-        env:
-          APP_ENV_PROD: ${{ secrets.APP_ENV_PROD }}
+      - name: Load environment variables from APP_ENV_PROD
         run: |
-          set -e
-          if [ -z "$APP_ENV_PROD" ]; then
-            echo "::error::Add repository secret APP_ENV_PROD (paste your server/.env contents, same as deploy secret)"
-            exit 1
-          fi
-          python3 -c "import os, pathlib; pathlib.Path('Server/.env').write_text(os.environ['APP_ENV_PROD'], encoding='utf-8')"
+          echo '${{ secrets.APP_ENV_PROD }}' > .env
+        working-directory: Server
+      - name: Export .env variables
+        uses: falti/dotenv-action@v1.1.4
+        with:
+          path: Server/.env
+          export-variables: true
+          keys-case: bypass
+          mask-variables: true
       - name: Install Chrome
         run: |
           wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
