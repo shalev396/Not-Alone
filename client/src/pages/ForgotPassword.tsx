@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { api } from "@/api/api";
+import { requestDedupedResetPasswordGenerate } from "@/api/verify2faGenerate";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { z } from "zod";
 import { toFormikValidationSchema } from "zod-formik-adapter";
@@ -29,19 +29,17 @@ export default function ForgotPassword() {
     { setSubmitting, setFieldError }: any
   ) => {
     try {
-      const response = await api.post(
-        "/auth/verify-2fa/reset-password/generate",
-        {
-          email: values.email,
-        }
+      const { userId, deviceToken } = await requestDedupedResetPasswordGenerate(
+        values.email
       );
 
-      if (response.data.userId) {
+      if (userId) {
         navigate("/reset-password-verify", {
           state: {
-            userId: response.data.userId,
+            userId,
             email: values.email,
             isPasswordReset: true,
+            deviceToken,
           },
         });
       }

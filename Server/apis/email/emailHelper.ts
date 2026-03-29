@@ -1,27 +1,9 @@
-import "dotenv";
-import express from "express";
-import nodemailer from "nodemailer";
-
-const app = express();
-const port = process.env.PORT || 3000;
-
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 5000; // 1 second
+const RETRY_DELAY_MS = 5000;
 
-//Configure the Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  service: "SMTP",
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  secure: false, // use TLS (true) if port is 465, otherwise false
-});
-
-// Helper function to delay execution
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export type SendEmailResult = { MessageId?: string };
 
 export const sendEmail = async (
   to: string,
@@ -29,64 +11,47 @@ export const sendEmail = async (
   text: string,
   html: string,
   retryCount = 0
-): Promise<any> => {
+): Promise<SendEmailResult> => {
+  if (!to || !subject || (!text.trim() && !html.trim())) {
+    throw new Error(
+      "Missing required fields: 'to', 'subject', and either 'text' or 'html'."
+    );
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+    throw new Error("Invalid email format");
+  }
+
+  const url = process.env.EMAIL_SENDER_URL;
+  const secret = process.env.EMAIL_SENDER_SECRET;
+  if (!url || !secret) {
+    throw new Error("EMAIL_SENDER_URL and EMAIL_SENDER_SECRET must be set");
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${secret}`,
+    },
+    body: JSON.stringify({ to, subject, text, html }),
+  });
+
+  let data: { messageId?: string | null; error?: string } = {};
   try {
-    // Validate required fields
-    if (!to || !subject || (!text && !html)) {
-      throw new Error(
-        "Missing required fields: 'to', 'subject', and either 'text' or 'html'."
-      );
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(to)) {
-      throw new Error("Invalid email format");
-    }
-
-    // 3) Send the email
-    const mailOptions = {
-      from: process.env.SMTP_USER,
-      to: to,
-      subject: subject,
-      text: text,
-      html: html,
-    };
-
-    try {
-      const info = await transporter.sendMail(mailOptions);
-      return info;
-    } catch (error: any) {
-      // Check if we should retry
-      if (retryCount < MAX_RETRIES) {
-        console.log(`Email send attempt ${retryCount + 1} failed. Retrying...`);
-        await delay(RETRY_DELAY * (retryCount + 1)); // Exponential backoff
-        return sendEmail(to, subject, text, html, retryCount + 1);
-      }
-
-      // If we've exhausted retries, throw a detailed error
-      throw new Error(
-        `Failed to send email after ${MAX_RETRIES} attempts: ${error.message}`
-      );
-    }
-  } catch (error: any) {
-    // Log the error with additional context
-    console.error("Email Error:", {
-      error: error.message,
-      recipient: to,
-      subject: subject,
-      timestamp: new Date().toISOString(),
-    });
-
-    throw error;
+    data = (await res.json()) as typeof data;
+  } catch {
+    /* non-JSON body */
   }
+
+  if (!res.ok) {
+    if (retryCount < MAX_RETRIES) {
+      await delay(RETRY_DELAY_MS * (retryCount + 1));
+      return sendEmail(to, subject, text, html, retryCount + 1);
+    }
+    throw new Error(
+      data.error || `Email sender failed after ${MAX_RETRIES} attempts (${res.status})`
+    );
+  }
+
+  return { MessageId: data.messageId ?? undefined };
 };
-
-// Verify transporter connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("SMTP Connection Error:", error);
-  } else {
-    console.log("SMTP Server is ready to take messages");
-  }
-});

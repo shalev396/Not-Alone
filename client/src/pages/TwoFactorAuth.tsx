@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "@/api/api";
+import {
+  requestInitialTwoFactorCode,
+  requestResendTwoFactorCode,
+} from "@/api/verify2faGenerate";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { z } from "zod";
 import { toFormikValidationSchema } from "zod-formik-adapter";
@@ -32,25 +36,41 @@ export default function TwoFactorAuth() {
       navigate(isLogin ? "/login" : "/signup");
       return;
     }
-    generateCode();
+    let ignoreResult = false;
+    requestInitialTwoFactorCode(userId)
+      .then(({ deviceToken: token }) => {
+        if (ignoreResult) return;
+        setDeviceToken(token);
+        setShowError(false);
+      })
+      .catch((error: unknown) => {
+        if (ignoreResult) return;
+        console.error("Failed to generate code:", error);
+        setErrorMessage(
+          "Failed to generate verification code. Please try again."
+        );
+        setShowError(true);
+        setTimeout(() => {
+          navigate(isLogin ? "/login" : "/signup");
+        }, 3000);
+      });
+    return () => {
+      ignoreResult = true;
+    };
   }, [userId, email, isLogin, navigate]);
 
-  const generateCode = async () => {
+  const resendCode = async () => {
+    if (!userId) return;
     try {
-      const response = await api.post("/verify-2fa/generate", {
-        userId,
-      });
-      setDeviceToken(response.data.deviceToken);
+      const { deviceToken: token } = await requestResendTwoFactorCode(userId);
+      setDeviceToken(token);
       setShowError(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to generate code:", error);
       setErrorMessage(
         "Failed to generate verification code. Please try again."
       );
       setShowError(true);
-      setTimeout(() => {
-        navigate(isLogin ? "/login" : "/signup");
-      }, 3000);
     }
   };
 
@@ -150,7 +170,7 @@ export default function TwoFactorAuth() {
                         type="button"
                         variant="link"
                         className="px-0 font-normal h-auto"
-                        onClick={generateCode}
+                        onClick={resendCode}
                         disabled={isSubmitting}
                       >
                         Resend Code

@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "@/api/api";
+import {
+  requestInitialResetPasswordCode,
+  requestResendResetPasswordCode,
+} from "@/api/verify2faGenerate";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { z } from "zod";
 import { toFormikValidationSchema } from "zod-formik-adapter";
@@ -33,11 +37,22 @@ const resetPasswordSchema = z
 
 type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 
+type ResetVerifyLocationState = {
+  userId?: string;
+  email?: string;
+  isPasswordReset?: boolean;
+  /** Set by forgot-password page so we do not POST /generate again on mount. */
+  deviceToken?: string;
+};
+
 export default function ResetPasswordVerify() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userId, email, isPasswordReset } = location.state || {};
-  const [deviceToken, setDeviceToken] = useState<string | null>(null);
+  const { userId, email, isPasswordReset, deviceToken: tokenFromForgot } =
+    (location.state || {}) as ResetVerifyLocationState;
+  const [deviceToken, setDeviceToken] = useState<string | null>(
+    tokenFromForgot ?? null
+  );
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [cooldown, setCooldown] = useState(0);
@@ -47,8 +62,29 @@ export default function ResetPasswordVerify() {
       navigate("/forgot-password");
       return;
     }
-    generateCode();
-  }, [userId, email, isPasswordReset, navigate]);
+    // Forgot-password already called generate; reuse token — only one email.
+    if (tokenFromForgot) {
+      setCooldown(60);
+      return;
+    }
+    let ignoreResult = false;
+    requestInitialResetPasswordCode(email)
+      .then(({ deviceToken: token }) => {
+        if (ignoreResult) return;
+        setDeviceToken(token);
+        setShowError(false);
+        setCooldown(60);
+      })
+      .catch((error: unknown) => {
+        if (ignoreResult) return;
+        console.error("Failed to generate code:", error);
+        setErrorMessage("Failed to generate code. Please try again.");
+        setShowError(true);
+      });
+    return () => {
+      ignoreResult = true;
+    };
+  }, [userId, email, isPasswordReset, navigate, tokenFromForgot]);
 
   useEffect(() => {
     if (cooldown > 0) {
@@ -58,6 +94,7 @@ export default function ResetPasswordVerify() {
   }, [cooldown]);
 
   const generateCode = async () => {
+    if (!email) return;
     if (cooldown > 0) {
       setErrorMessage(
         `Please wait ${cooldown} seconds before requesting a new code`
@@ -67,16 +104,13 @@ export default function ResetPasswordVerify() {
     }
 
     try {
-      const response = await api.post(
-        "/auth/verify-2fa/reset-password/generate",
-        {
-          email,
-        }
+      const { deviceToken: token } = await requestResendResetPasswordCode(
+        email
       );
-      setDeviceToken(response.data.deviceToken);
+      setDeviceToken(token);
       setShowError(false);
-      setCooldown(60); // Start 60-second cooldown
-    } catch (error: any) {
+      setCooldown(60);
+    } catch (error: unknown) {
       console.error("Failed to generate code:", error);
       setErrorMessage("Failed to generate code. Please try again.");
       setShowError(true);
