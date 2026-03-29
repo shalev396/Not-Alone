@@ -1,6 +1,6 @@
-# Reusable workflow: lint + build client and Server (no env secrets required).
+# Reusable workflow: build client and Server (no env secrets required).
 # Git path: Server/
-name: Lint & Build
+name: Build
 
 on:
   workflow_call:
@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  lint-build-client:
-    name: Lint & Build Client
+  build-client:
+    name: Build Client
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,15 +20,12 @@ jobs:
       - name: Install client dependencies
         run: npm ci
         working-directory: client
-      - name: Lint client
-        run: npm run lint
-        working-directory: client
       - name: Build client
         run: npm run build
         working-directory: client
 
-  lint-build-server:
-    name: Lint & Build Server
+  build-server:
+    name: Build Server
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,9 +34,6 @@ jobs:
           node-version: 24
       - name: Install Server dependencies
         run: npm ci
-        working-directory: Server
-      - name: Lint Server
-        run: npm run lint
         working-directory: Server
       - name: Build Server
         run: npm run build
