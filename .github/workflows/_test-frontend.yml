@@ -1,6 +1,5 @@
-# Frontend E2E: APP_ENV_TEST → Server/.env (local API, same as backend test stack).
-# APP_ENV_PROD → client/.env.production + client/test/.env.ci (same blob as deploy build; Vite runs with --mode production).
-# Selenium/API URLs: client/test/src/e2e_targets.py (local only).
+# Frontend E2E: after client npm ci, write Server/.env from secret APP_ENV_PROD (same multiline blob as local server/.env).
+# Client has no separate env file in CI (localhost API + client/test/src/e2e_targets.py). Runs after test-backend (pr-main.yml).
 name: Test Frontend
 
 on:
@@ -28,30 +27,22 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: client/test/requirements.txt
-      - name: Write Server/.env from APP_ENV_TEST
-        env:
-          APP_ENV_TEST: ${{ secrets.APP_ENV_TEST }}
-        run: |
-          if [ -z "$APP_ENV_TEST" ]; then
-            echo "::error::Add repository secret APP_ENV_TEST (full multiline env for tests)"
-            exit 1
-          fi
-          python3 -c "import os, pathlib; pathlib.Path('Server/.env').write_text(os.environ.get('APP_ENV_TEST',''), encoding='utf-8')"
-      - name: Write client/.env.production and client/test/.env.ci from APP_ENV_PROD
-        env:
-          APP_ENV_PROD: ${{ secrets.APP_ENV_PROD }}
-        run: |
-          if [ -z "$APP_ENV_PROD" ]; then
-            echo "::error::Add repository secret APP_ENV_PROD (same multiline production env as deploy)"
-            exit 1
-          fi
-          python3 -c "import os, pathlib; t=os.environ.get('APP_ENV_PROD',''); pathlib.Path('client/.env.production').write_text(t, encoding='utf-8'); pathlib.Path('client/test').mkdir(parents=True, exist_ok=True); pathlib.Path('client/test/.env.ci').write_text(t, encoding='utf-8')"
       - name: Install Server dependencies
         run: npm ci
         working-directory: Server
       - name: Install client dependencies
         run: npm ci
         working-directory: client
+      - name: Write Server/.env from APP_ENV_PROD
+        env:
+          APP_ENV_PROD: ${{ secrets.APP_ENV_PROD }}
+        run: |
+          set -e
+          if [ -z "$APP_ENV_PROD" ]; then
+            echo "::error::Add repository secret APP_ENV_PROD (paste your server/.env contents, same as deploy secret)"
+            exit 1
+          fi
+          python3 -c "import os, pathlib; pathlib.Path('Server/.env').write_text(os.environ['APP_ENV_PROD'], encoding='utf-8')"
       - name: Install Chrome
         run: |
           wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb

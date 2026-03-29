@@ -1,4 +1,4 @@
-# Backend: secret APP_ENV_TEST (multiline) → Server/.env — same shape as local server/.env.test (JWT, MONGODB_URI_TEST, NODE_ENV=test, etc.).
+# Backend: APP_ENV_TEST (multiline) → Server/.env — server test stack only. Frontend E2E overwrites Server/.env from APP_ENV_PROD on its own runner.
 # Then npm run dev + Jest. Job forces PORT=3000 for curl wait (matches getApiUrl() on localhost).
 # Git path: Server/
 name: Test Backend
