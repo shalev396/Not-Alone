@@ -6,7 +6,6 @@ import { encryptPayload } from "../utils/encryption";
 import { sendEmail } from "../../apis/email/emailHelper";
 import { get2FAEmailHTML } from "../../apis/email/emailTemplates";
 import useragent from "express-useragent";
-import geoip from "geoip-lite";
 
 interface Create2FAParams {
   userId: string;
@@ -33,7 +32,6 @@ export async function create2FA({
   const ip = request.ip;
   const source = request.headers["user-agent"] || "";
   const ua = useragent.parse(source);
-  const geo = geoip.lookup(ip || "") || undefined;
 
   // Construct the device info object with proper boolean values
   const deviceInfo = {
@@ -46,14 +44,6 @@ export async function create2FA({
     isDesktop: Boolean(ua.isDesktop),
     isBot: Boolean(ua.isBot),
     source, // Store the raw user agent string
-    geo: geo
-      ? {
-          country: geo.country,
-          region: geo.region,
-          city: geo.city,
-          ll: geo.ll,
-        }
-      : undefined,
   };
 
   // 4) Create an encrypted token with device info

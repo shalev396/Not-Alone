@@ -1,5 +1,4 @@
-# Reusable workflow: build client and Server (no env secrets required).
-# Git path: Server/
+# Reusable workflow: build client and server (no env secrets required)
 name: Build
 
 on:
@@ -18,7 +17,7 @@ jobs:
         with:
           node-version: 24
       - name: Install client dependencies
-        run: npm ci
+        run: npm install
         working-directory: client
       - name: Build client
         run: npm run build
@@ -32,9 +31,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Install Server dependencies
-        run: npm ci
+      - name: Install server dependencies
+        run: npm install
         working-directory: Server
-      - name: Build Server
+      - name: Build server
         run: npm run build
         working-directory: Server

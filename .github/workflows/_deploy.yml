@@ -1,0 +1,100 @@
+# Reusable workflow: Deploy backend (Serverless) + frontend (S3 + CloudFront) to specified stage
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      stage:
+        description: "Deployment stage (prod)"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend (${{ inputs.stage }})
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
+      HOSTED_ZONE_ID: ${{ secrets.HOSTED_ZONE_ID }}
+      CERTIFICATE_ARN: ${{ secrets.CERTIFICATE_ARN }}
+      DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+      SOCKET_ORIGIN_DOMAIN: ${{ secrets.SOCKET_ORIGIN_DOMAIN }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      PASSWORD_KEY: ${{ secrets.PASSWORD_KEY }}
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      DEVICE_TOKEN_SECRET: ${{ secrets.DEVICE_TOKEN_SECRET }}
+      ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/my-github-actions-role
+      - run: npm install
+        working-directory: Server
+      - run: npm run build
+        working-directory: Server
+      - name: Deploy to ${{ inputs.stage }}
+        run: npx serverless deploy --stage ${{ inputs.stage }}
+        working-directory: Server
+
+  deploy-frontend:
+    name: Deploy Frontend (${{ inputs.stage }})
+    runs-on: ubuntu-latest
+    needs: deploy-backend
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/my-github-actions-role
+      - run: npm install
+        working-directory: client
+      - run: npm run build
+        working-directory: client
+      - name: Get CloudFormation Outputs
+        id: cf
+        env:
+          APP_NAME: ${{ vars.APP_NAME }}
+        run: |
+          STACK="${APP_NAME}-${{ inputs.stage }}"
+          for i in 1 2 3; do
+            CF_ID=$(aws cloudformation describe-stacks --stack-name "$STACK" --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'].OutputValue" --output text 2>/dev/null || echo "")
+            S3_BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK" --query "Stacks[0].Outputs[?OutputKey=='S3ClientBucketName'].OutputValue" --output text 2>/dev/null || echo "")
+            if [ -n "$CF_ID" ] && [ "$CF_ID" != "None" ] && [ -n "$S3_BUCKET" ] && [ "$S3_BUCKET" != "None" ]; then
+              break
+            fi
+            echo "Waiting for CloudFormation outputs... (attempt $i)"
+            sleep 10
+          done
+          if [ -z "$CF_ID" ] || [ "$CF_ID" = "None" ]; then
+            echo "Error: Could not get CloudFrontDistributionId from stack $STACK"
+            exit 1
+          fi
+          if [ -z "$S3_BUCKET" ] || [ "$S3_BUCKET" = "None" ]; then
+            echo "Error: Could not get S3ClientBucketName from stack $STACK"
+            exit 1
+          fi
+          echo "cf_id=$CF_ID" >> $GITHUB_OUTPUT
+          echo "s3_bucket=$S3_BUCKET" >> $GITHUB_OUTPUT
+      - name: Deploy to S3
+        run: aws s3 sync ./client/dist s3://${{ steps.cf.outputs.s3_bucket }}/ --delete
+      - name: Invalidate CloudFront
+        run: aws cloudfront create-invalidation --distribution-id ${{ steps.cf.outputs.cf_id }} --paths "/*"

@@ -3,8 +3,6 @@ import store from "@/Redux/store";
 import { resetUser } from "@/Redux/userSlice";
 import { getApiUrl } from "@/utils/publicApiConfig";
 
-const token = sessionStorage.getItem("token");
-
 // List of endpoints that should not trigger auth redirect
 const EXCLUDED_ENDPOINTS = [
   "/login",
@@ -17,8 +15,6 @@ export const baseURL = getApiUrl();
 export const api = axios.create({
   baseURL: baseURL,
   headers: {
-    Authorization: `Bearer ${token}`,
-    "Access-Control-Allow-Methods": "true",
     "Content-Type": "application/json",
   },
 });
@@ -28,6 +24,8 @@ api.interceptors.request.use((config) => {
   const token = sessionStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    delete config.headers.Authorization;
   }
   return config;
 });

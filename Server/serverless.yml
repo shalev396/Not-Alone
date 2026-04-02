@@ -1,0 +1,332 @@
+# Not-Alone — Lambda HTTP API, S3 + CloudFront SPA, second origin for Socket.IO only.
+#
+# CloudFront: default → S3 SPA; /api/* → API Gateway → Lambda; /api/socket.io* → custom origin
+# SOCKET_ORIGIN_DOMAIN = full Node server (same app as local `npm run dev` / `npm start` after build).
+# Only websocket / Engine.IO traffic is routed there; REST API is served by Lambda.
+#
+# If AWS::SES::EmailIdentity for DOMAIN_NAME already exists elsewhere, remove SesSenderDomain + DKIM
+# resources here until the old stack is deleted, or delete the old stack first.
+#
+# Env layout: see .env.example (repository secrets + variables).
+#
+#   npx serverless deploy --stage prod
+#
+# After deploy: sync client to S3 (bucket = DOMAIN_NAME); invalidate CloudFront (Outputs).
+# Stack name: ${custom.appName}-${stage} — keep GitHub variable APP_NAME in sync with custom.appName.
+#
+# Local: npm run dev → src/handlers/http-server.ts (Express + Socket.IO).
+#        npm run offline → Lambda emulation (no WebSockets).
+
+org: shalev396
+
+app: ${self:custom.appName}
+
+service: ${self:custom.appName}
+
+frameworkVersion: ^4.0.0
+
+useDotenv: true
+
+build:
+  esbuild: false
+
+provider:
+  name: aws
+  stage: ${opt:stage}
+  runtime: nodejs22.x
+  timeout: 30
+  memorySize: 1024
+  region: ${env:AWS_REGION}
+  logRetentionInDays: 30
+
+  apiGateway:
+    shouldStartNameWithService: true
+  logs:
+    restApi: false
+
+  httpApi:
+    cors:
+      allowedOrigins:
+        - http://localhost:5173
+        - https://${env:DOMAIN_NAME}
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+        - HEAD
+      allowCredentials: true
+      maxAge: 86400
+
+  environment:
+    ENV: ${opt:stage, 'dev'}
+    NODE_ENV: production
+    DOMAIN_NAME: ${env:DOMAIN_NAME}
+    JWT_SECRET: ${env:JWT_SECRET}
+    PASSWORD_KEY: ${env:PASSWORD_KEY}
+    MONGO_URI: ${env:MONGO_URI}
+    DEVICE_TOKEN_SECRET: ${env:DEVICE_TOKEN_SECRET}
+    ENCRYPTION_KEY: ${env:ENCRYPTION_KEY}
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+          Resource:
+            - "arn:aws:ses:${self:provider.region}:*:identity/*"
+
+package:
+  individually: true
+
+plugins:
+  - serverless-esbuild
+  - serverless-offline
+  - serverless-offline-watcher
+
+custom:
+  appName: notalonesoldier
+  appDisplayName: Not Alone Soldier
+  clientBucketName: ${env:DOMAIN_NAME}
+
+  esbuild:
+    bundle: true
+    minify: false
+    target: node22
+    platform: node
+    format: cjs
+    sourcemap: true
+    packager: npm
+
+  viewerCertificate:
+    AcmCertificateArn: ${env:CERTIFICATE_ARN}
+    SslSupportMethod: sni-only
+    MinimumProtocolVersion: TLSv1.2_2021
+
+  distributionComment:
+    dev: "${self:custom.appDisplayName} Development"
+    qa: "${self:custom.appDisplayName} QA"
+    prod: "${self:custom.appDisplayName} Production"
+
+  serverless-offline:
+    httpPort: 3000
+    lambdaPort: 3002
+    noPrependStageInUrl: true
+    reloadHandler: false
+    disableCookieValidation: true
+    enforceSecureCookies: false
+    printOutput: true
+    noAuth: true
+
+  serverless-offline-watcher:
+    - path:
+        - .esbuild/.build/**/*
+      hook: offline:functionsUpdated
+
+  envFile: .env.${sls:stage}
+
+functions:
+  api:
+    handler: src/handlers/lambda-handler.handler
+    events:
+      - httpApi:
+          path: /api/{proxy+}
+          method: ANY
+
+resources:
+  Description: ${self:custom.appDisplayName} — Lambda API, S3 client, CloudFront, Route 53 (${self:provider.stage})
+  Resources:
+    ClientFilesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.clientBucketName}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: index.html
+        VersioningConfiguration:
+          Status: Enabled
+        LifecycleConfiguration:
+          Rules:
+            - Id: DeleteOldVersions
+              Status: Enabled
+              NoncurrentVersionExpirationInDays: 30
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders: ["*"]
+              AllowedMethods: [GET, HEAD]
+              AllowedOrigins: ["*"]
+              MaxAge: 3600
+
+    ClientFilesBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: ClientFilesBucket
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action: s3:GetObject
+              Resource:
+                - Fn::Join:
+                    - ""
+                    - - "arn:aws:s3:::"
+                      - Ref: ClientFilesBucket
+                      - "/*"
+
+    SesSenderDomain:
+      Type: AWS::SES::EmailIdentity
+      Properties:
+        EmailIdentity: ${env:DOMAIN_NAME}
+        DkimSigningAttributes:
+          NextSigningKeyLength: RSA_2048_BIT
+        DkimAttributes:
+          SigningEnabled: true
+
+    SesDkimRecord1:
+      Type: AWS::Route53::RecordSet
+      DependsOn: SesSenderDomain
+      Properties:
+        HostedZoneId: ${env:HOSTED_ZONE_ID}
+        Name:
+          Fn::GetAtt: [SesSenderDomain, DkimDNSTokenName1]
+        Type: CNAME
+        TTL: 300
+        ResourceRecords:
+          - Fn::GetAtt: [SesSenderDomain, DkimDNSTokenValue1]
+
+    SesDkimRecord2:
+      Type: AWS::Route53::RecordSet
+      DependsOn: SesSenderDomain
+      Properties:
+        HostedZoneId: ${env:HOSTED_ZONE_ID}
+        Name:
+          Fn::GetAtt: [SesSenderDomain, DkimDNSTokenName2]
+        Type: CNAME
+        TTL: 300
+        ResourceRecords:
+          - Fn::GetAtt: [SesSenderDomain, DkimDNSTokenValue2]
+
+    SesDkimRecord3:
+      Type: AWS::Route53::RecordSet
+      DependsOn: SesSenderDomain
+      Properties:
+        HostedZoneId: ${env:HOSTED_ZONE_ID}
+        Name:
+          Fn::GetAtt: [SesSenderDomain, DkimDNSTokenName3]
+        Type: CNAME
+        TTL: 300
+        ResourceRecords:
+          - Fn::GetAtt: [SesSenderDomain, DkimDNSTokenValue3]
+
+    CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Comment: ${self:custom.distributionComment.${self:provider.stage}}
+          Enabled: true
+          Aliases:
+            - ${env:DOMAIN_NAME}
+          ViewerCertificate: ${self:custom.viewerCertificate}
+          DefaultRootObject: index.html
+          DefaultCacheBehavior:
+            TargetOriginId: ClientFilesOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD, OPTIONS]
+            Compress: true
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+            OriginRequestPolicyId: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf
+          CacheBehaviors:
+            - PathPattern: "/api/socket.io*"
+              TargetOriginId: ExternalSocketOrigin
+              ViewerProtocolPolicy: redirect-to-https
+              AllowedMethods: [DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT]
+              CachedMethods: [GET, HEAD, OPTIONS]
+              Compress: true
+              CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+              OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            - PathPattern: "/api/*"
+              TargetOriginId: ApiGatewayOrigin
+              ViewerProtocolPolicy: redirect-to-https
+              AllowedMethods: [DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT]
+              CachedMethods: [GET, HEAD, OPTIONS]
+              Compress: true
+              CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+              OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+          Origins:
+            - Id: ClientFilesOrigin
+              DomainName:
+                Fn::Select:
+                  - 1
+                  - Fn::Split:
+                      - "//"
+                      - Fn::GetAtt:
+                          - ClientFilesBucket
+                          - WebsiteURL
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: http-only
+                OriginSSLProtocols: [TLSv1.2]
+            - Id: ApiGatewayOrigin
+              DomainName:
+                Fn::Sub: "${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+              CustomOriginConfig:
+                HTTPPort: 443
+                HTTPSPort: 443
+                OriginProtocolPolicy: https-only
+                OriginSSLProtocols: [TLSv1.2]
+            - Id: ExternalSocketOrigin
+              DomainName: ${env:SOCKET_ORIGIN_DOMAIN}
+              CustomOriginConfig:
+                HTTPPort: 443
+                HTTPSPort: 443
+                OriginProtocolPolicy: https-only
+                OriginSSLProtocols: [TLSv1.2]
+          PriceClass: PriceClass_All
+          HttpVersion: http2
+          IPV6Enabled: true
+
+    Route53Record:
+      Type: AWS::Route53::RecordSet
+      Properties:
+        HostedZoneId: ${env:HOSTED_ZONE_ID}
+        Name: ${env:DOMAIN_NAME}
+        Type: A
+        AliasTarget:
+          DNSName:
+            Fn::GetAtt:
+              - CloudFrontDistribution
+              - DomainName
+          HostedZoneId: Z2FDTNDATAQYW2
+          EvaluateTargetHealth: false
+
+  Outputs:
+    CloudFrontDistributionId:
+      Description: CloudFront distribution ID (cache invalidation)
+      Value:
+        Ref: CloudFrontDistribution
+      Export:
+        Name: ${self:custom.appName}-${self:provider.stage}-CloudFrontDistributionId
+
+    S3ClientBucketName:
+      Description: S3 bucket for Vite client build
+      Value:
+        Ref: ClientFilesBucket
+      Export:
+        Name: ${self:custom.appName}-${self:provider.stage}-S3ClientBucketName
