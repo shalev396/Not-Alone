@@ -33,7 +33,7 @@ jobs:
           node-version: 24
       - name: Install server dependencies
         run: npm install
-        working-directory: server
+        working-directory: Server
       - name: Build server
         run: npm run build
-        working-directory: server
+        working-directory: Server

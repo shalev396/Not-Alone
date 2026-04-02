@@ -27,9 +27,9 @@ jobs:
           node-version: 24
       - name: Install server dependencies
         run: npm install
-        working-directory: server
+        working-directory: Server
       - name: Start API (npm run dev) and run Jest
-        working-directory: server
+        working-directory: Server
         run: |
           npm run dev &
           echo $! > /tmp/not-alone-api.pid
@@ -56,5 +56,5 @@ jobs:
         if: failure()
         with:
           name: jest-report
-          path: server/test-report.html
+          path: Server/test-report.html
           retention-days: 7

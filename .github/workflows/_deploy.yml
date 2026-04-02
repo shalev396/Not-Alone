@@ -41,12 +41,12 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/my-github-actions-role
       - run: npm install
-        working-directory: server
+        working-directory: Server
       - run: npm run build
-        working-directory: server
+        working-directory: Server
       - name: Deploy to ${{ inputs.stage }}
         run: npx serverless deploy --stage ${{ inputs.stage }}
-        working-directory: server
+        working-directory: Server
 
   deploy-frontend:
     name: Deploy Frontend (${{ inputs.stage }})

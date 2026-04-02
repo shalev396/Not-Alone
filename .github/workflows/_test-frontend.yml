@@ -34,7 +34,7 @@ jobs:
           cache-dependency-path: client/test/requirements.txt
       - name: Install server dependencies
         run: npm install
-        working-directory: server
+        working-directory: Server
       - name: Install client dependencies
         run: npm install
         working-directory: client
@@ -49,7 +49,7 @@ jobs:
       - name: Start backend and frontend, wait, run E2E
         run: |
           set -e
-          cd server
+          cd Server
           npm run dev &
           cd ../client
           npm run dev -- --host localhost --port 5173 --mode production &
