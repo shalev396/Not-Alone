@@ -1,5 +1,4 @@
-# PR to main: build → backend tests (APP_ENV_TEST → Server/.env) → frontend E2E (APP_ENV_PROD → Server/.env after client install).
-# APP_ENV_PROD: same multiline server/.env you use locally (also used by deploy-frontend for client/.env.production if present).
+# PR to main: build -> backend tests -> frontend E2E
 name: PR to Main
 
 on:
@@ -7,7 +6,7 @@ on:
     branches: [main]
     paths:
       - "client/**"
-      - "Server/**"
+      - "server/**"
       - ".github/workflows/**"
 
 permissions:

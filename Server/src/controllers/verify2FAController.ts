@@ -1,12 +1,9 @@
 import { Request, Response } from "express";
 import { TwoFAAttempt } from "../models/TwoFAAttemptModel";
 import { decryptPayload } from "../utils/encryption";
-import useragent from "express-useragent";
-import geoip from "geoip-lite";
 import { AuditLogModel, AuditLogAction } from "../models/AuditLog";
 import { create2FA } from "../services/create2FA";
-import { UserModel, User } from "../models/userModel";
-import bcrypt from "bcryptjs";
+import { UserModel } from "../models/userModel";
 
 // Helper function to log failed attempts
 async function logFailedAttempt(userId: string, reason: string) {
@@ -82,8 +79,6 @@ export const verify2FA = async (req: Request, res: Response) => {
     // 2) Compare IP / user-agent for security
     const requestIp = req.ip;
     const source = req.headers["user-agent"] || "";
-    const ua = useragent.parse(source);
-    const geo = geoip.lookup(requestIp || "");
 
     // 3) Fetch 2FA record from DB with additional security checks
     const twoFAAttempt = await TwoFAAttempt.findOne({
@@ -134,7 +129,6 @@ export const verify2FA = async (req: Request, res: Response) => {
       userAgent: source,
       details: {
         deviceInfo: twoFAAttempt.deviceInfo,
-        geo,
       },
     });
 
@@ -213,8 +207,6 @@ export const verifyPasswordReset = async (req: Request, res: Response) => {
     // 2) Compare IP / user-agent for security
     const requestIp = req.ip;
     const source = req.headers["user-agent"] || "";
-    const ua = useragent.parse(source);
-    const geo = geoip.lookup(requestIp || "");
 
     // 3) Fetch 2FA record from DB with additional security checks
     const twoFAAttempt = await TwoFAAttempt.findOne({
@@ -260,7 +252,6 @@ export const verifyPasswordReset = async (req: Request, res: Response) => {
       userAgent: source,
       details: {
         deviceInfo: twoFAAttempt.deviceInfo,
-        geo,
         purpose: "password_reset",
       },
     });

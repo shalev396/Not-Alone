@@ -16,14 +16,15 @@ class SocketService {
   private connectedUsers: Map<string, UserSocket>;
 
   constructor(server: HttpServer) {
+    const defaultOrigins = [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "https://notalonesoldier.shalev396.com",
+    ];
     this.io = new SocketServer(server, {
       path: "/api/socket.io",
       cors: {
-        origin: [
-          "http://localhost:5173",
-          "http://127.0.0.1:5173",
-          "https://notalonesoldier.shalev396.com",
-        ],
+        origin: defaultOrigins,
         methods: ["GET", "POST"],
         credentials: true,
       },

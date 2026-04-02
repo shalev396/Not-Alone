@@ -1,6 +1,4 @@
-# Backend: APP_ENV_TEST (multiline) → Server/.env — server test stack only. Frontend E2E overwrites Server/.env from APP_ENV_PROD on its own runner.
-# Then npm run dev + Jest. Job forces PORT=3000 for curl wait (matches getApiUrl() on localhost).
-# Git path: Server/
+# Reusable workflow: Backend tests (Jest) against local dev server
 name: Test Backend
 
 on:
@@ -15,28 +13,23 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
-      PORT: "3000"
+      PORT: "3001"
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      PASSWORD_KEY: ${{ secrets.PASSWORD_KEY }}
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      MONGODB_URI_TEST: ${{ secrets.MONGODB_URI_TEST }}
+      DEVICE_TOKEN_SECRET: ${{ secrets.DEVICE_TOKEN_SECRET }}
+      ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Load environment variables from APP_ENV_TEST
-        run: |
-          echo '${{ secrets.APP_ENV_TEST }}' > .env
-        working-directory: Server
-      - name: Export .env variables
-        uses: falti/dotenv-action@v1.1.4
-        with:
-          path: Server/.env
-          export-variables: true
-          keys-case: bypass
-          mask-variables: true
-      - name: Install Server dependencies
-        run: npm ci
-        working-directory: Server
+      - name: Install server dependencies
+        run: npm install
+        working-directory: server
       - name: Start API (npm run dev) and run Jest
-        working-directory: Server
+        working-directory: server
         run: |
           npm run dev &
           echo $! > /tmp/not-alone-api.pid
@@ -63,5 +56,5 @@ jobs:
         if: failure()
         with:
           name: jest-report
-          path: Server/test-report.html
+          path: server/test-report.html
           retention-days: 7

@@ -1,5 +1,4 @@
-# Frontend E2E: after client npm ci, write Server/.env from secret APP_ENV_PROD (same multiline blob as local server/.env).
-# Client has no separate env file in CI (localhost API + client/test/src/e2e_targets.py). Runs after test-backend (pr-main.yml).
+# Reusable workflow: Frontend E2E tests (pytest / Selenium + Vite) against local servers
 name: Test Frontend
 
 on:
@@ -14,9 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CI: "true"
-      PORT: "3000"
+      PORT: "3001"
       BASE_URL: http://localhost:5173
-      API_ROOT: http://localhost:3000/api
+      API_ROOT: http://localhost:3001/api
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      PASSWORD_KEY: ${{ secrets.PASSWORD_KEY }}
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      MONGODB_URI_TEST: ${{ secrets.MONGODB_URI_TEST }}
+      DEVICE_TOKEN_SECRET: ${{ secrets.DEVICE_TOKEN_SECRET }}
+      ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,23 +32,12 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: client/test/requirements.txt
-      - name: Install Server dependencies
-        run: npm ci
-        working-directory: Server
+      - name: Install server dependencies
+        run: npm install
+        working-directory: server
       - name: Install client dependencies
-        run: npm ci
+        run: npm install
         working-directory: client
-      - name: Load environment variables from APP_ENV_PROD
-        run: |
-          echo '${{ secrets.APP_ENV_PROD }}' > .env
-        working-directory: Server
-      - name: Export .env variables
-        uses: falti/dotenv-action@v1.1.4
-        with:
-          path: Server/.env
-          export-variables: true
-          keys-case: bypass
-          mask-variables: true
       - name: Install Chrome
         run: |
           wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -55,7 +49,7 @@ jobs:
       - name: Start backend and frontend, wait, run E2E
         run: |
           set -e
-          cd Server
+          cd server
           npm run dev &
           cd ../client
           npm run dev -- --host localhost --port 5173 --mode production &
