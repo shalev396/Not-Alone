@@ -49,7 +49,7 @@ export const getDiscountById = async (req: Request, res: Response) => {
     }
 
     return res.json(discount);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error fetching discount" });
   }
 };
@@ -108,7 +108,7 @@ export const deleteDiscount = async (req: Request, res: Response) => {
 
     await DiscountModel.findByIdAndDelete(discountId);
     return res.json({ message: "Deal deleted successfully" });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error deleting deal" });
   }
 };

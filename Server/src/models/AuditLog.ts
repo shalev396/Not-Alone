@@ -36,7 +36,7 @@ export interface AuditLog extends mongoose.Document {
   action: string;
   userId: mongoose.Types.ObjectId;
   targetId?: mongoose.Types.ObjectId;
-  changes?: Record<string, any>;
+  changes?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
   timestamp: Date;

@@ -54,7 +54,7 @@ export const getAllDonations = async (req: Request, res: Response) => {
   if (!userInfo) return;
 
   try {
-    const query: any = {};
+    const query: Record<string, unknown> = {};
 
     // Municipality users can only see donations from their city
     if (userInfo.type === "Municipality") {
@@ -573,7 +573,7 @@ export const updateDonationStatus = async (req: Request, res: Response) => {
     }
 
     // If changing from assigned to pending, clear the assignedTo field
-    const updateData: any = { status };
+    const updateData: Record<string, unknown> = { status };
     if (status === "pending" && donation.status === "assigned") {
       updateData.assignedTo = null;
     }

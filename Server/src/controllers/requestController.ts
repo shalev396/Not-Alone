@@ -96,7 +96,7 @@ export const getRequests = async (req: Request, res: Response) => {
       sort = "-createdAt",
     } = req.query as RequestQuery;
 
-    const query: any = {};
+    const query: Record<string, unknown> = {};
 
     // Apply filters
     if (status) query.status = status;
@@ -530,7 +530,7 @@ export const getDonationRequestsBySoldier = async (req: Request, res: Response) 
       return res.status(400).json({ message: "Invalid sort parameter" });
     }
 
-    const sortObj = sortStr.split(",").reduce((acc: any, field: string) => {
+    const sortObj = sortStr.split(",").reduce<Record<string, SortOrder>>((acc, field: string) => {
       if (field.startsWith("-")) {
         acc[field.slice(1)] = -1;
       } else {
@@ -620,7 +620,7 @@ export const getRequestsByUser = async (req: Request, res: Response) => {
     } = req.query as RequestQuery;
 
     // Build query using authenticated user's ID
-    const query: any = { authorId: userInfo.userId };
+    const query: Record<string, unknown> = { authorId: userInfo.userId };
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);

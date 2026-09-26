@@ -57,7 +57,7 @@ export async function create2FA({
   const deviceToken = encryptPayload(devicePayload);
 
   // 5) Save record in DB
-  const twoFARecord = await TwoFAAttempt.create({
+  await TwoFAAttempt.create({
     userId,
     code,
     expiresAt,

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import request from "supertest";
+import request, { Response } from "supertest";
 import { app } from "../src/index";
 import {
   getUsersArray,
@@ -9,13 +9,11 @@ import {
   users,
 } from "./userHelper";
 import {
-  getCitiesArray,
   setCitiesArray,
   clearCities,
   city,
 } from "./cityHelper";
 import {
-  getBusinessesArray,
   setBusinessesArray,
   clearBusinesses,
   business,
@@ -23,7 +21,7 @@ import {
 import { UserModel } from "../src/models/userModel";
 import { CityModel } from "../src/models/cityModel";
 import { BusinessModel } from "../src/models/businessModel";
-import { clearDiscounts, setDiscountsArray } from "./discountHelper";
+import { clearDiscounts } from "./discountHelper";
 import { DiscountModel } from "../src/models/discountModel";
 import { clearDonations, setDonationsArray } from "./donationHelper";
 import { DonationModel } from "../src/models/donationModel";
@@ -244,10 +242,11 @@ const setupTestUsers = async () => {
       bio: "Test city description",
     };
 
-    const createCityResponse: any = await request(app)
+    // supertest's Response type does not declare the raw `_body` field read below
+    const createCityResponse = (await request(app)
       .post("/api/cities")
       .set("Authorization", `Bearer ${municipalityUser.token}`)
-      .send(cityData);
+      .send(cityData)) as Response & { _body: city & { _id: string } };
 
     if (createCityResponse.status !== 201) {
       throw new Error("Failed to create test city");
@@ -278,7 +277,7 @@ const setupTestUsers = async () => {
       slogan: "Test business slogan",
     };
 
-    const createBusinessResponse: any = await request(app)
+    const createBusinessResponse = await request(app)
       .post("/api/businesses")
       .set("Authorization", `Bearer ${businessUser.token}`)
       .send(businessData);
@@ -338,7 +337,7 @@ const setupTestUsers = async () => {
       media: ["http://example.com/image.jpg"],
     };
 
-    const createDonationResponse: any = await request(app)
+    const createDonationResponse = await request(app)
       .post("/api/donations")
       .set("Authorization", `Bearer ${donorUser.token}`)
       .send(donationData);
@@ -377,7 +376,7 @@ const setupTestUsers = async () => {
       limit: 20,
     };
 
-    const createEatupResponse: any = await request(app)
+    const createEatupResponse = await request(app)
       .post("/api/eatups")
       .set("Authorization", `Bearer ${organizationUser.token}`)
       .send(eatupData);
@@ -414,7 +413,7 @@ const setupTestUsers = async () => {
       agreeToShareDetails: true,
     };
 
-    const createRequestResponse: any = await request(app)
+    const createRequestResponse = await request(app)
       .post("/api/requests")
       .set("Authorization", `Bearer ${soldierUser.token}`)
       .send(requestData);
@@ -439,7 +438,7 @@ const setupTestUsers = async () => {
       media: ["http://example.com/image.jpg"],
     };
 
-    const createPostResponse: any = await request(app)
+    const createPostResponse = await request(app)
       .post("/api/posts")
       .set("Authorization", `Bearer ${soldierUser.token}`)
       .send(postData);
@@ -466,7 +465,7 @@ const setupTestUsers = async () => {
       content: "Test comment content from soldier",
     };
 
-    const createCommentResponse: any = await request(app)
+    const createCommentResponse = await request(app)
       .post("/api/comments")
       .set("Authorization", `Bearer ${soldierUser.token}`)
       .send(commentData);

@@ -24,7 +24,7 @@ export const getAllComments = async (req: Request, res: Response) => {
     const postId = req.query.postId as string;
     const authorId = req.query.authorId as string;
 
-    const match: any = {};
+    const match: Record<string, unknown> = {};
     if (postId && mongoose.Types.ObjectId.isValid(postId)) {
       match.postId = new mongoose.Types.ObjectId(postId);
     }
@@ -32,10 +32,10 @@ export const getAllComments = async (req: Request, res: Response) => {
       match.authorId = new mongoose.Types.ObjectId(authorId);
     }
 
-    const sortObj = sort.split(",").reduce((acc: any, item) => {
+    const sortObj = sort.split(",").reduce<Record<string, 1 | -1>>((acc, item) => {
       const [key, order] = item.startsWith("-")
-        ? [item.slice(1), -1]
-        : [item, 1];
+        ? ([item.slice(1), -1] as const)
+        : ([item, 1] as const);
       acc[key] = order;
       return acc;
     }, {});
@@ -90,7 +90,7 @@ export const getAllComments = async (req: Request, res: Response) => {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error fetching comments" });
   }
 };
@@ -132,7 +132,7 @@ export const getCommentById = async (req: Request, res: Response) => {
     }
 
     return res.json(comment);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error fetching comment" });
   }
 };

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { api } from "@/api/api";
+import axios from "axios";
 
 const initialState = {
   _id: "",
@@ -30,9 +31,11 @@ export const fetchUserData = createAsyncThunk(
     try {
       const response = await api.get("/users/me");
       return response.data.user;
-    } catch (error: any) {
+    } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch user data"
+        (axios.isAxiosError<{ message?: string }>(error) &&
+          error.response?.data?.message) ||
+          "Failed to fetch user data"
       );
     }
   }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api/api";
+import axios from "axios";
+import { ApiErrorResponse } from "@/types/api-error";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Navbar } from "@/components/shared/Navbar";
@@ -43,8 +45,12 @@ export default function MyRequests() {
       try {
         const response = await api.get("/requests/my");
         setRequests(response.data.requests);
-      } catch (error: any) {
-        setError(error.response?.data?.message || "Failed to fetch requests");
+      } catch (error) {
+        setError(
+          (axios.isAxiosError<ApiErrorResponse>(error) &&
+            error.response?.data?.message) ||
+            "Failed to fetch requests"
+        );
       } finally {
         setIsLoading(false);
       }
@@ -57,8 +63,12 @@ export default function MyRequests() {
     try {
       await api.delete(`/requests/${requestId}`);
       setRequests((prev) => prev.filter((req) => req._id !== requestId));
-    } catch (error: any) {
-      setError(error.response?.data?.message || "Failed to delete request");
+    } catch (error) {
+      setError(
+        (axios.isAxiosError<ApiErrorResponse>(error) &&
+          error.response?.data?.message) ||
+          "Failed to delete request"
+      );
     }
   };
 

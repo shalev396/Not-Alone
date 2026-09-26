@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { useQuery } from "@tanstack/react-query";
@@ -42,101 +42,108 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   });
 
   // Function to check if a path is in a route list
-  const isPathInRouteList = (routeList: any[]): boolean => {
-    return routeList.some((route) => {
-      if ("routes" in route) {
-        // Handle admin sections that contain nested routes
-        return route.routes?.some((r: any) => r.href === currentPath);
-      }
-      return route.href === currentPath;
-    });
-  };
+  const isPathInRouteList = useCallback(
+    (routeList: (RouteProps | AdminRouteSection)[]): boolean => {
+      return routeList.some((route) => {
+        if ("routes" in route) {
+          // Handle admin sections that contain nested routes
+          return route.routes?.some((r) => r.href === currentPath);
+        }
+        return route.href === currentPath;
+      });
+    },
+    [currentPath],
+  );
 
   // Function to filter routes based on city membership
-  const filterRoutesByAccess = (
-    routes: (RouteProps | AdminRouteSection)[]
-  ): (RouteProps | AdminRouteSection)[] => {
-    // If user is not Municipality or Admin, filter out routes that require city access
-    if (user.type !== "Municipality" && user.type !== "Admin") {
+  const filterRoutesByAccess = useCallback(
+    (
+      routes: (RouteProps | AdminRouteSection)[],
+    ): (RouteProps | AdminRouteSection)[] => {
+      // If user is not Municipality or Admin, filter out routes that require city access
+      if (user.type !== "Municipality" && user.type !== "Admin") {
+        return routes
+          .filter((route) => {
+            if ("routes" in route && route.routes) {
+              const filteredRoutes = route.routes.filter(
+                (r) => !r.requiresCityOrAdmin,
+              );
+              return filteredRoutes.length > 0
+                ? { ...route, routes: filteredRoutes }
+                : null;
+            }
+            return !route.requiresCityOrAdmin;
+          })
+          .filter(
+            (route): route is RouteProps | AdminRouteSection => route !== null,
+          );
+      }
+
+      // For Municipality and Admin users, check city membership
       return routes
-        .filter((route) => {
+        .map((route) => {
           if ("routes" in route && route.routes) {
             const filteredRoutes = route.routes.filter(
-              (r) => !r.requiresCityOrAdmin
+              (r) =>
+                !r.requiresCityOrAdmin ||
+                user.type === "Admin" ||
+                (Array.isArray(userCity) && userCity.length > 0),
             );
             return filteredRoutes.length > 0
               ? { ...route, routes: filteredRoutes }
               : null;
           }
-          return !route.requiresCityOrAdmin;
+          if (
+            "requiresCityOrAdmin" in route &&
+            route.requiresCityOrAdmin &&
+            user.type !== "Admin" &&
+            (!Array.isArray(userCity) || userCity.length === 0)
+          ) {
+            return null;
+          }
+          return route;
         })
         .filter(
-          (route): route is RouteProps | AdminRouteSection => route !== null
+          (route): route is RouteProps | AdminRouteSection => route !== null,
         );
-    }
-
-    // For Municipality and Admin users, check city membership
-    return routes
-      .map((route) => {
-        if ("routes" in route && route.routes) {
-          const filteredRoutes = route.routes.filter(
-            (r) =>
-              !r.requiresCityOrAdmin ||
-              user.type === "Admin" ||
-              (Array.isArray(userCity) && userCity.length > 0)
-          );
-          return filteredRoutes.length > 0
-            ? { ...route, routes: filteredRoutes }
-            : null;
-        }
-        if (
-          "requiresCityOrAdmin" in route &&
-          route.requiresCityOrAdmin &&
-          user.type !== "Admin" &&
-          (!Array.isArray(userCity) || userCity.length === 0)
-        ) {
-          return null;
-        }
-        return route;
-      })
-      .filter(
-        (route): route is RouteProps | AdminRouteSection => route !== null
-      );
-  };
+    },
+    [user.type, userCity],
+  );
 
   // Function to get allowed routes based on user type
-  const getAllowedRoutes = (
-    userType: string
-  ): (RouteProps | AdminRouteSection)[] => {
-    let routes: (RouteProps | AdminRouteSection)[];
-    switch (userType?.toLowerCase()) {
-      case "admin":
-        routes = routeListAdmin;
-        break;
-      case "soldier":
-        routes = routeListSoldier;
+  const getAllowedRoutes = useCallback(
+    (userType: string): (RouteProps | AdminRouteSection)[] => {
+      let routes: (RouteProps | AdminRouteSection)[];
+      switch (userType?.toLowerCase()) {
+        case "admin":
+          routes = routeListAdmin;
+          break;
+        case "soldier":
+          routes = routeListSoldier;
 
-        break;
-      case "municipality":
-        routes = routeListMunicipality;
-        break;
-      case "donor":
-        routes = routeListDonor;
-        break;
-      case "organization":
-        routes = routeListOrganization;
-        break;
-      case "business":
-        routes = routeListBusiness;
-        break;
-      default:
-        routes = [];
-    }
-    return filterRoutesByAccess(routes);
-  };
+          break;
+        case "municipality":
+          routes = routeListMunicipality;
+          break;
+        case "donor":
+          routes = routeListDonor;
+          break;
+        case "organization":
+          routes = routeListOrganization;
+          break;
+        case "business":
+          routes = routeListBusiness;
+          break;
+        default:
+          routes = [];
+      }
+      return filterRoutesByAccess(routes);
+    },
+    [filterRoutesByAccess],
+  );
 
   // Function to fetch user data
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       const response = await api.get("/users/me");
       dispatch({ type: "user/setUser", payload: response.data.user });
@@ -146,9 +153,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       sessionStorage.removeItem("token");
       return false;
     }
-  };
+  }, [dispatch]);
+
+  // Auth initialization should only run once (on mount)
+  const hasInitializedAuth = useRef(false);
 
   useEffect(() => {
+    if (hasInitializedAuth.current) return;
+    hasInitializedAuth.current = true;
+
     const initializeAuth = async () => {
       const token = sessionStorage.getItem("token");
 
@@ -170,7 +183,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     };
 
     initializeAuth();
-  }, []);
+  }, [fetchUserData, navigate, user.email]);
 
   useEffect(() => {
     if (!isLoading && !user.email) {
@@ -203,11 +216,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
             }
             return [...acc, route as RouteProps];
           },
-          []
+          [],
         );
 
         const currentRoute = flattenedRoutes.find(
-          (route) => route.href === currentPath
+          (route) => route.href === currentPath,
         );
 
         if (currentRoute?.requiresCityOrAdmin) {
@@ -231,6 +244,9 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     isLoading,
     isCityLoading,
     userCity,
+    getAllowedRoutes,
+    isPathInRouteList,
+    navigate,
   ]);
 
   if (isLoading || (user.type === "Municipality" && isCityLoading)) {

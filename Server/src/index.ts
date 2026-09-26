@@ -93,8 +93,13 @@ if (process.env.NODE_ENV !== "production") {
 }
 app.use("/api/verify-2fa", verify2FARoutes);
 
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
+  // Response already started: delegate to Express's default handler, which
+  // closes the connection (writing a new status/body here would throw).
+  if (res.headersSent) {
+    return next(err);
+  }
   const message =
     process.env.NODE_ENV === "production"
       ? "Internal Server Error"

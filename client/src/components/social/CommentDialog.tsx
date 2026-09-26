@@ -8,10 +8,12 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { uploadImage } from "@/components/shared/UploadPhoto";
+import { uploadImage } from "@/utils/uploadImage";
 import { api } from "@/api/api";
 import upload from "@/assets/upload.png";
 import { useSelector } from "react-redux";
+import { RootState } from "@/Redux/store";
+import type { Post } from "./PostCard";
 
 interface Comment {
   _id: string;
@@ -29,7 +31,7 @@ export function CommentDialog({
   isOpen,
   onClose,
 }: {
-  post: any;
+  post: Post;
   isOpen: boolean;
   onClose: () => void;
 }) {
@@ -45,7 +47,7 @@ export function CommentDialog({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { nickname, profileImage } = useSelector((state: any) => state.user);
+  const { nickname, profileImage } = useSelector((state: RootState) => state.user);
 
   useEffect(() => {
     const fetchComments = async () => {

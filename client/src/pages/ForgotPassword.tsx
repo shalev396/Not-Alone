@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { requestDedupedResetPasswordGenerate } from "@/api/verify2faGenerate";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import { Formik, Form, Field, ErrorMessage, FormikHelpers } from "formik";
 import { z } from "zod";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import { ArrowLeft, AlertCircle, X, Mail } from "lucide-react";
 import { ModeToggle } from "@/components/custom-ui/mode-toggle";
 import { useState } from "react";
+import axios from "axios";
+import { ApiErrorResponse } from "@/types/api-error";
 
 // Zod schema for forgot password validation
 const forgotPasswordSchema = z.object({
@@ -26,7 +28,7 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (
     values: ForgotPasswordForm,
-    { setSubmitting, setFieldError }: any
+    { setSubmitting, setFieldError }: FormikHelpers<ForgotPasswordForm>
   ) => {
     try {
       const { userId, deviceToken } = await requestDedupedResetPasswordGenerate(
@@ -43,8 +45,11 @@ export default function ForgotPassword() {
           },
         });
       }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Email not found";
+    } catch (error) {
+      const errorMessage =
+        (axios.isAxiosError<ApiErrorResponse>(error) &&
+          error.response?.data?.message) ||
+        "Email not found";
       setFieldError("email", errorMessage);
       setErrorMessage(errorMessage);
       setShowError(true);

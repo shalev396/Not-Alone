@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/api";
+import axios from "axios";
 import { Navbar } from "@/components/shared/Navbar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -111,8 +112,8 @@ export default function DonationControlPanel() {
       try {
         const response = await api.get("/cities/me");
         return response.data;
-      } catch (error: any) {
-        if (error.response?.status === 401) {
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
           navigate("/login");
         }
         setErrorMessage("Failed to fetch city information");
@@ -134,7 +135,7 @@ export default function DonationControlPanel() {
         try {
           const response = await api.get("/donations/city-matching");
           return response.data;
-        } catch (error: any) {
+        } catch (error) {
           setErrorMessage("Failed to fetch donations");
           setShowError(true);
           throw error;

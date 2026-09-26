@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/api";
+import axios from "axios";
+import { ApiErrorResponse } from "@/types/api-error";
 import { Navbar } from "@/components/shared/Navbar";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -104,8 +106,12 @@ export default function DonationStatus() {
       setSuccessMessage("Status updated successfully");
       refetch();
       setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (error: any) {
-      setError(error.response?.data?.message || "Failed to update status");
+    } catch (error) {
+      setError(
+        (axios.isAxiosError<ApiErrorResponse>(error) &&
+          error.response?.data?.message) ||
+          "Failed to update status"
+      );
       setTimeout(() => setError(null), 5000);
     }
   };

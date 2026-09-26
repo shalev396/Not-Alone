@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/api";
+import axios from "axios";
+import { ApiErrorResponse } from "@/types/api-error";
 import { Navbar } from "@/components/shared/Navbar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,8 +89,8 @@ export default function DonationAssignment() {
       try {
         const response = await api.get("/cities/me");
         return response.data;
-      } catch (error: any) {
-        if (error.response?.status === 401) {
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
           navigate("/login");
         }
         return [];
@@ -133,9 +135,11 @@ export default function DonationAssignment() {
         setShowSuccess(false);
         navigate(`/donation-control-panel`);
       }, 2000);
-    } catch (error: any) {
+    } catch (error) {
       setErrorMessage(
-        error.response?.data?.message || "Failed to assign donation"
+        (axios.isAxiosError<ApiErrorResponse>(error) &&
+          error.response?.data?.message) ||
+          "Failed to assign donation"
       );
       setShowError(true);
     }

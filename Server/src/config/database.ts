@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
-import { getMongoUri, isLambdaRuntime } from "./environment";
+import { getMongoUri } from "./environment";
 
 /**
  * Mongo connect tuned for Lambda (Atlas pool) — same idea as Elytra `connectMongo`.
- * Local long-running server uses a larger pool; optional retries only when not on Lambda.
+ * Uses a small pool suited to Lambda; the long-running server shares the same settings.
  */
-export async function initDB(retries = 5): Promise<void> {
+export async function initDB(): Promise<void> {
   const state = mongoose.connection.readyState;
   if (
     state === mongoose.ConnectionStates.connected ||

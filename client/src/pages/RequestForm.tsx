@@ -58,7 +58,7 @@ export default function RequestForm() {
       try {
         const response = await api.get("/cities");
         setCities(response.data);
-      } catch (error) {
+      } catch {
         setError("Failed to fetch cities");
       }
     };

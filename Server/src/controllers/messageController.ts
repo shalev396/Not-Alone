@@ -194,7 +194,7 @@ export const getMessagesByChannel = async (req: Request, res: Response) => {
         hasMore: result.messages.length === limit,
       },
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error fetching messages" });
   }
 };
@@ -245,7 +245,7 @@ export const updateMessage = async (req: Request, res: Response) => {
     });
 
     return res.json(message);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error updating message" });
   }
 };
@@ -284,7 +284,7 @@ export const deleteMessage = async (req: Request, res: Response) => {
     });
 
     return res.json({ message: "Message deleted successfully" });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error deleting message" });
   }
 };

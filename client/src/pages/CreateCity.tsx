@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { api } from "@/api/api";
+import axios from "axios";
+import { ApiErrorResponse } from "@/types/api-error";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
-import { uploadImage } from "@/components/shared/UploadPhoto";
+import { uploadImage } from "@/utils/uploadImage";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +20,14 @@ import { FormItem, FormLabel } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Navbar } from "@/components/shared/Navbar";
 import { MapPin, Building2, FileText, ImageIcon } from "lucide-react";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import {
+  Formik,
+  Form,
+  Field,
+  ErrorMessage,
+  FieldProps,
+  FormikHelpers,
+} from "formik";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import upload from "@/assets/upload.png";
 
@@ -65,14 +74,16 @@ export default function CreateCity() {
 
   const handleSubmit = async (
     values: CityFormValues,
-    { setSubmitting, setStatus }: any
+    { setSubmitting, setStatus }: FormikHelpers<CityFormValues>
   ) => {
     try {
       await api.post("/cities", values);
       navigate("/admin/cities");
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage =
-        error.response?.data?.error || "Failed to create city";
+        (axios.isAxiosError<ApiErrorResponse>(error) &&
+          error.response?.data?.error) ||
+        "Failed to create city";
       setStatus(errorMessage);
       setErrorMessage(errorMessage);
       setShowError(true);
@@ -149,7 +160,10 @@ export default function CreateCity() {
                       <FormItem>
                         <FormLabel>Zone *</FormLabel>
                         <Field name="zone">
-                          {({ field, form }: any) => (
+                          {({
+                            field,
+                            form,
+                          }: FieldProps<string, CityFormValues>) => (
                             <Select
                               value={field.value}
                               onValueChange={(value) =>

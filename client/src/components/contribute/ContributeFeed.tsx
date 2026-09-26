@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "@/api/api";
+import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -50,8 +51,12 @@ const ContributePostCard: React.FC = () => {
           params: { status: "approved", paid: false },
         });
         setRequests(response.data.requests);
-      } catch (error: any) {
-        setError(error.response?.data?.message || "Failed to fetch requests");
+      } catch (error) {
+        setError(
+          (axios.isAxiosError<{ message?: string }>(error) &&
+            error.response?.data?.message) ||
+            "Failed to fetch requests"
+        );
       } finally {
         setLoading(false);
       }

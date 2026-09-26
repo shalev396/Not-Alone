@@ -74,10 +74,10 @@ export const getAllPosts = async (req: Request, res: Response) => {
       match.authorId = new mongoose.Types.ObjectId(authorId);
     }
 
-    const sortObj = sort.split(",").reduce((acc: any, item) => {
+    const sortObj = sort.split(",").reduce<Record<string, 1 | -1>>((acc, item) => {
       const [key, order] = item.startsWith("-")
-        ? [item.slice(1), -1]
-        : [item, 1];
+        ? ([item.slice(1), -1] as const)
+        : ([item, 1] as const);
       acc[key] = order;
       return acc;
     }, {});
@@ -183,27 +183,12 @@ export const getPostById = async (req: Request, res: Response) => {
     }
 
     return res.json(post);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error fetching post" });
   }
 };
 
 // Get posts by user ID
-// Função auxiliar para processar o campo de ordenação
-const parseSort = (sortQuery: string | undefined): Record<string, 1 | -1> => {
-  try {
-    if (!sortQuery) return { createdAt: -1 }; // Valor padrão
-    const parsedSort = JSON.parse(sortQuery);
-    if (typeof parsedSort === "object" && parsedSort !== null) {
-      return parsedSort;
-    }
-    throw new Error("Sort must be a valid object");
-  } catch (error) {
-    console.warn("Invalid sort value. Using default sort:", error);
-    return { createdAt: -1 }; // Valor padrão
-  }
-};
-
 // Controlador corrigido
 export const getPostsByUserId = async (req: Request, res: Response) => {
   try {
@@ -220,10 +205,10 @@ export const getPostsByUserId = async (req: Request, res: Response) => {
     const sort = (req.query.sort as string) || "-createdAt";
 
     // Processa o campo de ordenação
-    const sortObj = sort.split(",").reduce((acc: any, item) => {
+    const sortObj = sort.split(",").reduce<Record<string, 1 | -1>>((acc, item) => {
       const [key, order] = item.startsWith("-")
-        ? [item.slice(1), -1]
-        : [item, 1];
+        ? ([item.slice(1), -1] as const)
+        : ([item, 1] as const);
       acc[key] = order;
       return acc;
     }, {});
@@ -349,7 +334,7 @@ export const toggleLike = async (req: Request, res: Response) => {
     }
 
     return res.json(post);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error toggling like" });
   }
 };
@@ -437,7 +422,7 @@ export const deletePost = async (req: Request, res: Response) => {
     }
 
     return res.json({ message: "Post deleted successfully" });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error deleting post" });
   }
 };

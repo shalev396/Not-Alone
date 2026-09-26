@@ -3,7 +3,7 @@ import {
   NavigationMenuItem,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { ModeToggle } from "@/components/custom-ui/mode-toggle";
 import {
   Sheet,
@@ -16,10 +16,11 @@ import { Menu } from "lucide-react";
 import { RouteProps } from "../types";
 import { useState } from "react";
 import { AuthButtons } from "../AuthButtons";
+import { RootState } from "@/Redux/store";
 
 interface LandingNavProps {
   routeList: RouteProps[];
-  user: any;
+  user: RootState["user"];
   navigate: (path: string) => void;
 }
 

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api/api";
 import { Formik, Form, Field } from "formik";
+import axios from "axios";
 import { z } from "zod";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import {
@@ -118,9 +119,11 @@ export function SignupForm() {
                     },
                   });
                 }
-              } catch (error: any) {
+              } catch (error) {
                 const errorMessage =
-                  error.response?.data?.message || "Failed to create account";
+                  (axios.isAxiosError<{ message?: string }>(error) &&
+                    error.response?.data?.message) ||
+                  "Failed to create account";
                 setStatus(errorMessage);
               } finally {
                 setSubmitting(false);

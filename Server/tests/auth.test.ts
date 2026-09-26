@@ -10,7 +10,6 @@ import {
 } from "./userHelper";
 import { getCitiesArray } from "./cityHelper";
 import { getDonationsArray } from "./donationHelper";
-import { UserModel } from "../src/models/userModel";
 import {
   authRoutes,
   userRoutes,

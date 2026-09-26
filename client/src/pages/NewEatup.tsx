@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { uploadImage } from "@/components/shared/UploadPhoto";
+import { uploadImage } from "@/utils/uploadImage";
 import { api } from "@/api/api";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -19,7 +19,14 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { format } from "date-fns";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import axios from "axios";
+import {
+  Formik,
+  Form,
+  Field,
+  ErrorMessage,
+  FormikHelpers,
+} from "formik";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import {
   Popover,
@@ -114,7 +121,7 @@ export default function NewEatup() {
 
   const handleSubmit = async (
     values: EatupFormValues,
-    { setSubmitting, setStatus }: any
+    { setSubmitting, setStatus }: FormikHelpers<EatupFormValues>
   ) => {
     try {
       const submitData = {
@@ -129,9 +136,11 @@ export default function NewEatup() {
 
       await api.post("/eatups", submitData);
       navigate("/my-eatups");
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage =
-        error.response?.data?.error || "Failed to create EatUp";
+        (axios.isAxiosError<{ error?: string }>(error) &&
+          error.response?.data?.error) ||
+        "Failed to create EatUp";
       setStatus(errorMessage);
       setErrorMessage(errorMessage);
       setShowError(true);

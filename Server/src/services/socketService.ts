@@ -1,9 +1,27 @@
-import { Server as SocketServer } from "socket.io";
+import { Server as SocketServer, Socket } from "socket.io";
+import { Request, Response } from "express";
 import { Server as HttpServer } from "http";
 import { auth } from "../middleware/auth";
 import { UserModel } from "../models/userModel";
 import mongoose from "mongoose";
 import { MessageModel, IMessage } from "../models/messageModel";
+
+interface IncomingMessage {
+  channelId: string;
+  content: string;
+  sender?: string;
+}
+
+interface MockAuthRequest {
+  headers: { authorization: string };
+  header: (name: string) => string | undefined;
+  user: Request["user"] | null;
+}
+
+interface MockAuthResponse {
+  status: (code: number) => MockAuthResponse;
+  json: (data: unknown) => MockAuthResponse;
+}
 
 interface UserSocket {
   userId: string;
@@ -45,12 +63,12 @@ class SocketService {
       if (token) {
         try {
           // Create a mock request object with the token
-          const mockReq: any = {
+          const mockReq: MockAuthRequest = {
             headers: {
               authorization: `Bearer ${token}`,
             },
             // Add header method to mock Express request
-            header: function (name: string) {
+            header: function (this: MockAuthRequest, name: string) {
               return name.toLowerCase() === "authorization"
                 ? this.headers.authorization
                 : undefined;
@@ -59,12 +77,12 @@ class SocketService {
           };
 
           // Create a mock response object
-          const mockRes: any = {
+          const mockRes: MockAuthResponse = {
             status: function (code: number) {
               console.log("Auth status code:", code);
               return this;
             },
-            json: function (data: any) {
+            json: function (data: unknown) {
               console.log("Auth response:", data);
               return this;
             },
@@ -109,7 +127,11 @@ class SocketService {
           };
 
           // Use the auth middleware
-          await auth(mockReq, mockRes, next);
+          await auth(
+            mockReq as unknown as Request,
+            mockRes as unknown as Response,
+            next
+          );
         } catch (error) {
           console.error("Socket authentication error:", error);
           socket.emit("auth_error", "Authentication failed");
@@ -150,7 +172,7 @@ class SocketService {
       });
 
       // Handle new message
-      socket.on("new message", async (message: any) => {
+      socket.on("new message", async (message: IncomingMessage) => {
         console.log(
           `New message received for channel: ${message.channelId}`,
           message
@@ -187,9 +209,9 @@ class SocketService {
             const tempUserSocket = this.connectedUsers.get(tempUserId);
             console.log("Created temporary user connection:", tempUserSocket);
 
-            await this.processMessage(socket, message, tempUserSocket!);
+            await this.processMessage(socket, message);
           } else if (userSocket) {
-            await this.processMessage(socket, message, userSocket);
+            await this.processMessage(socket, message);
           } else {
             console.error(
               "No user found for socket trying to send message and no sender ID provided"
@@ -240,7 +262,7 @@ class SocketService {
   }
 
   // Emit new message to channel members
-  public emitNewMessage(channelId: string, message: any): void {
+  public emitNewMessage(channelId: string, message: unknown): void {
     this.io.to(`channel:${channelId}`).emit("new_message", message);
   }
 
@@ -248,7 +270,7 @@ class SocketService {
   public emitMessageUpdate(
     channelId: string,
     messageId: string,
-    update: any
+    update: unknown
   ): void {
     this.io.to(`channel:${channelId}`).emit("message_update", {
       messageId,
@@ -262,12 +284,12 @@ class SocketService {
   }
 
   // Emit channel update to members
-  public emitChannelUpdate(channelId: string, update: any): void {
+  public emitChannelUpdate(channelId: string, update: unknown): void {
     this.io.to(`channel:${channelId}`).emit("channel_update", update);
   }
 
   // Emit new channel member to all channel members
-  public emitMemberJoin(channelId: string, member: any): void {
+  public emitMemberJoin(channelId: string, member: unknown): void {
     this.io.to(`channel:${channelId}`).emit("member_join", member);
   }
 
@@ -308,7 +330,7 @@ class SocketService {
   }
 
   // Emit city matching update to municipality users
-  public emitCityMatchingUpdate(cityId: string, update: any): void {
+  public emitCityMatchingUpdate(cityId: string, update: unknown): void {
     this.io.to(`city:${cityId}`).emit("city_matching_update", update);
   }
 
@@ -325,7 +347,7 @@ class SocketService {
   }
 
   // Emit new donation to city channel
-  public emitNewDonation(cityId: string, donation: any): void {
+  public emitNewDonation(cityId: string, donation: unknown): void {
     this.io.to(`city:${cityId}`).emit("new_donation", donation);
   }
 
@@ -342,9 +364,8 @@ class SocketService {
   }
 
   private async processMessage(
-    socket: any,
-    message: any,
-    userSocket: UserSocket
+    socket: Socket,
+    message: IncomingMessage
   ): Promise<void> {
     const { channelId, content, sender } = message;
 

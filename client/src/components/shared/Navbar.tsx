@@ -19,6 +19,11 @@ import { AdminNav } from "./navigation/variants/AdminNav";
 import { api } from "@/api/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+interface ChannelLinkData {
+  _id: string;
+  name: string;
+}
+
 const fetchChannels = async () => {
   const response = await api.get("/channels");
   return response.data;
@@ -137,14 +142,14 @@ export const Navbar = ({
   useEffect(() => {
     if (channelsData?.data) {
       dispatch(setChannels(channelsData.data));
-      const links = channelsData.data.map((channel: any) => ({
+      const links = channelsData.data.map((channel: ChannelLinkData) => ({
         href: `/channel/${channel._id}`,
         label: channel.name,
       }));
       setChannelsLinks(links);
     } else if (channelsData) {
       dispatch(setChannels(channelsData));
-      const links = channelsData.map((channel: any) => ({
+      const links = channelsData.map((channel: ChannelLinkData) => ({
         href: `/channel/${channel._id}`,
         label: channel.name,
       }));

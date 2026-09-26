@@ -1,6 +1,7 @@
 import { useState } from "react";
 // import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 import { api } from "@/api/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,16 @@ interface City {
   media: string[];
   approvalStatus: "approved";
   soldiers: string[];
+}
+
+interface PendingJoinRequest {
+  cityId: string;
+}
+
+interface JoinRequestErrorResponse {
+  error?: string;
+  message?: string;
+  cityName?: string;
 }
 
 interface JoinError {
@@ -67,7 +78,7 @@ export default function SoldierJoinCity() {
         const response = await api.get("/cities/my-pending-requests");
         console.log("Pending requests response:", response.data);
         const pendingCityIds = new Set(
-          response.data.map((request: any) => request.cityId)
+          response.data.map((request: PendingJoinRequest) => request.cityId)
         );
         setPendingRequests(pendingCityIds as Set<string>);
         return response.data;
@@ -86,8 +97,10 @@ export default function SoldierJoinCity() {
       setPendingRequests((prev) => new Set([...prev, cityId]));
       setSuccessMessage("Join request submitted successfully!");
       setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (error: any) {
-      const errorData = error.response?.data;
+    } catch (error) {
+      const errorData = axios.isAxiosError<JoinRequestErrorResponse>(error)
+        ? error.response?.data
+        : undefined;
       if (
         errorData?.error ===
         "Already assigned to city or have a pending request"

@@ -1,11 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { api } from "@/api/api";
 import {
   requestInitialResetPasswordCode,
   requestResendResetPasswordCode,
 } from "@/api/verify2faGenerate";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import {
+  Formik,
+  Form,
+  Field,
+  ErrorMessage,
+  FormikHelpers,
+} from "formik";
 import { z } from "zod";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import { ArrowLeft, AlertCircle, X, Lock } from "lucide-react";
@@ -119,7 +126,7 @@ export default function ResetPasswordVerify() {
 
   const handleSubmit = async (
     values: ResetPasswordForm,
-    { setSubmitting, setFieldError }: any
+    { setSubmitting, setFieldError }: FormikHelpers<ResetPasswordForm>
   ) => {
     if (!deviceToken) {
       setFieldError("code", "Please try again, session expired");
@@ -145,9 +152,11 @@ export default function ResetPasswordVerify() {
         });
         navigate("/login");
       }
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Verification failed";
+        (axios.isAxiosError<{ message?: string }>(error) &&
+          error.response?.data?.message) ||
+        "Verification failed";
       setFieldError("code", errorMessage);
       setErrorMessage(errorMessage);
       setShowError(true);
