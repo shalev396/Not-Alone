@@ -21,9 +21,11 @@ npm install
 
 ```
 PORT=3000
-MONGODB_URI=mongodb://localhost:27017/not-alone
+DATABASE_URL="mongodb+srv://atlas-mongodb-cluster.9gmhoze.mongodb.net/NotAlone-Prod?authSource=%24external&authMechanism=MONGODB-AWS&retryWrites=true&w=majority&appName=notalonesoldier-prod"
 NODE_ENV=development
 ```
+
+The full list is in [`.env.example`](./.env.example). `DATABASE_URL` carries no password: MongoDB Atlas authenticates your AWS identity (run `aws sso login` first). See [MongoDB Atlas IAM authentication](./docs/README.md#mongodb-atlas-iam-authentication).
 
 4. Start the development server:
 

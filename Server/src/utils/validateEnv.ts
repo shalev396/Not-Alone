@@ -1,12 +1,12 @@
 export function validateEnv(): void {
   let required: string[] = [];
   if (process.env.NODE_ENV === "test") {
-    required = ["JWT_SECRET", "PASSWORD_KEY", "MONGODB_URI_TEST"];
+    required = ["JWT_SECRET", "PASSWORD_KEY", "DATABASE_URL_TEST"];
   } else {
     required = [
       "JWT_SECRET",
       "PASSWORD_KEY",
-      "MONGO_URI",
+      "DATABASE_URL",
       "DEVICE_TOKEN_SECRET",
       "ENCRYPTION_KEY",
     ];

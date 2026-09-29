@@ -14,6 +14,10 @@
 # After deploy: sync client to S3 (bucket = DOMAIN_NAME); invalidate CloudFront (Outputs).
 # Stack name: ${custom.appName}-${stage} — keep GitHub variable APP_NAME in sync with custom.appName.
 #
+# MongoDB: Atlas IAM auth (MONGODB-AWS). DATABASE_URL has no credentials; the Lambda authenticates as
+# its execution role, pinned to ${custom.appName}-${stage}-api (output ApiRoleArn) so Atlas can key a
+# database user on the ARN. See docs/README.md → "MongoDB Atlas IAM authentication".
+#
 # Local: npm run dev → src/handlers/http-server.ts (Express + Socket.IO).
 #        npm run offline → Lambda emulation (no WebSockets).
 
@@ -69,12 +73,14 @@ provider:
     DOMAIN_NAME: ${env:DOMAIN_NAME}
     JWT_SECRET: ${env:JWT_SECRET}
     PASSWORD_KEY: ${env:PASSWORD_KEY}
-    MONGO_URI: ${env:MONGO_URI}
+    DATABASE_URL: ${env:DATABASE_URL}
     DEVICE_TOKEN_SECRET: ${env:DEVICE_TOKEN_SECRET}
     ENCRYPTION_KEY: ${env:ENCRYPTION_KEY}
 
   iam:
     role:
+      # Fixed name → stable ARN for the Atlas MONGODB-AWS database user (output ApiRoleArn).
+      name: ${self:custom.appName}-${sls:stage}-api
       statements:
         - Effect: Allow
           Action:
@@ -330,3 +336,12 @@ resources:
         Ref: ClientFilesBucket
       Export:
         Name: ${self:custom.appName}-${self:provider.stage}-S3ClientBucketName
+
+    ApiRoleArn:
+      Description: Lambda execution role ARN (Atlas MONGODB-AWS database user)
+      Value:
+        Fn::GetAtt:
+          - IamRoleLambdaExecution
+          - Arn
+      Export:
+        Name: ${self:custom.appName}-${self:provider.stage}-ApiRoleArn

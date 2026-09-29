@@ -514,7 +514,7 @@ const setupTestUsers = async () => {
 export default async () => {
   try {
     await mongoose.connect(
-      process.env.MONGODB_URI_TEST || "mongodb://localhost:27017/not-alone-test"
+      process.env.DATABASE_URL_TEST || "mongodb://localhost:27017/not-alone-test"
     );
     await setupTestUsers();
     await mongoose.connection.close();

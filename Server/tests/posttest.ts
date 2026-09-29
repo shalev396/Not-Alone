@@ -57,7 +57,7 @@ export default async () => {
   try {
     // Connect to test database
     await mongoose.connect(
-      process.env.MONGODB_URI_TEST || "mongodb://localhost:27017/not-alone-test"
+      process.env.DATABASE_URL_TEST || "mongodb://localhost:27017/not-alone-test"
     );
 
     // Perform cleanup

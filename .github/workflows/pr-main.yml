@@ -21,10 +21,16 @@ jobs:
     name: Test Backend
     needs: build
     uses: ./.github/workflows/_test-backend.yml
+    permissions:
+      id-token: write
+      contents: read
     secrets: inherit
 
   test-frontend:
     name: Test Frontend
     needs: [build, test-backend]
     uses: ./.github/workflows/_test-frontend.yml
+    permissions:
+      id-token: write
+      contents: read
     secrets: inherit

@@ -3,12 +3,12 @@
  */
 export function getMongoUri(): string {
   if (process.env.NODE_ENV === "test") {
-    const t = process.env.MONGODB_URI_TEST;
-    if (!t) throw new Error("MONGODB_URI_TEST is required in test");
+    const t = process.env.DATABASE_URL_TEST;
+    if (!t) throw new Error("DATABASE_URL_TEST is required in test");
     return t;
   }
-  const uri = process.env.MONGO_URI;
-  if (!uri) throw new Error("MONGO_URI is required");
+  const uri = process.env.DATABASE_URL;
+  if (!uri) throw new Error("DATABASE_URL is required");
   return uri;
 }
 

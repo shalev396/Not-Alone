@@ -19,7 +19,7 @@ The `auth.test.ts` file implements comprehensive testing of the API's authentica
 
 ```typescript
 beforeAll(async () => {
-  await mongoose.connect(process.env.MONGODB_URI_TEST);
+  await mongoose.connect(process.env.DATABASE_URL_TEST);
 });
 ```
 
