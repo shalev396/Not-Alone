@@ -20,6 +20,8 @@ jobs:
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       PASSWORD_KEY: ${{ secrets.PASSWORD_KEY }}
       DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
+      # The E2E backend runs without NODE_ENV=test, so it reads DATABASE_URL: point it at qa
+      DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
       DEVICE_TOKEN_SECRET: ${{ secrets.DEVICE_TOKEN_SECRET }}
       ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
     steps:
@@ -52,6 +54,9 @@ jobs:
       - name: Install E2E Python venv and dependencies
         run: npx tsx test/scripts/run-e2e.ts install
         working-directory: client
+      - name: Seed E2E data (admin user, clear signup user)
+        run: npx ts-node tests/e2eSeed.ts
+        working-directory: Server
       - name: Start backend and frontend, wait, run E2E
         run: |
           set -e
