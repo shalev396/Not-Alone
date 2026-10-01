@@ -12,6 +12,12 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
+  // Response already started: delegate to Express's default handler, which
+  // closes the connection (writing a new status/body here would throw).
+  if (res.headersSent) {
+    return next(err);
+  }
+
   const error: ErrorResponse = {
     message: err.message || "Server Error",
     stack: process.env.NODE_ENV === "production" ? undefined : err.stack,

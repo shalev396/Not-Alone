@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { api } from "@/api/api";
-import { Formik, Form, Field } from "formik";
+import { Formik, Form, Field, useFormikContext } from "formik";
+import axios from "axios";
 import { z } from "zod";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import { ArrowLeft, AlertCircle, X, Mail, Lock } from "lucide-react";
@@ -27,6 +28,27 @@ const initialValues: LoginForm = {
   email: "",
   password: "",
 };
+
+// Clears the Formik status (error message) after 10 seconds
+function StatusAutoClear() {
+  const { status, setStatus } = useFormikContext<LoginForm>();
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (status) {
+      timeoutId = setTimeout(() => {
+        setStatus(undefined);
+      }, 10000);
+    }
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [status, setStatus]);
+
+  return null;
+}
 
 export function LoginForm() {
   const navigate = useNavigate();
@@ -154,9 +176,11 @@ export function LoginForm() {
                     state: { request: res.data.request },
                   });
                 }
-              } catch (error: any) {
+              } catch (error) {
                 const errorMessage =
-                  error.response?.data?.message || "Failed to login";
+                  (axios.isAxiosError<{ message?: string }>(error) &&
+                    error.response?.data?.message) ||
+                  "Failed to login";
                 setStatus(errorMessage);
               } finally {
                 setSubmitting(false);
@@ -164,23 +188,10 @@ export function LoginForm() {
             }}
           >
             {({ isSubmitting, touched, errors, status, setStatus }) => {
-              // Clear error after 10 seconds
-              useEffect(() => {
-                let timeoutId: NodeJS.Timeout;
-                if (status) {
-                  timeoutId = setTimeout(() => {
-                    setStatus(undefined);
-                  }, 10000);
-                }
-                return () => {
-                  if (timeoutId) {
-                    clearTimeout(timeoutId);
-                  }
-                };
-              }, [status, setStatus]);
-
               return (
                 <Form className="space-y-6">
+                  <StatusAutoClear />
+
                   {status && (
                     <div className="bg-destructive/15 text-destructive px-4 py-3 rounded-md flex items-center gap-3">
                       <AlertCircle className="h-5 w-5 flex-shrink-0" />

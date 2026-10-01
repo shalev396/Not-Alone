@@ -3,9 +3,10 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/Redux/store";
 import { updateUser } from "@/Redux/userSlice";
 import ProfileImageDialog from "@/components/profile/ProfileImageDialog";
-import { uploadImage } from "@/components/shared/UploadPhoto";
+import { uploadImage } from "@/utils/uploadImage";
 import { Navbar } from "@/components/shared/Navbar";
 import { Filter } from "bad-words";
+import axios from "axios";
 import { api } from "@/api/api";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -243,8 +244,11 @@ const Profile: React.FC = () => {
         (request: Request) => request._id !== requestId
       );
       console.log("Updated soldier requests:", updatedRequests);
-    } catch (error: any) {
-      console.error("Error deleting request:", error.response?.data || error);
+    } catch (error) {
+      console.error(
+        "Error deleting request:",
+        (axios.isAxiosError(error) && error.response?.data) || error
+      );
       alert("Failed to delete request.");
     }
   };

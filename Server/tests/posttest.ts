@@ -28,9 +28,13 @@ const cleanup = async () => {
         for (const collection of collections) {
           try {
             await collection.drop();
-          } catch (error: any) {
+          } catch (error) {
             // Ignore collection doesn't exist errors
-            if (error.code !== 26) {
+            const code =
+              typeof error === "object" && error !== null && "code" in error
+                ? error.code
+                : undefined;
+            if (code !== 26) {
               console.error(
                 `Error dropping collection ${collection.collectionName}:`,
                 error
@@ -53,7 +57,7 @@ export default async () => {
   try {
     // Connect to test database
     await mongoose.connect(
-      process.env.MONGODB_URI_TEST || "mongodb://localhost:27017/not-alone-test"
+      process.env.DATABASE_URL_TEST || "mongodb://localhost:27017/not-alone-test"
     );
 
     // Perform cleanup

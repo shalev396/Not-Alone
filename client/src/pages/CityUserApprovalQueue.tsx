@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/api";
+import axios from "axios";
+import { ApiErrorResponse } from "@/types/api-error";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Navbar } from "@/components/shared/Navbar";
@@ -47,8 +49,8 @@ export default function CityUserApprovalQueue() {
       try {
         const response = await api.get("/cities/me");
         return response.data;
-      } catch (error: any) {
-        if (error.response?.status === 401) {
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
           navigate("/login");
         }
         return [];
@@ -81,9 +83,11 @@ export default function CityUserApprovalQueue() {
       setSuccessMessage("User successfully approved and added to the city!");
       setShowSuccess(true);
       refetch();
-    } catch (error: any) {
+    } catch (error) {
       setErrorMessage(
-        error.response?.data?.message || "Failed to approve request"
+        (axios.isAxiosError<ApiErrorResponse>(error) &&
+          error.response?.data?.message) ||
+          "Failed to approve request"
       );
       setShowError(true);
     }
@@ -106,9 +110,11 @@ export default function CityUserApprovalQueue() {
       setSuccessMessage("Request denied successfully");
       setShowSuccess(true);
       refetch();
-    } catch (error: any) {
+    } catch (error) {
       setErrorMessage(
-        error.response?.data?.message || "Failed to deny request"
+        (axios.isAxiosError<ApiErrorResponse>(error) &&
+          error.response?.data?.message) ||
+          "Failed to deny request"
       );
       setShowError(true);
     }

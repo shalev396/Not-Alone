@@ -3,9 +3,10 @@ import { api } from "@/api/api";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
-import { uploadImage } from "@/components/shared/UploadPhoto";
+import { uploadImage } from "@/utils/uploadImage";
 import { Navbar } from "@/components/shared/Navbar";
-import { Formik, Form, Field } from "formik";
+import axios from "axios";
+import { Formik, Form, Field, FieldProps, FormikHelpers } from "formik";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,9 +88,16 @@ export default function NewDonation() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [showError, setShowError] = useState(false);
   const user = useSelector((state: RootState) => state.user);
+  const isSoldier = user.type === "Soldier";
+
+  const { data: cities = [] } = useQuery<City[]>({
+    queryKey: ["cities"],
+    queryFn: fetchCities,
+    enabled: !isSoldier,
+  });
 
   // Redirect soldiers away from this page
-  if (user.type === "Soldier") {
+  if (isSoldier) {
     return (
       <div className="flex h-screen bg-background">
         <Navbar isVertical isAccordion modes="home" />
@@ -116,14 +124,9 @@ export default function NewDonation() {
     );
   }
 
-  const { data: cities = [] } = useQuery<City[]>({
-    queryKey: ["cities"],
-    queryFn: fetchCities,
-  });
-
   const handleImageUpload = async (
     file: File,
-    setFieldValue: any,
+    setFieldValue: FormikHelpers<DonationForm>["setFieldValue"],
     values: DonationForm
   ) => {
     try {
@@ -186,9 +189,10 @@ export default function NewDonation() {
                   try {
                     await api.post("/donations", values);
                     navigate("/my-donations");
-                  } catch (error: any) {
+                  } catch (error) {
                     const errorMessage =
-                      error.response?.data?.error ||
+                      (axios.isAxiosError<{ error?: string }>(error) &&
+                        error.response?.data?.error) ||
                       "Failed to create donation. Please try again.";
                     setServerError(errorMessage);
                     setShowError(true);
@@ -206,7 +210,7 @@ export default function NewDonation() {
                           City *
                         </FormLabel>
                         <Field name="city">
-                          {({ field }: any) => (
+                          {({ field }: FieldProps<string>) => (
                             <Select
                               value={field.value}
                               onValueChange={(value) =>
@@ -243,7 +247,7 @@ export default function NewDonation() {
                           Address *
                         </FormLabel>
                         <Field name="address">
-                          {({ field }: any) => (
+                          {({ field }: FieldProps<string>) => (
                             <Input
                               {...field}
                               placeholder="Enter pickup address"
@@ -266,7 +270,7 @@ export default function NewDonation() {
                           Category *
                         </FormLabel>
                         <Field name="category">
-                          {({ field }: any) => (
+                          {({ field }: FieldProps<string>) => (
                             <Select
                               value={field.value}
                               onValueChange={(value) =>
@@ -303,7 +307,7 @@ export default function NewDonation() {
                           Title *
                         </FormLabel>
                         <Field name="title">
-                          {({ field }: any) => (
+                          {({ field }: FieldProps<string>) => (
                             <Input
                               {...field}
                               placeholder="Enter a descriptive title"
@@ -326,7 +330,7 @@ export default function NewDonation() {
                           Description
                         </FormLabel>
                         <Field name="description">
-                          {({ field }: any) => (
+                          {({ field }: FieldProps<string>) => (
                             <Textarea
                               {...field}
                               placeholder="Provide additional details about your donation"

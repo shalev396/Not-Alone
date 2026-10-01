@@ -3,14 +3,12 @@ import jwt from "jsonwebtoken";
 import { UserModel } from "../models/userModel";
 import { UserType } from "../types/user";
 
-declare global {
-  namespace Express {
-    interface Request {
-      user: {
-        userId: string;
-        type: UserType;
-      };
-    }
+declare module "express-serve-static-core" {
+  interface Request {
+    user: {
+      userId: string;
+      type: UserType;
+    };
   }
 }
 

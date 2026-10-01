@@ -6,7 +6,7 @@ const SECRET_KEY =
   process.env.DEVICE_TOKEN_SECRET || "32_characters_secret_key";
 // Must be 32 bytes for AES-256
 
-export function encryptPayload(payload: Record<string, any>): string {
+export function encryptPayload(payload: Record<string, unknown>): string {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(SECRET_KEY), iv);
 
@@ -19,7 +19,7 @@ export function encryptPayload(payload: Record<string, any>): string {
 
 export function decryptPayload(
   encryptedData: string
-): Record<string, any> | null {
+): Record<string, unknown> | null {
   try {
     const [ivHex, encrypted] = encryptedData.split(":");
     const iv = Buffer.from(ivHex, "hex");

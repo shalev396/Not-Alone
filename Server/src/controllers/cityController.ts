@@ -4,15 +4,12 @@ import { CityModel } from "../models/cityModel";
 import { AuditLogModel } from "../models/AuditLog";
 import { City } from "../types/city";
 import { UserType } from "../types/user";
-import { Schema } from "mongoose";
-declare global {
-  namespace Express {
-    interface Request {
-      user: {
-        userId: string;
-        type: UserType;
-      };
-    }
+declare module "express-serve-static-core" {
+  interface Request {
+    user: {
+      userId: string;
+      type: UserType;
+    };
   }
 }
 
@@ -86,40 +83,6 @@ export const createCity = async (req: Request, res: Response) => {
   }
 };
 
-// Add new interface for pending joins
-interface IPendingJoin {
-  userId: mongoose.Types.ObjectId;
-  type: "Municipality" | "Soldier";
-  requestDate: Date;
-}
-
-// Add pendingJoins field to City model
-const citySchema = new Schema(
-  {
-    // ... existing fields ...
-    pendingJoins: [
-      {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        },
-        type: {
-          type: String,
-          enum: ["Municipality", "Soldier"],
-          required: true,
-        },
-        requestDate: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
-  },
-  {
-    timestamps: true,
-  }
-);
 export const getMyCity = async (req: Request, res: Response) => {
   try {
     const city = await CityModel.find({

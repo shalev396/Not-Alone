@@ -2,6 +2,8 @@ import { useState } from "react";
 // import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/api";
+import axios from "axios";
+import { ApiErrorResponse } from "@/types/api-error";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Navbar } from "@/components/shared/Navbar";
@@ -111,10 +113,10 @@ export default function JoinCityRequest() {
       setTimeout(() => {
         setSuccessMessage(null);
       }, 5000);
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
+        (axios.isAxiosError<ApiErrorResponse>(error) &&
+          (error.response?.data?.error || error.response?.data?.message)) ||
         "Failed to submit join request";
       setError(errorMessage);
 

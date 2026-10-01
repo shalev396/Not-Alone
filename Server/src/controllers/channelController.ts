@@ -83,7 +83,7 @@ export const getChannelsForUser = async (req: Request, res: Response) => {
       .sort({ updatedAt: -1 });
 
     return res.json(channels);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error fetching channels" });
   }
 };
@@ -133,7 +133,7 @@ export const addMembers = async (req: Request, res: Response) => {
     });
 
     return res.json(channel);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error adding members" });
   }
 };
@@ -184,7 +184,7 @@ export const removeMember = async (req: Request, res: Response) => {
     });
 
     return res.json(channel);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error removing member" });
   }
 };
@@ -222,7 +222,7 @@ export const deleteChannel = async (req: Request, res: Response) => {
     });
 
     return res.json({ message: "Channel deleted successfully" });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Error deleting channel" });
   }
 };

@@ -24,7 +24,7 @@ export interface AuditLog extends Document {
   action: AuditAction;
   userId: string;
   targetId?: string;
-  changes?: Record<string, any>;
+  changes?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
   timestamp: Date;

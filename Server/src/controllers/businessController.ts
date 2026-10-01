@@ -78,7 +78,7 @@ export const getBusinessById = async (req: Request, res: Response) => {
     }
     let hasAccess;
     if (!(process.env.NODE_ENV === "test")) {
-      const hasAccess = await canAccessBusiness(
+      hasAccess = await canAccessBusiness(
         userInfo.userId,
         userInfo.type,
         businessId
@@ -217,7 +217,7 @@ export const deleteBusiness = async (req: Request, res: Response) => {
     }
     let hasAccess;
     if (!(process.env.NODE_ENV === "test")) {
-      const hasAccess = await canAccessBusiness(
+      hasAccess = await canAccessBusiness(
         userInfo.userId,
         userInfo.type,
         businessId

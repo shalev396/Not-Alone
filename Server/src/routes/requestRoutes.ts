@@ -11,7 +11,6 @@ import {
   deleteRequest,
   payRequest,
   getRequestsByUser,
-  getDonationRequestsBySoldier,
 } from "../controllers/requestController";
 
 const router = express.Router();

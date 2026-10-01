@@ -96,12 +96,12 @@ export const fetchResidences = async (): Promise<Residence[]> => {
 export const fetchPosts = async ({
   pageParam = 1, 
 }: {
-  pageParam: any;
+  pageParam: number;
 }): Promise<PaginationResponse<Post>> => {
   const res = await api.get(`/posts?page=${pageParam}&limit=2`);
   
   return {
-    posts: res.data.posts.map((post: any) => ({
+    posts: res.data.posts.map((post: Post) => ({
       ...post,
       author: {
         _id: post.author._id,
@@ -122,12 +122,14 @@ export const fetchUserPosts = async ({
   pageParam = 1,
 }: {
   userId: string;
-  pageParam: any;
+  // useInfiniteQuery callers with explicit generics provide pageParam as unknown
+  pageParam: unknown;
 }): Promise<PaginationResponse<Post>> => {
-  const res = await api.get(`/posts/user/${userId}?page=${pageParam}&limit=2`);
+  const page = typeof pageParam === "number" ? pageParam : 1;
+  const res = await api.get(`/posts/user/${userId}?page=${page}&limit=2`);
 
   return {
-    posts: res.data.posts.map((post: any) => ({
+    posts: res.data.posts.map((post: Post) => ({
       ...post,
       author: {
         _id: post.author._id,

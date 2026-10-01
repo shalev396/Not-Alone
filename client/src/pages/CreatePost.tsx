@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { uploadImage } from "@/components/shared/UploadPhoto";
+import { uploadImage } from "@/utils/uploadImage";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/Redux/store";
 import { api } from "@/api/api";
@@ -12,7 +12,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/shared/Navbar";
 import { Image, X, Loader2 } from "lucide-react";
 import { updateUser } from "@/Redux/userSlice";
-import { Formik, Form, Field } from "formik";
+import { Formik, Form, Field, FormikHelpers } from "formik";
 import { z } from "zod";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 
@@ -26,6 +26,16 @@ const postSchema = z.object({
 });
 
 type PostForm = z.infer<typeof postSchema>;
+
+interface CreatePostPayload {
+  content: string;
+  media: string[];
+  author: {
+    _id: string;
+    profileImage: string;
+  };
+  visibility: string;
+}
 
 export default function CreatePost({
   onPostCreated,
@@ -76,7 +86,7 @@ export default function CreatePost({
   };
 
   const createPostMutation = useMutation({
-    mutationFn: async (postData: any) => {
+    mutationFn: async (postData: CreatePostPayload) => {
       const response = await api.post("/posts", postData);
       return response.data;
     },
@@ -89,7 +99,7 @@ export default function CreatePost({
 
   const handleImageChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    setFieldValue: (field: string, value: any) => void
+    setFieldValue: (field: string, value: File | null) => void
   ) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -99,7 +109,7 @@ export default function CreatePost({
   };
 
   const handleRemoveImage = (
-    setFieldValue: (field: string, value: any) => void
+    setFieldValue: (field: string, value: File | null) => void
   ) => {
     setFieldValue("image", null);
     setPreviewUrl(null);
@@ -107,18 +117,18 @@ export default function CreatePost({
 
   const handleSubmit = async (
     values: PostForm,
-    { setSubmitting, setStatus }: any
+    { setSubmitting, setStatus }: FormikHelpers<PostForm>
   ) => {
     try {
       setUploading(true);
       let imageUrl = "";
-      let profileImageUrl = await ensureUserProfileImage();
+      const profileImageUrl = await ensureUserProfileImage();
 
       if (values.image) {
         imageUrl = await uploadImage(values.image);
       }
 
-      const postData = {
+      const postData: CreatePostPayload = {
         content: values.content,
         media: imageUrl ? [imageUrl] : [],
         author: {
@@ -129,7 +139,7 @@ export default function CreatePost({
       };
 
       await createPostMutation.mutateAsync(postData);
-    } catch (error: any) {
+    } catch {
       setStatus({ error: "Failed to create post. Please try again." });
     } finally {
       setSubmitting(false);
@@ -157,7 +167,7 @@ export default function CreatePost({
           </div>
 
           <Card className="p-6">
-            <Formik
+            <Formik<PostForm>
               initialValues={{ content: "", image: null }}
               validationSchema={toFormikValidationSchema(postSchema)}
               onSubmit={handleSubmit}

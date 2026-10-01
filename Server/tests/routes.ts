@@ -1,12 +1,11 @@
 import { types, getUsersArray, users } from "./userHelper";
-import { getDiscountsArray } from "./discountHelper";
 import { getCitiesArray } from "./cityHelper";
 import { getPostsArray } from "./postsHelper";
 
 type route = {
   path: string;
   method: "GET" | "POST" | "PUT" | "DELETE";
-  body?: Record<string, any> | ((type: types) => Record<string, any>);
+  body?: Record<string, unknown> | ((type: types) => Record<string, unknown>);
   query?: string[];
   params?: string;
   auth: boolean;
@@ -57,7 +56,7 @@ export const authRoutes: route[] = [
       "Business",
     ],
     body: (type: types) => {
-      const user = getUsersArray().find((u: any) => u.type === type);
+      const user = getUsersArray().find((u: users) => u.type === type);
       return {
         email: user.email,
         password: "Test123!@#",
@@ -322,7 +321,7 @@ export const businessRoutes: route[] = [
     method: "POST",
     auth: true,
     allowedTypes: ["Admin", "Business"],
-    body: (type: types) => ({
+    body: () => ({
       name: `Test Business ${Math.random().toString(36).substring(7)}`,
       slogan: "Test business slogan",
     }),

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api/api";
+import axios from "axios";
+import { ApiErrorResponse } from "@/types/api-error";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,8 +24,12 @@ export default function MyDeals() {
     try {
       const response = await api.get("/discounts/my");
       setDeals(response.data);
-    } catch (error: any) {
-      setError(error.response?.data?.message || "Failed to fetch your deals");
+    } catch (error) {
+      setError(
+        (axios.isAxiosError<ApiErrorResponse>(error) &&
+          error.response?.data?.message) ||
+          "Failed to fetch your deals"
+      );
     } finally {
       setIsLoading(false);
     }

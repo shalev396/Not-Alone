@@ -1,11 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import { api } from "@/api/api";
 import {
   requestInitialTwoFactorCode,
   requestResendTwoFactorCode,
 } from "@/api/verify2faGenerate";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import {
+  Formik,
+  Form,
+  Field,
+  ErrorMessage,
+  FormikHelpers,
+} from "formik";
 import { z } from "zod";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import { ArrowLeft, AlertCircle, X, Lock } from "lucide-react";
@@ -76,7 +83,7 @@ export default function TwoFactorAuth() {
 
   const handleSubmit = async (
     values: VerificationForm,
-    { setSubmitting, setFieldError }: any
+    { setSubmitting, setFieldError }: FormikHelpers<VerificationForm>
   ) => {
     if (!deviceToken) {
       setFieldError("code", "Please try again, session expired");
@@ -107,9 +114,11 @@ export default function TwoFactorAuth() {
           });
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Invalid verification code";
+        (axios.isAxiosError<{ message?: string }>(error) &&
+          error.response?.data?.message) ||
+        "Invalid verification code";
       setFieldError("code", errorMessage);
       setErrorMessage(errorMessage);
       setShowError(true);

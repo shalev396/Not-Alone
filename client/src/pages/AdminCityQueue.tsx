@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { api } from "@/api/api";
+import axios from "axios";
+import { ApiErrorResponse } from "@/types/api-error";
 import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/shared/Navbar";
 import {
@@ -53,8 +55,12 @@ export default function AdminCityQueue() {
     try {
       await api.post(`/cities/${cityId}/approve`);
       refetch();
-    } catch (error: any) {
-      setError(error.response?.data?.message || "Failed to approve city");
+    } catch (error) {
+      setError(
+        (axios.isAxiosError<ApiErrorResponse>(error) &&
+          error.response?.data?.message) ||
+          "Failed to approve city"
+      );
     }
   };
 
@@ -69,8 +75,12 @@ export default function AdminCityQueue() {
       setDenialReason("");
       setSelectedCity(null);
       refetch();
-    } catch (error: any) {
-      setError(error.response?.data?.message || "Failed to deny city");
+    } catch (error) {
+      setError(
+        (axios.isAxiosError<ApiErrorResponse>(error) &&
+          error.response?.data?.message) ||
+          "Failed to deny city"
+      );
     }
   };
 

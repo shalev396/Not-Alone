@@ -1,4 +1,4 @@
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Facebook, Instagram, Linkedin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 

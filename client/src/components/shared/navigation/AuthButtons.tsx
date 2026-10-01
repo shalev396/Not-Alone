@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { RootState } from "@/Redux/store";
 
 interface AuthButtonsProps {
-  user: any;
+  user: RootState["user"];
   navigate: (path: string) => void;
 }
 

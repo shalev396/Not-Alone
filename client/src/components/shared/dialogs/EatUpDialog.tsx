@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { EatUp } from "@/types/EatUps";
 import { useState, useEffect } from "react";
 import { api } from "@/api/api";
+import axios from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
@@ -56,15 +57,18 @@ export function EatUpDialog({ eatup, trigger }: EatUpDialogProps) {
           setIsLimitReached(false);
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Subscription error:", error);
-      console.error("Error response:", error.response);
+      const errorResponse = axios.isAxiosError<{ message?: string }>(error)
+        ? error.response
+        : undefined;
+      console.error("Error response:", errorResponse);
 
-      if (error.response?.status === 404) {
-        alert(error.response.data.message || "EatUp not found");
-      } else if (error.response?.status === 400) {
-        alert(error.response.data.message);
-        if (error.response.data.message === "Guest limit reached") {
+      if (errorResponse?.status === 404) {
+        alert(errorResponse.data.message || "EatUp not found");
+      } else if (errorResponse?.status === 400) {
+        alert(errorResponse.data.message);
+        if (errorResponse.data.message === "Guest limit reached") {
           setIsLimitReached(true);
         }
       } else {

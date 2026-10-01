@@ -1,7 +1,8 @@
 import { api } from "@/api/api";
+import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { Formik, Form, Field } from "formik";
+import { Formik, Form, Field, FieldProps } from "formik";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import {
   Dialog,
@@ -162,9 +163,10 @@ export function EditEatupDialog({
               await api.put(`/eatups/${eatup._id}`, eatupData);
               onSave();
               onClose();
-            } catch (error: any) {
+            } catch (error) {
               const errorMessage =
-                error.response?.data?.error ||
+                (axios.isAxiosError<{ error?: string }>(error) &&
+                  error.response?.data?.error) ||
                 "Failed to update EatUp. Please try again.";
               setStatus({ error: errorMessage });
             } finally {
@@ -241,7 +243,7 @@ export function EditEatupDialog({
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Field name="location">
-                      {({ field }: any) => (
+                      {({ field }: FieldProps) => (
                         <Input
                           {...field}
                           placeholder="Enter specific location (e.g., address, venue name)"
@@ -268,7 +270,7 @@ export function EditEatupDialog({
                   <div className="relative">
                     <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Field name="title">
-                      {({ field }: any) => (
+                      {({ field }: FieldProps) => (
                         <Input
                           {...field}
                           placeholder="Enter title"
@@ -433,7 +435,7 @@ export function EditEatupDialog({
                   <div className="relative">
                     <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Field name="limit">
-                      {({ field }: any) => (
+                      {({ field }: FieldProps) => (
                         <Input
                           {...field}
                           type="number"
@@ -483,7 +485,7 @@ export function EditEatupDialog({
                 <div className="relative">
                   <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Field name="description">
-                    {({ field }: any) => (
+                    {({ field }: FieldProps) => (
                       <Textarea
                         {...field}
                         placeholder="Tell us about your EatUp event..."

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "@/Redux/store";
 import { api } from "@/api/api";
+import axios from "axios";
+import { ApiErrorResponse } from "@/types/api-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -58,12 +60,14 @@ export default function ChannelPage() {
           : response.data?.messages
           ? response.data.messages
           : [];
-      } catch (error: any) {
-        if (error.response?.status === 401) {
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
           navigate("/login");
         }
         setErrorMessage(
-          error.response?.data?.message || "Failed to fetch messages"
+          (axios.isAxiosError<ApiErrorResponse>(error) &&
+            error.response?.data?.message) ||
+            "Failed to fetch messages"
         );
         setShowError(true);
         return [];
@@ -76,7 +80,7 @@ export default function ChannelPage() {
   });
 
   // Debug logger function
-  const debugLog = (message: string, data?: any) => {
+  const debugLog = (message: string, data?: unknown) => {
     if (DEBUG_MODE) {
       if (data) {
         console.log(message, data);
@@ -109,7 +113,7 @@ export default function ChannelPage() {
       // Update messages in cache
       queryClient.setQueryData(
         ["messages", channelId],
-        (oldMessages: any[] = []) => {
+        (oldMessages: Message[] = []) => {
           // If oldMessages is not an array, handle it
           if (!Array.isArray(oldMessages)) {
             debugLog("oldMessages is not an array:", oldMessages);

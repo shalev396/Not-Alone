@@ -2,9 +2,10 @@ import { useState } from "react";
 import { api } from "@/api/api";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
-import { uploadImage } from "@/components/shared/UploadPhoto";
+import { uploadImage } from "@/utils/uploadImage";
 import { Navbar } from "@/components/shared/Navbar";
-import { Formik, Form, Field } from "formik";
+import axios from "axios";
+import { Formik, Form, Field, FieldProps, FormikHelpers } from "formik";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -89,7 +90,7 @@ export default function NewDeal() {
 
   const handleImageUpload = async (
     file: File,
-    setFieldValue: any,
+    setFieldValue: FormikHelpers<DealForm>["setFieldValue"],
     values: DealForm
   ) => {
     try {
@@ -150,9 +151,10 @@ export default function NewDeal() {
                   try {
                     await api.post("/discounts", values);
                     navigate("/my-deals");
-                  } catch (error: any) {
+                  } catch (error) {
                     const errorMessage =
-                      error.response?.data?.error ||
+                      (axios.isAxiosError<{ error?: string }>(error) &&
+                        error.response?.data?.error) ||
                       "Failed to create new deal. Please try again.";
                     setServerError(errorMessage);
                     setShowError(true);
@@ -171,7 +173,7 @@ export default function NewDeal() {
                           Category *
                         </FormLabel>
                         <Field name="category">
-                          {({ field }: any) => (
+                          {({ field }: FieldProps<string>) => (
                             <Select
                               value={field.value}
                               onValueChange={(value) =>
@@ -208,7 +210,7 @@ export default function NewDeal() {
                           Title *
                         </FormLabel>
                         <Field name="title">
-                          {({ field }: any) => (
+                          {({ field }: FieldProps<string>) => (
                             <Input
                               {...field}
                               placeholder="Enter a descriptive title"
@@ -231,7 +233,7 @@ export default function NewDeal() {
                           Description
                         </FormLabel>
                         <Field name="description">
-                          {({ field }: any) => (
+                          {({ field }: FieldProps<string>) => (
                             <Textarea
                               {...field}
                               placeholder="Provide additional details about your donation"

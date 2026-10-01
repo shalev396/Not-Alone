@@ -10,6 +10,6 @@ export default function Logout() {
     sessionStorage.clear();
     store.dispatch(resetUser());
     navigate("/");
-  }, []);
+  }, [navigate]);
   return <div></div>;
 }

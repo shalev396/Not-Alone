@@ -137,7 +137,7 @@ export const getAllEatups = async (req: Request, res: Response) => {
     const userInfo = ensureUser(req, res);
     if (!userInfo) return;
 
-    const query: any = {};
+    const query: Record<string, unknown> = {};
 
     // Add filters if provided
     if (city) query.city = city;
@@ -289,7 +289,7 @@ export const subscribeToEatup = async (req: Request, res: Response) => {
     }
 
     // Check if user is already subscribed
-    if (eatup.guests.includes(userInfo.userId as any)) {
+    if (eatup.guests.some((id) => id.toString() === userInfo.userId)) {
       return res
         .status(400)
         .json({ message: "Already subscribed to this eatup" });
@@ -321,7 +321,7 @@ export const subscribeToEatup = async (req: Request, res: Response) => {
     const channel = await ChannelModel.findOne({ eatupId });
     if (channel) {
       // Only add user if they're not already a member
-      if (!channel.members.includes(userInfo.userId as any)) {
+      if (!channel.members.some((id) => id.toString() === userInfo.userId)) {
         await ChannelModel.findByIdAndUpdate(
           channel._id,
           { $push: { members: userInfo.userId } },
@@ -358,7 +358,7 @@ export const unsubscribeFromEatup = async (req: Request, res: Response) => {
     }
 
     // Check if user is subscribed
-    if (!eatup.guests.includes(userInfo.userId as any)) {
+    if (!eatup.guests.some((id) => id.toString() === userInfo.userId)) {
       return res.status(400).json({ message: "Not subscribed to this eatup" });
     }
 

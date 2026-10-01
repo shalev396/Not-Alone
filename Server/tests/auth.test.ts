@@ -10,7 +10,6 @@ import {
 } from "./userHelper";
 import { getCitiesArray } from "./cityHelper";
 import { getDonationsArray } from "./donationHelper";
-import { UserModel } from "../src/models/userModel";
 import {
   authRoutes,
   userRoutes,
@@ -51,7 +50,7 @@ describe("Route Access Tests", () => {
 
   beforeAll(async () => {
     await mongoose.connect(
-      process.env.MONGODB_URI_TEST || "mongodb://localhost:27017/not-alone-test"
+      process.env.DATABASE_URL_TEST || "mongodb://localhost:27017/not-alone-test"
     );
     await new Promise((resolve) => setTimeout(resolve, 1000));
 

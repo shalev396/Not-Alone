@@ -1,4 +1,3 @@
-import { Express } from "express";
 import { Server } from "http";
 
 declare module "express-serve-static-core" {

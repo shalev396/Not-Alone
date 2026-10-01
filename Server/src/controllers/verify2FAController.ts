@@ -1,12 +1,9 @@
 import { Request, Response } from "express";
 import { TwoFAAttempt } from "../models/TwoFAAttemptModel";
 import { decryptPayload } from "../utils/encryption";
-import useragent from "express-useragent";
-import geoip from "geoip-lite";
 import { AuditLogModel, AuditLogAction } from "../models/AuditLog";
 import { create2FA } from "../services/create2FA";
-import { UserModel, User } from "../models/userModel";
-import bcrypt from "bcryptjs";
+import { UserModel } from "../models/userModel";
 
 // Helper function to log failed attempts
 async function logFailedAttempt(userId: string, reason: string) {
@@ -58,11 +55,14 @@ export const generate2FA = async (req: Request, res: Response) => {
       message: "2FA code sent successfully",
       deviceToken,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("2FA Generation Error:", error);
     return res.status(500).json({
       message: "Failed to generate and send 2FA code",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error:
+        process.env.NODE_ENV === "development" && error instanceof Error
+          ? error.message
+          : undefined,
     });
   }
 };
@@ -82,8 +82,6 @@ export const verify2FA = async (req: Request, res: Response) => {
     // 2) Compare IP / user-agent for security
     const requestIp = req.ip;
     const source = req.headers["user-agent"] || "";
-    const ua = useragent.parse(source);
-    const geo = geoip.lookup(requestIp || "");
 
     // 3) Fetch 2FA record from DB with additional security checks
     const twoFAAttempt = await TwoFAAttempt.findOne({
@@ -134,7 +132,6 @@ export const verify2FA = async (req: Request, res: Response) => {
       userAgent: source,
       details: {
         deviceInfo: twoFAAttempt.deviceInfo,
-        geo,
       },
     });
 
@@ -142,11 +139,14 @@ export const verify2FA = async (req: Request, res: Response) => {
       message: "2FA verified successfully.",
       verified: true,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("2FA Verification Error:", error);
     return res.status(500).json({
       message: "An error occurred during verification.",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error:
+        process.env.NODE_ENV === "development" && error instanceof Error
+          ? error.message
+          : undefined,
     });
   }
 };
@@ -189,11 +189,14 @@ export const generatePasswordReset = async (req: Request, res: Response) => {
       userId: user.id,
       deviceToken,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Password Reset Generation Error:", error);
     return res.status(500).json({
       message: "Failed to generate reset code",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error:
+        process.env.NODE_ENV === "development" && error instanceof Error
+          ? error.message
+          : undefined,
     });
   }
 };
@@ -213,8 +216,6 @@ export const verifyPasswordReset = async (req: Request, res: Response) => {
     // 2) Compare IP / user-agent for security
     const requestIp = req.ip;
     const source = req.headers["user-agent"] || "";
-    const ua = useragent.parse(source);
-    const geo = geoip.lookup(requestIp || "");
 
     // 3) Fetch 2FA record from DB with additional security checks
     const twoFAAttempt = await TwoFAAttempt.findOne({
@@ -260,7 +261,6 @@ export const verifyPasswordReset = async (req: Request, res: Response) => {
       userAgent: source,
       details: {
         deviceInfo: twoFAAttempt.deviceInfo,
-        geo,
         purpose: "password_reset",
       },
     });
@@ -269,11 +269,14 @@ export const verifyPasswordReset = async (req: Request, res: Response) => {
       message: "Code verified successfully.",
       verified: true,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Password Reset Verification Error:", error);
     return res.status(500).json({
       message: "An error occurred during verification.",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error:
+        process.env.NODE_ENV === "development" && error instanceof Error
+          ? error.message
+          : undefined,
     });
   }
 };
@@ -307,11 +310,14 @@ export const updatePassword = async (req: Request, res: Response) => {
     return res.status(200).json({
       message: "Password updated successfully",
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Password Update Error:", error);
     return res.status(500).json({
       message: "Failed to update password",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error:
+        process.env.NODE_ENV === "development" && error instanceof Error
+          ? error.message
+          : undefined,
     });
   }
 };

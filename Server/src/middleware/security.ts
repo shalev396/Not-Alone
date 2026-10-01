@@ -102,12 +102,12 @@ export const auditLog = (action: string) => {
     next: NextFunction
   ): Promise<void> => {
     const originalSend = res.json;
-    res.json = function (body: any): Response {
+    res.json = function (body: unknown): Response {
       res.json = originalSend;
       // Only log if the request was successful
       if (res.statusCode >= 200 && res.statusCode < 300) {
         try {
-          const logData: any = {
+          const logData: Record<string, unknown> = {
             action,
             targetId: req.params.id,
             changes: req.body,
