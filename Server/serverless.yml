@@ -18,6 +18,9 @@
 # its execution role, pinned to ${custom.appName}-${stage}-api (output ApiRoleArn) so Atlas can key a
 # database user on the ARN. See docs/README.md → "MongoDB Atlas IAM authentication".
 #
+# WAF: WAF_WEB_ACL_ARN = shared web ACL shalev396-shared-acl (CloudFront scope, us-east-1), attached
+# to the distribution. Empty → no WAF. See docs/README.md → "Shared WAF".
+#
 # Local: npm run dev → src/handlers/http-server.ts (Express + Socket.IO).
 #        npm run offline → Lambda emulation (no WebSockets).
 
@@ -148,6 +151,12 @@ functions:
 
 resources:
   Description: ${self:custom.appDisplayName} — Lambda API, S3 client, CloudFront, Route 53 (${self:provider.stage})
+  Conditions:
+    HasWebAcl:
+      Fn::Not:
+        - Fn::Equals:
+            - ${env:WAF_WEB_ACL_ARN, ''}
+            - ""
   Resources:
     ClientFilesBucket:
       Type: AWS::S3::Bucket
@@ -248,6 +257,11 @@ resources:
           Aliases:
             - ${env:DOMAIN_NAME}
           ViewerCertificate: ${self:custom.viewerCertificate}
+          WebACLId:
+            Fn::If:
+              - HasWebAcl
+              - ${env:WAF_WEB_ACL_ARN, ''}
+              - Ref: AWS::NoValue
           DefaultRootObject: index.html
           DefaultCacheBehavior:
             TargetOriginId: ClientFilesOrigin

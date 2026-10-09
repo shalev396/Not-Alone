@@ -30,6 +30,7 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DEVICE_TOKEN_SECRET: ${{ secrets.DEVICE_TOKEN_SECRET }}
       ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+      WAF_WEB_ACL_ARN: ${{ secrets.WAF_WEB_ACL_ARN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
