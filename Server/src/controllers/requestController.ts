@@ -3,6 +3,7 @@ import mongoose, { SortOrder } from "mongoose";
 import { RequestModel } from "../models/requestModel";
 import { CityModel } from "../models/cityModel";
 import { AuditLogModel } from "../models/AuditLog";
+import { pickSchemaFields } from "../utils/schemaFields";
 
 interface UserInfo {
   userId: string;
@@ -99,11 +100,11 @@ export const getRequests = async (req: Request, res: Response) => {
     const query: Record<string, unknown> = {};
 
     // Apply filters
-    if (status) query.status = status;
-    if (zone) query.zone = zone;
-    if (service) query.service = service;
-    if (city) query.city = city;
-    if (paid) query.paid = paid;
+    if (status) query.status = { $eq: status };
+    if (zone) query.zone = { $eq: zone };
+    if (service) query.service = { $eq: service };
+    if (city) query.city = { $eq: city };
+    if (paid) query.paid = { $eq: paid };
 
     // For non-admin users, apply specific filters
     if (userInfo.type !== "Admin") {
@@ -204,6 +205,9 @@ export const createRequest = async (req: Request, res: Response) => {
     };
 
     // Validate city exists and matches zone
+    if (!mongoose.Types.ObjectId.isValid(requestData.city)) {
+      return res.status(400).json({ message: "Invalid city ID format" });
+    }
     const city = await CityModel.findById(requestData.city);
     if (!city) {
       return res.status(400).json({ message: "City not found" });
@@ -278,7 +282,7 @@ export const updateRequest = async (req: Request, res: Response) => {
 
     const updatedRequest = await RequestModel.findByIdAndUpdate(
       requestId,
-      { $set: req.body },
+      { $set: pickSchemaFields(RequestModel.schema, req.body) },
       { new: true, runValidators: true }
     )
       .populate("author", "-password")

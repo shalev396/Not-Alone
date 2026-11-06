@@ -4,7 +4,7 @@ import { api } from "@/api/api";
 import { Formik, Form, Field } from "formik";
 import axios from "axios";
 import { z } from "zod";
-import { toFormikValidationSchema } from "zod-formik-adapter";
+import { toFormikValidationSchema } from "@/lib/zodFormik";
 import {
   ArrowLeft,
   AlertCircle,

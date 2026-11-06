@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { DonationModel } from "../models/donationModel";
 import { UserModel } from "../models/userModel";
 import { CityModel } from "../models/cityModel";
+import { pickSchemaFields } from "../utils/schemaFields";
 
 interface UserInfo {
   userId: string;
@@ -173,6 +174,9 @@ export const createDonation = async (req: Request, res: Response) => {
     };
 
     // Validate city exists
+    if (!mongoose.Types.ObjectId.isValid(donationData.city)) {
+      return res.status(400).json({ message: "Invalid city ID format" });
+    }
     const city = await CityModel.findById(donationData.city).lean();
     if (!city) {
       return res.status(400).json({ message: "City not found" });
@@ -247,7 +251,7 @@ export const updateDonation = async (req: Request, res: Response) => {
 
     const updatedDonation = await DonationModel.findByIdAndUpdate(
       donationId,
-      { $set: req.body },
+      { $set: pickSchemaFields(DonationModel.schema, req.body) },
       { new: true, runValidators: true }
     )
       .populate("donor", "-password")
@@ -384,6 +388,9 @@ export const getCityDonationsAndSoldiers = async (
         return res
           .status(400)
           .json({ message: "City ID is required for admin" });
+      }
+      if (!mongoose.Types.ObjectId.isValid(cityId)) {
+        return res.status(400).json({ message: "Invalid city ID format" });
       }
       userCity = await CityModel.findById(cityId).lean();
       if (!userCity) {

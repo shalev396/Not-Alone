@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { TwoFAAttempt } from "../models/TwoFAAttemptModel";
 import { decryptPayload } from "../utils/encryption";
 import { AuditLogModel, AuditLogAction } from "../models/AuditLog";
@@ -21,6 +22,10 @@ async function logFailedAttempt(userId: string, reason: string) {
 export const generate2FA = async (req: Request, res: Response) => {
   try {
     const { userId, isPasswordReset } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
 
     // Fetch user details from database
     const user = await UserModel.findById(userId);
@@ -83,10 +88,14 @@ export const verify2FA = async (req: Request, res: Response) => {
     const requestIp = req.ip;
     const source = req.headers["user-agent"] || "";
 
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
     // 3) Fetch 2FA record from DB with additional security checks
     const twoFAAttempt = await TwoFAAttempt.findOne({
       userId,
-      code,
+      code: { $eq: code },
       used: false,
     }).sort({ createdAt: -1 }); // Get the most recent attempt
 
@@ -157,7 +166,7 @@ export const generatePasswordReset = async (req: Request, res: Response) => {
     const { email } = req.body;
 
     // Find user by email and select specific fields
-    const user = await UserModel.findOne({ email }).select(
+    const user = await UserModel.findOne({ email: { $eq: email } }).select(
       "_id email firstName lastName"
     );
     if (!user) {
@@ -217,10 +226,14 @@ export const verifyPasswordReset = async (req: Request, res: Response) => {
     const requestIp = req.ip;
     const source = req.headers["user-agent"] || "";
 
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
     // 3) Fetch 2FA record from DB with additional security checks
     const twoFAAttempt = await TwoFAAttempt.findOne({
       userId,
-      code,
+      code: { $eq: code },
       used: false,
     }).sort({ createdAt: -1 }); // Get the most recent attempt
 
@@ -285,6 +298,10 @@ export const verifyPasswordReset = async (req: Request, res: Response) => {
 export const updatePassword = async (req: Request, res: Response) => {
   try {
     const { userId, password } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
 
     // Find user
     const user = await UserModel.findById(userId);

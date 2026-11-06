@@ -8,6 +8,12 @@ import { app } from "../index";
 
 const httpHandler = serverlessHttp(app, {
   binary: ["image/*", "application/pdf"],
+  // serverless-http pins req.ip to API Gateway's sourceIp, which is the
+  // CloudFront edge. Drop it so Express derives the client IP from
+  // X-Forwarded-For using the app's "trust proxy" setting.
+  request: (request: object) => {
+    Reflect.deleteProperty(request, "ip");
+  },
 });
 
 let dbReady: Promise<void> | null = null;

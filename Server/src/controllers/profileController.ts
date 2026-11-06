@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { ProfileModel } from "../models/profileModel";
 import { UserModel } from "../models/userModel";
+import { pickSchemaFields } from "../utils/schemaFields";
 
 interface UserInfo {
   userId: string;
@@ -200,7 +201,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
 
     const updatedProfile = await ProfileModel.findByIdAndUpdate(
       profile._id,
-      { $set: req.body },
+      { $set: pickSchemaFields(ProfileModel.schema, req.body) },
       { new: true, runValidators: true }
     ).populate("user", "-password");
 

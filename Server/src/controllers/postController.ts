@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { PostModel } from "../models/postModel";
+import { pickSchemaFields } from "../utils/schemaFields";
 
 
 interface UserInfo {
@@ -362,7 +363,7 @@ export const updatePost = async (req: Request, res: Response) => {
       },
       {
         $set: {
-          ...req.body,
+          ...pickSchemaFields(PostModel.schema, req.body),
           authorId: undefined, // Prevent authorId modification
           likes: undefined, // Prevent likes modification
         },

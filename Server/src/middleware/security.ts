@@ -4,6 +4,25 @@ import { Request, Response, NextFunction } from "express";
 import { AuditLogModel } from "../models/AuditLog";
 
 // Rate limiters
+// App-wide limit per client IP, applied to every route in index.ts
+export const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 1000,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many requests, please try again later" },
+});
+
+// Login, registration and password reset: only failed attempts count
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 20,
+  skipSuccessfulRequests: true,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many attempts, please try again later" },
+});
+
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: process.env.NODE_ENV === "test" ? 100 : 5, // Higher limit for tests

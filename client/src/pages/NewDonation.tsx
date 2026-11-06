@@ -7,7 +7,7 @@ import { uploadImage } from "@/utils/uploadImage";
 import { Navbar } from "@/components/shared/Navbar";
 import axios from "axios";
 import { Formik, Form, Field, FieldProps, FormikHelpers } from "formik";
-import { toFormikValidationSchema } from "zod-formik-adapter";
+import { toFormikValidationSchema } from "@/lib/zodFormik";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,13 +62,16 @@ const fetchCities = async () => {
 
 // Zod schema for form validation
 const donationSchema = z.object({
-  city: z.string({ required_error: "City is required" }),
+  city: z.string({
+    error: (issue) => (issue.input === undefined ? "City is required" : undefined),
+  }),
   address: z
     .string()
     .min(5, "Address must be at least 5 characters")
     .max(200, "Address cannot exceed 200 characters"),
   category: z.enum(categories, {
-    required_error: "Please select a category",
+    error: (issue) =>
+      issue.input === undefined ? "Please select a category" : undefined,
   }),
   title: z
     .string()

@@ -11,21 +11,29 @@ export const loginUser = async (
     const { email, password } = req.body;
 
     // Basic validation
-    if (!email || !password) {
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email ||
+      !password
+    ) {
       return res.status(403).json({
         errors: [{ msg: "Email and password are required" }],
       });
     }
 
-    // Email format validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    // Email format validation (linear-time pattern, bounded length)
+    if (
+      email.length > 254 ||
+      !/^[^\s@]+@[^\s@][^\s@.]*\.[^\s@]+$/.test(email)
+    ) {
       return res.status(403).json({
         errors: [{ msg: "Invalid email format!" }],
       });
     }
 
     // Find user
-    const user = await UserModel.findOne({ email });
+    const user = await UserModel.findOne({ email: { $eq: email } });
     if (!user) {
       return res.status(403).json({ error: "Invalid credentials" });
     }

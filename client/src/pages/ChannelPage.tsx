@@ -83,9 +83,9 @@ export default function ChannelPage() {
   const debugLog = (message: string, data?: unknown) => {
     if (DEBUG_MODE) {
       if (data) {
-        console.log(message, data);
+        console.log("%s", message, data);
       } else {
-        console.log(message);
+        console.log("%s", message);
       }
     }
   };

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { uploadImage } from "@/utils/uploadImage";
+import { getImagePreviewUrl } from "@/utils/imagePreview";
 import { api } from "@/api/api";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -27,7 +28,7 @@ import {
   ErrorMessage,
   FormikHelpers,
 } from "formik";
-import { toFormikValidationSchema } from "zod-formik-adapter";
+import { toFormikValidationSchema } from "@/lib/zodFormik";
 import {
   Popover,
   PopoverContent,
@@ -501,7 +502,7 @@ export default function NewEatup() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              setPreviewUrl(URL.createObjectURL(file));
+                              setPreviewUrl(getImagePreviewUrl(file));
                               const imageUrl = await uploadImage(file);
                               setFieldValue("media", [imageUrl]);
                             }

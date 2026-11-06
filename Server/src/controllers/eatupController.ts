@@ -3,6 +3,7 @@ import mongoose, { SortOrder } from "mongoose";
 import { EatupModel } from "../models/eatupModel";
 import { CityModel } from "../models/cityModel";
 import { ChannelModel } from "../models/channelModel";
+import { pickSchemaFields } from "../utils/schemaFields";
 
 interface UserInfo {
   userId: string;
@@ -140,8 +141,8 @@ export const getAllEatups = async (req: Request, res: Response) => {
     const query: Record<string, unknown> = {};
 
     // Add filters if provided
-    if (city) query.city = city;
-    if (hosting) query.hosting = hosting;
+    if (city) query.city = { $eq: city };
+    if (hosting) query.hosting = { $eq: hosting };
     if (date) {
       const parsedDate = new Date(date as string);
       if (isNaN(parsedDate.getTime())) {
@@ -236,6 +237,9 @@ export const createEatup = async (req: Request, res: Response) => {
 
     // Only validate city if it's provided
     if (eatupData.city) {
+      if (!mongoose.Types.ObjectId.isValid(eatupData.city)) {
+        return res.status(400).json({ message: "Invalid city ID format" });
+      }
       const city = await CityModel.findById(eatupData.city);
       if (!city) {
         return res.status(400).json({ message: "City not found" });
@@ -452,7 +456,7 @@ export const updateEatup = async (req: Request, res: Response) => {
 
     const updatedEatup = await EatupModel.findByIdAndUpdate(
       eatupId,
-      { $set: req.body },
+      { $set: pickSchemaFields(EatupModel.schema, req.body) },
       { new: true, runValidators: true }
     )
       .populate("author", "-password")

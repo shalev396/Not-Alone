@@ -5,6 +5,7 @@ import { ApiErrorResponse } from "@/types/api-error";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 import { uploadImage } from "@/utils/uploadImage";
+import { getImagePreviewUrl } from "@/utils/imagePreview";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,7 @@ import {
   FieldProps,
   FormikHelpers,
 } from "formik";
-import { toFormikValidationSchema } from "zod-formik-adapter";
+import { toFormikValidationSchema } from "@/lib/zodFormik";
 import upload from "@/assets/upload.png";
 
 // Constants
@@ -237,7 +238,7 @@ export default function CreateCity() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              setPreviewUrl(URL.createObjectURL(file));
+                              setPreviewUrl(getImagePreviewUrl(file));
                               const imageUrl = await uploadImage(file);
                               setFieldValue("media", [imageUrl]);
                             }

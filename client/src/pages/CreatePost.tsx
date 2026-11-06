@@ -14,7 +14,7 @@ import { Image, X, Loader2 } from "lucide-react";
 import { updateUser } from "@/Redux/userSlice";
 import { Formik, Form, Field, FormikHelpers } from "formik";
 import { z } from "zod";
-import { toFormikValidationSchema } from "zod-formik-adapter";
+import { toFormikValidationSchema } from "@/lib/zodFormik";
 
 // Zod schema for post validation
 const postSchema = z.object({

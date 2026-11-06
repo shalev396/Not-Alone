@@ -42,7 +42,9 @@ export const createCity = async (req: Request, res: Response) => {
     }
 
     // Check if city already exists
-    const existingCity = await CityModel.findOne({ name }).lean();
+    const existingCity = await CityModel.findOne({
+      name: { $eq: name },
+    }).lean();
     if (existingCity) {
       return res
         .status(400)

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { requestDedupedResetPasswordGenerate } from "@/api/verify2faGenerate";
 import { Formik, Form, Field, ErrorMessage, FormikHelpers } from "formik";
 import { z } from "zod";
-import { toFormikValidationSchema } from "zod-formik-adapter";
+import { toFormikValidationSchema } from "@/lib/zodFormik";
 import { ArrowLeft, AlertCircle, X, Mail } from "lucide-react";
 import { ModeToggle } from "@/components/custom-ui/mode-toggle";
 import { useState } from "react";

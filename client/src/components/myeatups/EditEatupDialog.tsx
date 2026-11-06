@@ -3,7 +3,7 @@ import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Formik, Form, Field, FieldProps } from "formik";
-import { toFormikValidationSchema } from "zod-formik-adapter";
+import { toFormikValidationSchema } from "@/lib/zodFormik";
 import {
   Dialog,
   DialogContent,
@@ -90,7 +90,8 @@ const eatupSchema = z.object({
     .min(1, "At least one language is required")
     .max(5, "Cannot exceed 5 languages"),
   hosting: z.enum(hostingTypes, {
-    required_error: "Please select a hosting type",
+    error: (issue) =>
+      issue.input === undefined ? "Please select a hosting type" : undefined,
   }),
   limit: z
     .number()

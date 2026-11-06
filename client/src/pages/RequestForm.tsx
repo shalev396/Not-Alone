@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertCircle, Package } from "lucide-react";
 import { Formik, Form, Field } from "formik";
 import { z } from "zod";
-import { toFormikValidationSchema } from "zod-formik-adapter";
+import { toFormikValidationSchema } from "@/lib/zodFormik";
 import {
   Select,
   SelectContent,

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { BusinessModel } from "../models/businessModel";
+import { pickSchemaFields } from "../utils/schemaFields";
 
 interface UserInfo {
   userId: string;
@@ -185,7 +186,7 @@ export const updateBusiness = async (req: Request, res: Response) => {
 
     const updatedBusiness = await BusinessModel.findByIdAndUpdate(
       businessId,
-      { $set: req.body },
+      { $set: pickSchemaFields(BusinessModel.schema, req.body) },
       { new: true, runValidators: true }
     )
       .populate("ownerDetails", "-password")

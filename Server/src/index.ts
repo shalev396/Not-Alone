@@ -25,11 +25,18 @@ import channelRoutes from "./routes/channelRoutes";
 import messageRoutes from "./routes/messageRoutes";
 import verify2FARoutes from "./routes/verify2FARoutes";
 import discountRoutes from "./routes/discountRoutes";
+import { apiLimiter } from "./middleware/security";
+import { isLambdaRuntime } from "./config/environment";
 
 dotenv.config();
 validateEnv();
 
 const app = express();
+
+// Number of proxies in front of the app, so req.ip is the real client IP
+// (rate limiting, audit logs, 2FA device checks). Lambda is reached through
+// CloudFront -> API Gateway; the Render/local server through at most one proxy.
+app.set("trust proxy", isLambdaRuntime() ? 2 : 1);
 
 app.use(
   helmet({
@@ -74,6 +81,8 @@ app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(morgan("dev"));
 
 app.use(express.static(path.join(__dirname, "../public")));
+
+app.use(apiLimiter);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);

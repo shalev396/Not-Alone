@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { UserModel } from "../models/userModel";
 import { AuditLogAction, AuditLogModel } from "../models/AuditLog";
 import { UserUpdates, UserFilter } from "../types/user";
+import { pickSchemaFields } from "../utils/schemaFields";
 
 // Helper function to ensure user exists
 const ensureUser = (req: Request, res: Response): Response | undefined => {
@@ -24,9 +25,11 @@ export const getUsers = async (
     if (req.path === "/pending") {
       query.approvalStatus = "pending";
     } else {
-      if (type) query.type = type;
-      if (approvalStatus) query.approvalStatus = approvalStatus;
-      if (search) {
+      if (typeof type === "string") query.type = { $eq: type };
+      if (typeof approvalStatus === "string") {
+        query.approvalStatus = { $eq: approvalStatus };
+      }
+      if (typeof search === "string" && search) {
         query.$or = [
           { firstName: { $regex: search, $options: "i" } },
           { lastName: { $regex: search, $options: "i" } },
@@ -107,7 +110,9 @@ export const registerUser = async (
     const { email } = req.body;
 
     // Check if user exists
-    const existingUser = await UserModel.findOne({ email }).lean();
+    const existingUser = await UserModel.findOne({
+      email: { $eq: email },
+    }).lean();
     if (existingUser) {
       return res.status(400).json({ error: "Email already registered" });
     }
@@ -180,7 +185,7 @@ export const updateProfile = async (
 
     const user = await UserModel.findByIdAndUpdate(
       req.user!.userId,
-      { $set: updates },
+      { $set: pickSchemaFields(UserModel.schema, updates) },
       { new: true, runValidators: true },
     )
       .select("-password")
@@ -229,7 +234,7 @@ export const updateUser = async (
 
     const user = await UserModel.findByIdAndUpdate(
       userId,
-      { $set: updates },
+      { $set: pickSchemaFields(UserModel.schema, updates) },
       { new: true, runValidators: true },
     )
       .select("-password")

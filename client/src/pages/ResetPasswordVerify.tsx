@@ -14,7 +14,7 @@ import {
   FormikHelpers,
 } from "formik";
 import { z } from "zod";
-import { toFormikValidationSchema } from "zod-formik-adapter";
+import { toFormikValidationSchema } from "@/lib/zodFormik";
 import { ArrowLeft, AlertCircle, X, Lock } from "lucide-react";
 import { ModeToggle } from "@/components/custom-ui/mode-toggle";
 import { useEffect, useState } from "react";

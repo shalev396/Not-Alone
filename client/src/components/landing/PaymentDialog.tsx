@@ -5,7 +5,7 @@ import { CreditCard, Apple, CircleDollarSign } from "lucide-react";
 import { useState } from "react";
 import { useFormik } from "formik";
 import { z } from "zod";
-import { toFormikValidationSchema } from "zod-formik-adapter";
+import { toFormikValidationSchema } from "@/lib/zodFormik";
 
 interface PaymentDialogProps {
   triggerClassName?: string;

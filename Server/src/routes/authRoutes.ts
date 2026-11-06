@@ -6,8 +6,11 @@ import {
   verifyPasswordReset,
   updatePassword,
 } from "../controllers/verify2FAController";
+import { authLimiter } from "../middleware/security";
 
 const router = express.Router();
+
+router.use(authLimiter);
 
 router.post("/login", loginUser);
 router.post("/register", registerUser);
